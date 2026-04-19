@@ -432,7 +432,7 @@ For support, issues, or questions:
 
 <div align="center">
 
-**Made with ❤️ by the Hyper Plays Team**
+**Made with ❤️ by Sharan S**
 
 *Bringing arcade gaming to the modern web*
 
