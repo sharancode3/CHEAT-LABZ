@@ -1,0 +1,9 @@
+/* Dedicated animation helper classes + particles */
+.fade-in{animation:fadeIn .8s ease forwards}
+@keyframes fadeIn{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
+.spark{position:absolute;width:4px;height:4px;background:#00CFFF;border-radius:50%;pointer-events:none;animation:sparkFly .9s linear forwards}
+@keyframes sparkFly{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.2)}}
+/* Neon trail on hover */
+.trail-hover{position:relative}
+.trail-hover::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 0 0 rgba(0,207,255,.6);opacity:0;transition:.45s cubic-bezier(.16,.8,.36,1)}
+.trail-hover:hover::after{opacity:1;box-shadow:0 0 22px 4px rgba(0,207,255,.4)}

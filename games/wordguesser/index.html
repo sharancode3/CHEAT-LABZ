@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Guesser</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0a0000, #1a0505);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #ffebeb;
+      padding: 20px;
+    }
+
+    .game-container {
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ff0000, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .stat-item {
+      color: #ff6b6b;
+    }
+
+    .stat-value {
+      color: #ff0000;
+      text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    }
+
+    .hangman-display {
+      background: rgba(20, 0, 0, 0.5);
+      border: 2px solid rgba(255, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hangman-art {
+      font-size: 80px;
+      filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5));
+    }
+
+    .word-display {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      margin-bottom: 30px;
+      color: #ff0000;
+      text-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+      min-height: 60px;
+    }
+
+    .hint {
+      font-size: 16px;
+      color: #ff6b6b;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .keyboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+      max-width: 600px;
+    }
+
+    .key {
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255, 0, 0, 0.2), rgba(255, 0, 0, 0.1));
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: 8px;
+      color: #ffebeb;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 16px;
+    }
+
+    .key:hover:not(.used) {
+      background: linear-gradient(180deg, #ff0000, #ff3333);
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .key.used {
+      opacity: 0.3;
+      cursor: not-allowed;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .key.correct {
+      background: linear-gradient(180deg, #00ff00, #00cc00);
+      color: #000;
+    }
+
+    .key.wrong {
+      background: linear-gradient(180deg, #ff0000, #cc0000);
+    }
+
+    .btn {
+      margin-top: 15px;
+      padding: 14px 28px;
+      background: linear-gradient(180deg, #ff0000, #ff3333);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
+    }
+
+    .game-over-msg {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(20, 0, 0, 0.98);
+      padding: 40px;
+      border-radius: 16px;
+      border: 2px solid rgba(255, 0, 0, 0.5);
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 60px rgba(255, 0, 0, 0.5);
+      z-index: 1000;
+      min-width: 300px;
+    }
+
+    .game-over-msg.show {
+      display: block;
+    }
+
+    .game-over-msg h2 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      color: #ff0000;
+    }
+
+    .game-over-msg p {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #ff6b6b;
+    }
+
+    .word-reveal {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ff3333;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>💭 Word Guesser</h1>
+    
+    <div class="stats">
+      <div class="stat-item">
+        Score: <span class="stat-value" id="score">0</span>
+      </div>
+      <div class="stat-item">
+        Wrong: <span class="stat-value" id="wrongGuesses">0</span>/6
+      </div>
+    </div>
+
+    <div class="hangman-display">
+      <div class="hangman-art" id="hangmanArt">😊</div>
+    </div>
+
+    <div class="word-display" id="wordDisplay">_ _ _ _ _</div>
+    
+    <div class="hint" id="hint">Click Start to begin!</div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <button class="btn" id="startBtn">Start Game</button>
+  </div>
+
+  <div class="game-over-msg" id="gameOverMsg">
+    <h2 id="resultTitle">Game Over!</h2>
+    <p id="resultText"></p>
+    <p class="word-reveal" id="wordReveal"></p>
+    <p>Score: <span id="finalScore">0</span></p>
+    <button class="btn" id="restartBtn">Play Again</button>
+  </div>
+
+  <script>
+    const words = [
+      { word: 'JAVASCRIPT', hint: 'Programming language' },
+      { word: 'PYTHON', hint: 'Snake programming language' },
+      { word: 'COMPUTER', hint: 'Electronic device' },
+      { word: 'KEYBOARD', hint: 'Input device' },
+      { word: 'DEVELOPER', hint: 'Code creator' },
+      { word: 'ALGORITHM', hint: 'Step-by-step procedure' },
+      { word: 'DATABASE', hint: 'Data storage' },
+      { word: 'NETWORK', hint: 'Connected systems' },
+      { word: 'FUNCTION', hint: 'Reusable code block' },
+      { word: 'VARIABLE', hint: 'Data container' },
+      { word: 'INTERFACE', hint: 'Interaction point' },
+      { word: 'FRAMEWORK', hint: 'Development structure' },
+      { word: 'SECURITY', hint: 'Protection measure' },
+      { word: 'ENCRYPTION', hint: 'Data encoding' },
+      { word: 'BROWSER', hint: 'Web application' }
+    ];
+
+    const hangmanStages = ['😊', '😐', '😟', '😦', '😧', '😱', '💀'];
+
+    let currentWord = '';
+    let currentHint = '';
+    let guessedLetters = [];
+    let wrongGuesses = 0;
+    let score = 0;
+    let gameActive = false;
+
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const wordDisplayEl = document.getElementById('wordDisplay');
+    const hintEl = document.getElementById('hint');
+    const scoreEl = document.getElementById('score');
+    const wrongGuessesEl = document.getElementById('wrongGuesses');
+    const hangmanArtEl = document.getElementById('hangmanArt');
+    const keyboardEl = document.getElementById('keyboard');
+    const gameOverMsg = document.getElementById('gameOverMsg');
+
+    // Create keyboard
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    letters.forEach(letter => {
+      const key = document.createElement('button');
+      key.className = 'key';
+      key.textContent = letter;
+      key.dataset.letter = letter;
+      key.addEventListener('click', () => handleGuess(letter));
+      keyboardEl.appendChild(key);
+    });
+
+    // Physical keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (!gameActive) return;
+      const letter = e.key.toUpperCase();
+      if (letters.includes(letter)) {
+        handleGuess(letter);
+      }
+    });
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', () => {
+      gameOverMsg.classList.remove('show');
+      startGame();
+    });
+
+    function startGame() {
+      gameActive = true;
+      startBtn.style.display = 'none';
+      wrongGuesses = 0;
+      guessedLetters = [];
+      
+      // Pick random word
+      const wordObj = words[Math.floor(Math.random() * words.length)];
+      currentWord = wordObj.word;
+      currentHint = wordObj.hint;
+      
+      updateDisplay();
+      resetKeyboard();
+      
+      hintEl.textContent = `Hint: ${currentHint}`;
+      hangmanArtEl.textContent = hangmanStages[0];
+      wrongGuessesEl.textContent = wrongGuesses;
+    }
+
+    function handleGuess(letter) {
+      if (!gameActive || guessedLetters.includes(letter)) return;
+      
+      guessedLetters.push(letter);
+      const keyEl = document.querySelector(`[data-letter="${letter}"]`);
+      
+      if (currentWord.includes(letter)) {
+        keyEl.classList.add('correct', 'used');
+        score += 10;
+        scoreEl.textContent = score;
+        
+        // Check if word is complete
+        if (isWordComplete()) {
+          winGame();
+        }
+      } else {
+        keyEl.classList.add('wrong', 'used');
+        wrongGuesses++;
+        wrongGuessesEl.textContent = wrongGuesses;
+        hangmanArtEl.textContent = hangmanStages[wrongGuesses];
+        
+        if (wrongGuesses >= 6) {
+          loseGame();
+        }
+      }
+      
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const display = currentWord.split('').map(letter => 
+        guessedLetters.includes(letter) ? letter : '_'
+      ).join(' ');
+      wordDisplayEl.textContent = display;
+    }
+
+    function isWordComplete() {
+      return currentWord.split('').every(letter => guessedLetters.includes(letter));
+    }
+
+    function resetKeyboard() {
+      document.querySelectorAll('.key').forEach(key => {
+        key.classList.remove('used', 'correct', 'wrong');
+      });
+    }
+
+    function winGame() {
+      gameActive = false;
+      score += 50; // Bonus for winning
+      scoreEl.textContent = score;
+      
+      document.getElementById('resultTitle').textContent = '🎉 You Won!';
+      document.getElementById('resultText').textContent = 'Congratulations! You guessed the word!';
+      document.getElementById('wordReveal').textContent = currentWord;
+      document.getElementById('finalScore').textContent = score;
+      gameOverMsg.classList.add('show');
+
+      sendGameOver('won');
+    }
+
+    function loseGame() {
+      gameActive = false;
+      
+      document.getElementById('resultTitle').textContent = '💀 Game Over!';
+      document.getElementById('resultText').textContent = 'The word was:';
+      document.getElementById('wordReveal').textContent = currentWord;
+      document.getElementById('finalScore').textContent = score;
+      gameOverMsg.classList.add('show');
+
+      sendGameOver('lost');
+    }
+
+    function sendGameOver(result) {
+      try {
+        window.parent.postMessage({
+          type: 'game_over',
+          gameId: 'wordguesser',
+          result: result,
+          score: score
+        }, '*');
+      } catch (e) {
+        console.log('Could not send message to parent');
+      }
+    }
+  </script>
+</body>
+</html>

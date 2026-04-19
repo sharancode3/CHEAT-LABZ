@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Wordle Clone</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="shell">
+    <h1 class="title">Wordle Clone</h1>
+    <div id="board" class="board" aria-label="Word Grid"></div>
+    <div class="status" id="status">Guess the 5-letter word. Attempts: <span id="attemptsLeft">6</span></div>
+    <div class="kb" id="keyboard"></div>
+    <div class="actions" style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+      <button id="hintBtn" class="restart" type="button" aria-label="Get a hint about the word">Hint</button>
+      <button id="restart" class="restart" hidden>Play Again</button>
+    </div>
+  </main>
+  <script src="wordle.js" type="module"></script>
+</body>
+</html>

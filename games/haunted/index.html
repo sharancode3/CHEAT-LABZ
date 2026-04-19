@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Haunted Halloween Calculator</title>
+  <link rel="stylesheet" href="csy.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎃 Haunted Calculator 🎃</h1>
+    <div id="hint">Hint: Solve to find the *Secret Code* 👀</div>
+    <div class="calculator">
+      <input type="text" id="display" readonly>
+      <div class="buttons">
+        <button class="btn" onclick="press('7')">7</button>
+        <button class="btn" onclick="press('8')">8</button>
+        <button class="btn" onclick="press('9')">9</button>
+        <button class="btn op" onclick="press('/')">÷</button>
+
+        <button class="btn" onclick="press('4')">4</button>
+        <button class="btn" onclick="press('5')">5</button>
+        <button class="btn" onclick="press('6')">6</button>
+        <button class="btn op" onclick="press('*')">×</button>
+
+        <button class="btn" onclick="press('1')">1</button>
+        <button class="btn" onclick="press('2')">2</button>
+        <button class="btn" onclick="press('3')">3</button>
+        <button class="btn op" onclick="press('-')">−</button>
+
+        <button class="btn" onclick="press('0')">0</button>
+        <button class="btn" onclick="press('.')">.</button>
+        <button class="btn eq" onclick="calculate()">=</button>
+        <button class="btn op" onclick="press('+')">+</button>
+
+        <button class="btn clr" onclick="clearDisplay()">C</button>
+      </div>
+    </div>
+    <div id="message"></div>
+  </div>
+
+  <div class="lightning"></div>
+  <div id="blood"></div>
+
+  <script src="cj.js"></script>
+</body>
+</html>

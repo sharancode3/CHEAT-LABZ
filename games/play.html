@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cheat Labz Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="play.css" />
+</head>
+<body>
+  <div class="game-shell" id="shell">
+    <header class="hud">
+      <div class="title-wrap">
+        <h1 id="title">CHEAT LABZ</h1>
+        <p id="subtitle">No rules. Just scores.</p>
+      </div>
+      <div class="stats">
+        <span>Score <b id="score">0</b></span>
+        <span>Combo <b id="combo">x1</b></span>
+        <span>Level <b id="level">1</b></span>
+      </div>
+      <div class="actions">
+        <button id="helpBtn">?</button>
+      </div>
+    </header>
+
+    <main id="playArea" class="play-area aspect-16-9">
+      <canvas id="canvas" width="960" height="540"></canvas>
+      <div id="domArea" class="dom-area hidden"></div>
+      <div id="flash" class="flash hidden">LEVEL UP</div>
+    </main>
+
+    <div id="howTo" class="overlay">
+      <div class="panel">
+        <h2>HOW TO PLAY</h2>
+        <p id="howToText"></p>
+        <button id="startBtn">GOT IT — LET'S GO</button>
+      </div>
+    </div>
+
+    <div id="pause" class="overlay hidden">
+      <div class="panel"><h2>PAUSED</h2><p>Press P or ESC to resume</p></div>
+    </div>
+
+    <div id="gameOver" class="overlay hidden">
+      <div class="panel">
+        <h2 id="goTitle">GAME OVER</h2>
+        <p>Final Score: <b id="finalScore">0</b></p>
+        <p>Best Score: <b id="bestScore">0</b></p>
+        <p>Runs Today: <b id="runsToday">0</b></p>
+        <p id="closeMsg" class="muted"></p>
+        <div class="row">
+          <button id="replayBtn">PLAY AGAIN (R)</button>
+          <button id="lobbyBtn">BACK TO LOBBY</button>
+          <button id="challengeBtn">CHALLENGE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/soundManager.js"></script>
+  <script src="play.js"></script>
+</body>
+</html>

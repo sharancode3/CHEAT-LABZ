@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reaction Time Challenge</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0a0000, #1a0505);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #ffebeb;
+      padding: 20px;
+    }
+
+    .game-container {
+      text-align: center;
+      max-width: 700px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ff0000, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .stat {
+      background: rgba(20, 0, 0, 0.5);
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 0, 0, 0.3);
+    }
+
+    .stat-label {
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      color: #ff0000;
+      font-size: 24px;
+      font-weight: 900;
+      text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    }
+
+    .game-area {
+      background: rgba(20, 0, 0, 0.5);
+      border: 3px solid rgba(255, 0, 0, 0.3);
+      border-radius: 16px;
+      padding: 60px;
+      margin-bottom: 20px;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .game-area.waiting {
+      background: rgba(255, 0, 0, 0.1);
+      border-color: rgba(255, 0, 0, 0.5);
+    }
+
+    .game-area.ready {
+      background: rgba(0, 255, 0, 0.1);
+      border-color: rgba(0, 255, 0, 0.5);
+      animation: pulse 0.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(0, 255, 0, 0.6); }
+    }
+
+    .game-area.too-early {
+      background: rgba(255, 0, 0, 0.3);
+      border-color: rgba(255, 0, 0, 0.8);
+    }
+
+    .instruction {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #ff0000;
+    }
+
+    .game-area.ready .instruction {
+      color: #00ff00;
+      font-size: 32px;
+      animation: glow 0.5s infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
+      50% { text-shadow: 0 0 40px rgba(0, 255, 0, 1); }
+    }
+
+    .detail {
+      font-size: 16px;
+      color: #ff6b6b;
+      margin-top: 10px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff0000, #ff6b6b);
+      width: 0%;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    }
+
+    .btn {
+      margin-top: 15px;
+      padding: 14px 28px;
+      background: linear-gradient(180deg, #ff0000, #ff3333);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
+    }
+
+    .results {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .results.show {
+      display: block;
+    }
+
+    .result-item {
+      background: rgba(20, 0, 0, 0.5);
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 0, 0, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-item.best {
+      border-color: #00ff00;
+      background: rgba(0, 255, 0, 0.1);
+    }
+
+    .game-over-screen {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(20, 0, 0, 0.98);
+      padding: 40px;
+      border-radius: 16px;
+      border: 2px solid rgba(255, 0, 0, 0.5);
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 60px rgba(255, 0, 0, 0.5);
+      z-index: 1000;
+      min-width: 350px;
+    }
+
+    .game-over-screen.show {
+      display: block;
+    }
+
+    .game-over-screen h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #ff0000;
+    }
+
+    .game-over-screen .stat-summary {
+      margin: 15px 0;
+      font-size: 18px;
+      color: #ff6b6b;
+    }
+
+    .game-over-screen .stat-summary strong {
+      color: #ff0000;
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>⚡ Reaction Time Challenge</h1>
+    
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-label">Round</div>
+        <div class="stat-value" id="round">0/5</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Best Time</div>
+        <div class="stat-value" id="bestTime">---</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Average</div>
+        <div class="stat-value" id="avgTime">---</div>
+      </div>
+    </div>
+
+    <div class="game-area" id="gameArea">
+      <div class="instruction" id="instruction">Click "Start Challenge" to begin!</div>
+      <div class="detail" id="detail">Test your reflexes across 5 rounds</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <button class="btn" id="startBtn">Start Challenge</button>
+
+    <div class="results" id="results">
+      <h3 style="color: #ff0000; margin-bottom: 10px;">Your Attempts:</h3>
+      <div id="resultsList"></div>
+    </div>
+  </div>
+
+  <div class="game-over-screen" id="gameOverScreen">
+    <h2>Challenge Complete! 🎉</h2>
+    <div class="stat-summary">
+      Best Time: <strong id="finalBest">---</strong>
+    </div>
+    <div class="stat-summary">
+      Average Time: <strong id="finalAvg">---</strong>
+    </div>
+    <div class="stat-summary">
+      Total Score: <strong id="finalScore">---</strong>
+    </div>
+    <button class="btn" id="restartBtn">Try Again</button>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById('gameArea');
+    const instruction = document.getElementById('instruction');
+    const detail = document.getElementById('detail');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const roundEl = document.getElementById('round');
+    const bestTimeEl = document.getElementById('bestTime');
+    const avgTimeEl = document.getElementById('avgTime');
+    const progressFill = document.getElementById('progressFill');
+    const resultsDiv = document.getElementById('results');
+    const resultsList = document.getElementById('resultsList');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+
+    let gameState = 'idle'; // idle, waiting, ready
+    let startTime = 0;
+    let timeout = null;
+    let currentRound = 0;
+    let maxRounds = 5;
+    let attempts = [];
+
+    startBtn.addEventListener('click', startChallenge);
+    restartBtn.addEventListener('click', resetChallenge);
+    gameArea.addEventListener('click', handleClick);
+
+    function startChallenge() {
+      startBtn.style.display = 'none';
+      currentRound = 0;
+      attempts = [];
+      resultsDiv.classList.remove('show');
+      resultsList.innerHTML = '';
+      bestTimeEl.textContent = '---';
+      avgTimeEl.textContent = '---';
+      startRound();
+    }
+
+    function startRound() {
+      currentRound++;
+      roundEl.textContent = `${currentRound}/${maxRounds}`;
+      progressFill.style.width = `${(currentRound / maxRounds) * 100}%`;
+      
+      gameState = 'waiting';
+      gameArea.className = 'game-area waiting';
+      instruction.textContent = 'Wait for green...';
+      detail.textContent = "Don't click yet!";
+      
+      // Random delay between 2-5 seconds
+      const delay = Math.random() * 3000 + 2000;
+      timeout = setTimeout(() => {
+        gameState = 'ready';
+        gameArea.className = 'game-area ready';
+        instruction.textContent = 'CLICK NOW!';
+        detail.textContent = 'Click as fast as you can!';
+        startTime = Date.now();
+      }, delay);
+    }
+
+    function handleClick() {
+      if (gameState === 'idle') return;
+      
+      if (gameState === 'waiting') {
+        // Clicked too early
+        clearTimeout(timeout);
+        gameState = 'idle';
+        gameArea.className = 'game-area too-early';
+        instruction.textContent = 'Too Early!';
+        detail.textContent = 'Wait for the green signal';
+        
+        setTimeout(() => {
+          startRound();
+        }, 1500);
+        return;
+      }
+      
+      if (gameState === 'ready') {
+        // Calculate reaction time
+        const reactionTime = Date.now() - startTime;
+        attempts.push(reactionTime);
+        
+        gameState = 'idle';
+        gameArea.className = 'game-area';
+        instruction.textContent = `${reactionTime}ms`;
+        detail.textContent = getReactionFeedback(reactionTime);
+        
+        updateStats();
+        addResultToList(currentRound, reactionTime);
+        resultsDiv.classList.add('show');
+        
+        if (currentRound < maxRounds) {
+          setTimeout(() => {
+            startRound();
+          }, 1500);
+        } else {
+          setTimeout(() => {
+            endChallenge();
+          }, 1500);
+        }
+      }
+    }
+
+    function getReactionFeedback(time) {
+      if (time < 200) return '🔥 Lightning Fast!';
+      if (time < 300) return '⚡ Excellent!';
+      if (time < 400) return '👍 Great!';
+      if (time < 500) return '✓ Good!';
+      return '🐢 Keep practicing!';
+    }
+
+    function updateStats() {
+      const best = Math.min(...attempts);
+      const avg = Math.round(attempts.reduce((a, b) => a + b, 0) / attempts.length);
+      
+      bestTimeEl.textContent = `${best}ms`;
+      avgTimeEl.textContent = `${avg}ms`;
+    }
+
+    function addResultToList(round, time) {
+      const isBest = time === Math.min(...attempts);
+      const item = document.createElement('div');
+      item.className = `result-item ${isBest ? 'best' : ''}`;
+      item.innerHTML = `
+        <span>Round ${round}</span>
+        <span style="color: ${isBest ? '#00ff00' : '#ff0000'}; font-weight: 800;">
+          ${time}ms ${isBest ? '⭐' : ''}
+        </span>
+      `;
+      resultsList.appendChild(item);
+    }
+
+    function endChallenge() {
+      const best = Math.min(...attempts);
+      const avg = Math.round(attempts.reduce((a, b) => a + b, 0) / attempts.length);
+      
+      // Calculate score (lower is better, so invert it)
+      const score = Math.round(10000 / avg);
+      
+      document.getElementById('finalBest').textContent = `${best}ms`;
+      document.getElementById('finalAvg').textContent = `${avg}ms`;
+      document.getElementById('finalScore').textContent = score;
+      
+      gameOverScreen.classList.add('show');
+      
+      // Send to parent
+      try {
+        window.parent.postMessage({
+          type: 'game_over',
+          gameId: 'reactiontime',
+          result: avg < 350 ? 'won' : 'lost',
+          score: score,
+          stats: {
+            bestTime: best,
+            avgTime: avg,
+            attempts: attempts
+          }
+        }, '*');
+      } catch (e) {
+        console.log('Could not send message to parent');
+      }
+    }
+
+    function resetChallenge() {
+      gameOverScreen.classList.remove('show');
+      gameArea.className = 'game-area';
+      instruction.textContent = 'Ready for another round?';
+      detail.textContent = 'Click "Start Challenge" when ready!';
+      startBtn.style.display = 'inline-block';
+      progressFill.style.width = '0%';
+      roundEl.textContent = '0/5';
+    }
+  </script>
+</body>
+</html>

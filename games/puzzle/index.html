@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sliding Puzzle</title>
+<style>
+ body{margin:0;font-family:Inter,system-ui;background:#06000c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+ #board{display:grid;grid-template-columns:repeat(4,90px);grid-template-rows:repeat(4,90px);gap:6px;margin:10px auto}
+ .tile{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.4rem;background:linear-gradient(135deg,#7c3aed,#ff004d);border-radius:14px;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.4);transition:transform .2s}
+ .tile:hover{transform:translateY(-4px)}
+ .empty{background:rgba(255,255,255,.05);box-shadow:none;cursor:default}
+ .hud{margin-top:12px;display:flex;gap:20px;font-size:.9rem}
+ .btn{padding:8px 16px;border-radius:10px;border:0;background:linear-gradient(135deg,#00f0ff,#ff7a18);color:#050007;font-weight:700;cursor:pointer}
+ #overlay{position:fixed;inset:0;background:rgba(10,0,20,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:2rem;font-weight:800}
+ #overlay.show{display:flex}
+</style>
+</head>
+<body>
+ <h1 style="margin:0 0 10px;font-size:1.6rem">🧩 Sliding Puzzle</h1>
+ <div id="board"></div>
+ <div class="hud"><span id="moves">Moves: 0</span><button class="btn" id="shuffle">Shuffle</button></div>
+ <div id="overlay"></div>
+ <script>
+ const board=document.getElementById('board'); let tiles=[]; let emptyIndex=15; let moves=0; const overlay=document.getElementById('overlay');
+ function init(){ tiles=[]; for(let i=1;i<=15;i++){ tiles.push(i); } tiles.push(null); render(); }
+ function render(){ board.innerHTML=''; tiles.forEach((val,i)=>{ const div=document.createElement('div'); div.className='tile'+(val===null?' empty':''); div.dataset.index=i; if(val) div.textContent=val; board.appendChild(div); }); }
+ function pos(i){ return {r:Math.floor(i/4),c:i%4}; }
+ function canMove(i){ const e=pos(emptyIndex), t=pos(i); return (Math.abs(e.r-t.r)+Math.abs(e.c-t.c))===1; }
+ board.addEventListener('click',e=>{const tile=e.target.closest('.tile'); if(!tile) return; const idx=+tile.dataset.index; if(tiles[idx]===null) return; if(canMove(idx)){ tiles[emptyIndex]=tiles[idx]; tiles[idx]=null; emptyIndex=idx; moves++; document.getElementById('moves').textContent='Moves: '+moves; render(); check(); }});
+ function shuffle(){ // simple fisher-yates ensuring solvable parity
+ let arr=[...Array(15).keys()].map(x=>x+1); arr.push(null); do{ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }while(!solvable(arr)); tiles=arr; emptyIndex=tiles.indexOf(null); moves=0; document.getElementById('moves').textContent='Moves: 0'; render(); }
+ function solvable(a){ // count inversions
+ const list=a.filter(v=>v); let inv=0; for(let i=0;i<list.length;i++){ for(let j=i+1;j<list.length;j++){ if(list[i]>list[j]) inv++; } } const rowFromBottom=4-Math.floor(a.indexOf(null)/4); return (rowFromBottom%2===0) === (inv%2===1); }
+ function check(){ for(let i=0;i<15;i++){ if(tiles[i]!==i+1) return; } end(); }
+ function end(){ overlay.innerHTML=`<div>PUZZLE SOLVED</div><div style='font-size:1rem'>Moves ${moves}</div>`; overlay.classList.add('show'); try{ window.parent.postMessage({type:'game_over',gameId:'puzzle',result:'won',score:moves},'*'); }catch(e){} }
+ document.getElementById('shuffle').addEventListener('click',shuffle); init();
+ </script>
+</body>
+</html>

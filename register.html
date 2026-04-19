@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hyper Plays • Register</title>
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+  <div class="aurora" aria-hidden="true">
+    <span class="orb orb-one"></span>
+    <span class="orb orb-two"></span>
+  </div>
+  <main class="auth-shell">
+    <section class="auth-hero">
+      <div class="badge">Hyper Plays Onboarding</div>
+      <h1>Create your pilot account and jump into the arena.</h1>
+      <p>Track your scores, build streaks, and keep your progress synced in one player profile.</p>
+      <ul>
+        <li>Single account for all included games</li>
+        <li>Online sync + offline fallback signup</li>
+        <li>Fast launch into full-screen portal mode</li>
+      </ul>
+      <a class="link-chip" href="login.html">Already registered? Login instead ↗</a>
+    </section>
+
+    <section class="auth-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Create profile</p>
+          <h2>Join Hyper Plays</h2>
+        </div>
+        <a class="ghost link" href="index.html">Back Home</a>
+      </div>
+
+      <form id="regForm" class="form active">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="regUsername">Username</label>
+            <input id="regUsername" type="text" required placeholder="Player name" />
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email</label>
+            <input id="regEmail" type="email" required placeholder="you@email.com" />
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <div class="pass-wrap">
+              <input id="regPassword" type="password" required placeholder="••••••••" />
+              <button type="button" class="pass-toggle" data-target="regPassword">Show</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regConfirm">Confirm Password</label>
+            <div class="pass-wrap">
+              <input id="regConfirm" type="password" required placeholder="••••••••" />
+              <button type="button" class="pass-toggle" data-target="regConfirm">Show</button>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Create Account</button>
+        <div class="error-message" id="regError"></div>
+      </form>
+
+      <div class="panel-foot">
+        <p>Already have an account? <a href="login.html">Go to login</a></p>
+      </div>
+    </section>
+  </main>
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+    const form = document.getElementById('regForm');
+    const regError = document.getElementById('regError');
+    const toggles = document.querySelectorAll('.pass-toggle');
+
+    toggles.forEach((toggle) => {
+      toggle.addEventListener('click', () => {
+        const input = document.getElementById(toggle.dataset.target);
+        if (!input) return;
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        toggle.textContent = isPassword ? 'Hide' : 'Show';
+      });
+    });
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const username = regUsername.value.trim();
+      const email = regEmail.value.trim();
+      const password = regPassword.value;
+      const confirm = regConfirm.value;
+
+      if (password !== confirm) {
+        showErr('Passwords do not match');
+        return;
+      }
+      if (password.length < 6) {
+        showErr('Password must be at least 6 characters');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/auth/signup`, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          window.location.href = 'portal.html';
+        } else {
+          showErr(data.message || 'Signup failed');
+        }
+      } catch (error) {
+        const users = JSON.parse(localStorage.getItem('offlineUsers') || '[]');
+        if (users.find((item) => item.email === email)) {
+          showErr('Email already exists (offline mode)');
+          return;
+        }
+        const offlineUser = {
+          id: 'user_' + Date.now(),
+          username,
+          email,
+          password,
+          createdAt: new Date().toISOString()
+        };
+        users.push(offlineUser);
+        localStorage.setItem('offlineUsers', JSON.stringify(users));
+
+        const safeUser = { id: offlineUser.id, username: offlineUser.username, email: offlineUser.email };
+        localStorage.setItem('authToken', 'offline_' + offlineUser.id);
+        localStorage.setItem('user', JSON.stringify(safeUser));
+        window.location.href = 'portal.html';
+      }
+
+      function showErr(message) {
+        regError.textContent = message;
+        regError.classList.add('show');
+        setTimeout(() => regError.classList.remove('show'), 5000);
+      }
+    });
+
+    if (localStorage.getItem('authToken')) {
+      window.location.href = 'portal.html';
+    }
+  </script>
+</body>
+</html>

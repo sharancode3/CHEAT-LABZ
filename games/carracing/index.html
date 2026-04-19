@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Car Racing</title>
+<style>
+ body{margin:0;font-family:Inter,system-ui;background:#020611;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+ canvas{background:#0a0f18;border:2px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+ .hud{margin-top:12px;display:flex;gap:24px;font-size:.85rem;align-items:center}
+ #overlay{position:fixed;inset:0;background:rgba(0,0,20,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:2rem;font-weight:800}
+ #overlay.show{display:flex}
+ .btn{padding:8px 16px;border-radius:10px;border:0;background:linear-gradient(135deg,#00f0ff,#7c3aed);color:#050007;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+ <h1 style="margin:0 0 10px;font-size:1.6rem;background:linear-gradient(90deg,#00f0ff,#7c3aed);-webkit-background-clip:text;color:transparent;">🚗 Car Racing</h1>
+ <canvas id="game" width="420" height="640"></canvas>
+ <div class="hud"><span id="score">Score: 0</span><span id="speed">Speed: 1x</span><button class="btn" id="restart">Restart</button></div>
+ <div id="overlay"></div>
+ <script>
+ const cvs=document.getElementById('game'); const ctx=cvs.getContext('2d');
+ const player={x:cvs.width/2-22,y:cvs.height-110,w:44,h:90,color:'#ff004d'};
+ let obstacles=[]; let frame=0; let speed=5; let score=0; let over=false; let keys={};
+ document.addEventListener('keydown',e=>{keys[e.key]=true; if((e.key==='r'||e.key==='R')&&over) restart();});
+ document.addEventListener('keyup',e=>{keys[e.key]=false;});
+ function spawnObstacle(){const laneW=70; const lanes= Math.floor(cvs.width/laneW); const lane=Math.floor(Math.random()*lanes); obstacles.push({x:lane*laneW+laneW*0.15,y:-100,w:laneW*0.7,h:90,color:'#00f0ff'}); }
+ function update(){ if(over) return; frame++; if(frame%40===0) spawnObstacle(); if(frame%600===0) speed+=1; // move
+ if(keys['ArrowLeft']||keys['a']||keys['A']) player.x-=8; if(keys['ArrowRight']||keys['d']||keys['D']) player.x+=8; player.x=Math.max(0,Math.min(player.x,cvs.width-player.w));
+ obstacles.forEach(o=>o.y+=speed+2); obstacles=obstacles.filter(o=>o.y< cvs.height+50); score+=0.1; document.getElementById('score').textContent='Score: '+Math.floor(score); document.getElementById('speed').textContent='Speed: '+speed+'x';
+ // collisions
+ for(const o of obstacles){ if(player.x < o.x+o.w && player.x+player.w>o.x && player.y<o.y+o.h && player.y+player.h>o.y){ end(); break; } }
+ }
+ function draw(){ ctx.fillStyle='#050007'; ctx.fillRect(0,0,cvs.width,cvs.height); // road lanes
+ ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.lineWidth=4; for(let i=1;i<5;i++){ ctx.beginPath(); ctx.setLineDash([14,14]); ctx.moveTo(i*80,0); ctx.lineTo(i*80,cvs.height); ctx.stroke(); }
+ ctx.setLineDash([]);
+ // car
+ ctx.fillStyle=player.color; ctx.fillRect(player.x,player.y,player.w,player.h);
+ // obstacles
+ obstacles.forEach(o=>{ ctx.fillStyle=o.color; ctx.fillRect(o.x,o.y,o.w,o.h); });
+ }
+ function loop(){ update(); draw(); requestAnimationFrame(loop); }
+ function end(){ over=true; const ov=document.getElementById('overlay'); ov.innerHTML=`<div>CRASHED</div><div style='font-size:1rem'>Score ${Math.floor(score)}</div>`; ov.classList.add('show'); try{ window.parent.postMessage({type:'game_over',gameId:'carracing',result:'lost',score:Math.floor(score)},'*'); }catch(e){} }
+ function restart(){ over=false; obstacles=[]; frame=0; speed=5; score=0; document.getElementById('overlay').classList.remove('show'); }
+ loop();
+ document.getElementById('restart').addEventListener('click',restart);
+ </script>
+</body>
+</html>

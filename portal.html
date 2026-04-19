@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hyper Plays Portal — Game Command Center</title>
+  <link rel="stylesheet" href="./portal.style.css">
+</head>
+<body>
+  <canvas id="bgCanvas" class="bg-canvas" aria-hidden="true"></canvas>
+  <div class="aura aura-a" aria-hidden="true"></div>
+  <div class="aura aura-b" aria-hidden="true"></div>
+  <div class="page-shell">
+    <header class="header glass">
+      <div class="brand">
+        <div class="logo-mark">HP</div>
+        <div>
+          <div class="title">Hyper Plays Portal</div>
+          <div class="subtitle">Competitive browser gaming, refined.</div>
+        </div>
+      </div>
+      <div class="controls" role="group" aria-label="Portal controls">
+        <div class="search-wrap"><input id="search" placeholder="Search title, category, or vibe..." /></div>
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="about.html">About</a>
+        <span id="username" class="username-pill"></span>
+        <button id="themeToggle" class="theme-toggle" title="Change Theme">Theme</button>
+        <button id="logoutBtn" class="ghost-btn" title="Logout">Logout</button>
+      </div>
+    </header>
+
+    <section class="hero glass" aria-label="Portal overview">
+      <div class="hero-main">
+        <p class="eyebrow">PLAYER HQ</p>
+        <h1>Pick a game, launch instantly, and track your streaks.</h1>
+        <p class="hero-copy">Your entire arcade library lives here with fullscreen launch, persistent highscores, and smooth replay controls.</p>
+      </div>
+      <div class="hero-stats">
+        <article class="stat-card">
+          <p>Library Size</p>
+          <h3 id="statTotal">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>Played Sessions</p>
+          <h3 id="statPlayed">0</h3>
+        </article>
+        <article class="stat-card">
+          <p>Best Category</p>
+          <h3 id="statBest">—</h3>
+        </article>
+      </div>
+    </section>
+
+    <section class="filters glass" aria-label="Game filters">
+      <div id="categoryBar" class="category-bar">
+        <button class="cat-pill active" data-category="all">All</button>
+        <button class="cat-pill" data-category="arcade">Arcade</button>
+        <button class="cat-pill" data-category="puzzle">Puzzle</button>
+        <button class="cat-pill" data-category="racing">Racing</button>
+        <button class="cat-pill" data-category="skill">Skill</button>
+      </div>
+    </section>
+
+    <main class="grid" id="grid" role="main" aria-live="polite"></main>
+    <p id="portalEmpty" class="empty hidden">No games found for current filters.</p>
+    <div id="fsGame" class="fs-game" aria-hidden="true"></div>
+    <footer class="footer"><small>© 2026 Hyper Plays • Portal Redesign</small></footer>
+  </div>
+  <script defer src="./portal.app.js"></script>
+</body>
+</html>

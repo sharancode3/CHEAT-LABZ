@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bubble Shooter</title>
+<style>
+ body{margin:0;font-family:Inter,system-ui;background:#050007;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+ canvas{background:#0d0012;border:2px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+ .hud{margin-top:14px;display:flex;gap:24px;font-size:.9rem;align-items:center}
+ .btn{padding:8px 16px;border-radius:10px;border:0;background:linear-gradient(135deg,#ff004d,#ff7a18);color:#050007;font-weight:700;cursor:pointer}
+ #overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,0,20,.8);backdrop-filter:blur(6px);flex-direction:column;gap:16px;font-size:2rem;font-weight:800}
+ #overlay.show{display:flex}
+</style>
+</head>
+<body>
+ <h1 style="margin:0 0 10px;font-size:1.6rem">🟡 Bubble Shooter</h1>
+ <canvas id="game" width="480" height="640"></canvas>
+ <div class="hud"><span id="score">Score: 0</span><span id="shots">Shots: 0</span><button class="btn" id="restart">Restart</button></div>
+ <div id="overlay"></div>
+ <script>
+ const cvs=document.getElementById('game');const ctx=cvs.getContext('2d');
+ const COLS=8, ROWS=10, R=24; const GRID=[]; const COLORS=['#ff004d','#ff7a18','#7c3aed','#00f0ff'];
+ let shooter={x:cvs.width/2,y:cvs.height-40,angle:-Math.PI/2};
+ let currentBall=spawnBall(); let flying=null; let score=0; let shots=0; let over=false;
+ function initGrid(){GRID.length=0; for(let r=0;r<ROWS;r++){const row=[]; for(let c=0;c<COLS;c++){row.push(Math.random()<0.6?COLORS[Math.floor(Math.random()*COLORS.length)]:null);} GRID.push(row);} }
+ function spawnBall(){return {color:COLORS[Math.floor(Math.random()*COLORS.length)],x:shooter.x,y:shooter.y,r:R*0.6,vx:0,vy:0};}
+ function drawGrid(){for(let r=0;r<GRID.length;r++){for(let c=0;c<COLS;c++){const col=GRID[r][c]; if(!col) continue; const x=40 + c*R*1.1; const y=40 + r*R*1.1; ctx.beginPath(); ctx.arc(x,y,R/2,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();}} }
+ function launch(){if(flying||over) return; shots++; document.getElementById('shots').textContent='Shots: '+shots; const speed=7; flying={...currentBall,vx:Math.cos(shooter.angle)*speed,vy:Math.sin(shooter.angle)*speed}; currentBall=spawnBall(); }
+ function updateFlying(){if(!flying) return; flying.x+=flying.vx; flying.y+=flying.vy; if(flying.x<20||flying.x>cvs.width-20) flying.vx*=-1; if(flying.y<20){flying.y=20; settleBall();} else if(flying.y>cvs.height-20){ // missed
+   end(false);
+ }
+ // collision with grid
+ for(let r=0;r<GRID.length;r++){for(let c=0;c<COLS;c++){const col=GRID[r][c]; if(!col) continue; const gx=40 + c*R*1.1; const gy=40 + r*R*1.1; const dx=flying.x-gx; const dy=flying.y-gy; if(Math.hypot(dx,dy) < R){ settleBall(); return; }}}
+ }
+ function settleBall(){ // find closest cell
+ let best={r:0,c:0,d:1e9};
+ for(let r=0;r<ROWS;r++){for(let c=0;c<COLS;c++){const gx=40 + c*R*1.1; const gy=40 + r*R*1.1; const d=Math.hypot(flying.x-gx,flying.y-gy); if(d<best.d){best={r,c,d};}}}
+ if(!GRID[best.r][best.c]) GRID[best.r][best.c]=flying.color; clusterCheck(best.r,best.c); flying=null; if(gridFilled()) end(true); }
+ function clusterCheck(sr,sc){const target=GRID[sr][sc]; const stack=[[sr,sc]]; const seen=new Set(); const match=[]; while(stack.length){const [r,c]=stack.pop(); const key=r+','+c; if(seen.has(key)) continue; seen.add(key); if(GRID[r][c]!==target) continue; match.push([r,c]); [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{const nr=r+dr,nc=c+dc; if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) stack.push([nr,nc]);}); }
+ if(match.length>=3){match.forEach(([r,c])=>{GRID[r][c]=null;}); score+=match.length*10; document.getElementById('score').textContent='Score: '+score; }
+ }
+ function gridFilled(){for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(!GRID[r][c]) return false; return true; }
+ function end(win){over=true; const ov=document.getElementById('overlay'); ov.innerHTML= win?`<div>YOU WIN</div><div style='font-size:1rem'>Score ${score}</div>`:`<div>GAME OVER</div><div style='font-size:1rem'>Score ${score}</div>`; ov.classList.add('show'); try{ window.parent.postMessage({type:'game_over',gameId:'bubbleshooter',result: win?'won':'lost',score},'*'); }catch(e){} }
+ document.addEventListener('mousemove',e=>{const rect=cvs.getBoundingClientRect(); const mx=e.clientX-rect.left; const my=e.clientY-rect.top; shooter.angle=Math.atan2(my-shooter.y,mx-shooter.x);});
+ document.addEventListener('click', launch);
+ document.getElementById('restart').addEventListener('click',()=>{score=0;shots=0;over=false; document.getElementById('score').textContent='Score: 0'; document.getElementById('shots').textContent='Shots: 0'; currentBall=spawnBall(); flying=null; initGrid(); document.getElementById('overlay').classList.remove('show'); });
+ function loop(){ctx.clearRect(0,0,cvs.width,cvs.height); drawGrid(); // shooter
+ ctx.beginPath(); ctx.arc(shooter.x,shooter.y,16,0,Math.PI*2); ctx.fillStyle='#ff004d'; ctx.fill(); // aim line
+ ctx.strokeStyle='#00f0ff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(shooter.x,shooter.y); ctx.lineTo(shooter.x+Math.cos(shooter.angle)*60, shooter.y+Math.sin(shooter.angle)*60); ctx.stroke(); // current ball
+ if(currentBall){ctx.beginPath(); ctx.arc(currentBall.x,currentBall.y,currentBall.r,0,Math.PI*2); ctx.fillStyle=currentBall.color; ctx.fill();}
+ updateFlying(); if(flying){ctx.beginPath(); ctx.arc(flying.x,flying.y,currentBall.r,0,Math.PI*2); ctx.fillStyle=flying.color; ctx.fill();}
+ requestAnimationFrame(loop); }
+ initGrid(); loop();
+ </script>
+</body>
+</html>

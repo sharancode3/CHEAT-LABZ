@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Paddle Bounce</title>
+  <style>
+    body{margin:0;font-family:Inter,system-ui;background:#050007;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+    canvas{background:#0d0012;border:2px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+    .hud{margin-top:14px;display:flex;gap:24px;font-size:.9rem;align-items:center;flex-wrap:wrap;justify-content:center}
+    .overlay{position:fixed;inset:0;background:rgba(8,0,20,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:2rem;font-weight:800}
+    .overlay.show{display:flex}
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 10px;font-size:1.6rem;background:linear-gradient(90deg,#ff004d,#ff7a18,#00f0ff);-webkit-background-clip:text;background-clip:text;color:transparent">🏓 Paddle Bounce</h1>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <div class="hud"><span id="score">Score: 0</span><span id="lives">Lives: 3</span><span id="status">Press SPACE to start • ← → or A/D to move • P pause</span></div>
+  <div id="overlay" class="overlay" aria-hidden="true"></div>
+  <script>
+    const canvas=document.getElementById('gameCanvas');
+    const ctx=canvas.getContext('2d');
+    const scoreEl=document.getElementById('score');
+    const livesEl=document.getElementById('lives');
+    const statusEl=document.getElementById('status');
+    const overlay=document.getElementById('overlay');
+    const paddle={x:canvas.width/2-60,y:canvas.height-26,w:120,h:16,speed:9};
+    const ball={x:canvas.width/2,y:canvas.height/2,r:10,vx:5,vy:-5,max:12};
+    let score=0,lives=3,running=false,paused=false,keys={};
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;const audioCtx=new AudioCtx();
+    function fx(freq=440,type='sine',dur=.12,vol=.15){const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.type=type;o.frequency.value=freq;o.connect(g);g.connect(audioCtx.destination);g.gain.value=vol;o.start();o.stop(audioCtx.currentTime+dur);}    
+    document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '&&!running&&!paused){running=true;statusEl.textContent='Playing...';fx(520,'square',.15,.2);} if((e.key==='p'||e.key==='P')&&running){togglePause();} if((e.key==='r'||e.key==='R')&&lives<=0){restart();}});
+    document.addEventListener('keyup',e=>{keys[e.key]=false;});
+    function restart(){score=0;lives=3;ball.x=canvas.width/2;ball.y=canvas.height/2;ball.vx=5;ball.vy=-5;running=true;paused=false;overlay.classList.remove('show');statusEl.textContent='Playing...';fx(600,'triangle',.15,.25);}
+    function togglePause(){paused=!paused;if(paused){overlay.innerHTML='<div>PAUSED</div><div style="font-size:1rem">Press P to resume</div>';overlay.classList.add('show');}else{overlay.classList.remove('show');fx(700,'sine',.07,.18);} }
+    function update(){if((keys['ArrowLeft']||keys['a']||keys['A'])&&paddle.x>0)paddle.x-=paddle.speed;if((keys['ArrowRight']||keys['d']||keys['D'])&&paddle.x<canvas.width-paddle.w)paddle.x+=paddle.speed;ball.x+=ball.vx;ball.y+=ball.vy;if(ball.y-ball.r<0){ball.vy=-ball.vy;fx(400,'sine',.05,.12);} if(ball.x-ball.r<0||ball.x+ball.r>canvas.width){ball.vx=-ball.vx;fx(380,'sine',.05,.12);} if(ball.y+ball.r>=paddle.y&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w){ball.vy=-Math.abs(ball.vy);const hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);ball.vx+=hit*2;ball.vx=Math.max(Math.min(ball.vx,ball.max),-ball.max);ball.vy=Math.max(Math.min(ball.vy*1.05,-3),-ball.max);score++;updateHUD();fx(520+Math.min(score*3,160),'square',.08,.2);} if(ball.y-ball.r>canvas.height){lives--;updateHUD();resetBall();fx(180,'sawtooth',.25,.25);if(lives<=0)endGame();} }
+    function draw(){ctx.fillStyle='#050007';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#181024';ctx.fillRect(0,0,canvas.width,12);ctx.fillRect(0,0,12,canvas.height);ctx.fillRect(canvas.width-12,0,12,canvas.height);ctx.fillStyle='#ff004d';ctx.shadowBlur=18;ctx.shadowColor='#ff004d';ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);ctx.shadowBlur=0;ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle='#00f0ff';ctx.fill();}
+    function resetBall(){ball.x=canvas.width/2;ball.y=canvas.height/2;ball.vx=5*(Math.random()>0.5?1:-1);ball.vy=-5;}
+    function updateHUD(){scoreEl.textContent='Score: '+score;livesEl.textContent='Lives: '+lives;}
+    function endGame(){running=false;fx(140,'sawtooth',.35,.25);overlay.innerHTML=`<div>GAME OVER</div><div style='font-size:1rem'>Score: ${score}</div><button id='restartBtn' style='padding:10px 18px;border-radius:12px;border:0;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#ff004d,#ff7a18);color:#050007'>Restart (R)</button>`;overlay.classList.add('show');document.getElementById('restartBtn').addEventListener('click',restart);try{window.parent.postMessage({type:'game_over',gameId:'pingpong',result:'lost',score},'*');}catch(e){}}
+    function loop(){if(!running||paused){requestAnimationFrame(loop);return;}update();draw();requestAnimationFrame(loop);}updateHUD();loop();
+  </script>
+</body>
+</html>

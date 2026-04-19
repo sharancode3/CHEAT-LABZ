@@ -1,0 +1,54 @@
+/* Crazy Type (Monkey Type) Game Styles */
+:root {
+  --bg: #080018;
+  --panel: #120035;
+  --accent: #ff004d;
+  --accent2: #ff7a18;
+  --accent3: #00f0ff;
+  --text: #ffffff;
+  --good: #53ff94;
+  --bad: #ff2d55;
+  --warn: #ffd84d;
+  --radius: 28px;
+  --transition: 180ms cubic-bezier(.4,.0,.2,1);
+}
+* { box-sizing: border-box; }
+body {
+  margin:0; font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:20px; overflow:hidden;
+}
+header { text-align:center; margin-bottom:12px; }
+header h1 { margin:0; font-size:2rem; font-weight:800; letter-spacing:.5px; background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+#gameRoot { width:100%; max-width:1100px; background: linear-gradient(135deg,var(--panel),#1c0055); border:1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding:24px 28px; box-shadow:0 30px 80px rgba(0,0,0,.7); display:grid; grid-template-columns: 1fr 320px; gap:24px; }
+#fieldWrap { position:relative; }
+#field { background: radial-gradient(circle at 30% 30%, #1a0060,#0b0028 65%); border:1px solid rgba(255,255,255,.08); border-radius:22px; width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; }
+.word { position:absolute; font-weight:600; font-size:1.05rem; letter-spacing:.5px; white-space:nowrap; display:inline-flex; gap:0; }
+.word .done { color: var(--good); text-shadow:0 0 6px var(--good); font-weight:700; }
+.word .left { color: var(--text); }
+.word.miss { animation: missFlash .4s; }
+@keyframes missFlash { 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(2.3);} }
+#sidebar { display:flex; flex-direction:column; gap:18px; }
+.panel { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); padding:16px 18px; border-radius:18px; display:flex; flex-direction:column; gap:12px; }
+.panel h2 { margin:0; font-size:1rem; font-weight:700; letter-spacing:.5px; opacity:.8; }
+.statsGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:10px; }
+.stat { background:rgba(255,255,255,.05); padding:10px 12px; border-radius:14px; border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; gap:4px; min-width:100px; }
+.stat b { font-size:.65rem; font-weight:600; opacity:.7; }
+.stat span { font-size:.95rem; font-weight:700; }
+.controls { display:flex; flex-wrap:wrap; gap:10px; }
+button { padding:10px 18px; border-radius:18px; border:0; font-weight:700; cursor:pointer; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:.85rem; letter-spacing:.4px; transition:var(--transition); }
+button.secondary { background:#1c0048; border:1px solid rgba(255,255,255,.15); }
+button.danger { background:linear-gradient(135deg,#ff2d55,#ff7a18); }
+button:hover { filter:brightness(1.15); transform:translateY(-2px); }
+button:active { transform:translateY(0); }
+button:focus-visible { outline:2px solid var(--accent3); outline-offset:2px; }
+#settings label { font-size:.7rem; font-weight:600; opacity:.75; }
+input[type=file] { font-size:.7rem; }
+#uploadStatus { font-size:.7rem; opacity:.75; }
+#powerups { display:flex; flex-wrap:wrap; gap:6px; }
+.badge { background:linear-gradient(135deg,#341b80,#6629b3); padding:6px 10px; font-size:.65rem; border-radius:12px; letter-spacing:.5px; font-weight:600; box-shadow:0 4px 10px rgba(0,0,0,.4); }
+.badge.active { background:linear-gradient(135deg,#ff7a18,#00f0ff); color:#070014; }
+#overlay { position:fixed; inset:0; background:rgba(10,0,40,.82); backdrop-filter:blur(7px); display:none; align-items:center; justify-content:center; flex-direction:column; gap:18px; text-align:center; padding:40px; font-weight:800; }
+#overlay.show { display:flex; }
+#overlay .statsLine { font-size:1rem; font-weight:600; }
+.fullscreen { position:absolute; top:10px; right:10px; z-index:10; }
+#debugInfo { position:absolute; bottom:4px; left:8px; font-size:.6rem; font-family:monospace; opacity:.6; white-space:pre; pointer-events:none; }
+@media (max-width:1000px){ #gameRoot { grid-template-columns:1fr; } #sidebar { order:-1; flex-direction:row; flex-wrap:wrap; } }
