@@ -1,5 +1,9 @@
 // login.js - Authentication Logic
-const API_URL = 'http://localhost:3000/api';
+// Detect environment: GitHub Pages or local
+const isGitHubPages = window.location.hostname.includes('github.io');
+const API_URL = isGitHubPages 
+  ? null  // No backend on GitHub Pages - local storage only
+  : 'http://localhost:3000/api';
 
 // Tab switching
 const tabs = document.querySelectorAll('.tab');

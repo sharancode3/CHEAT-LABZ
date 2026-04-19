@@ -8,7 +8,7 @@
 
 **A modern, full-stack browser gaming platform with real-time progress tracking, secure authentication, and an intuitive arcade experience.**
 
-[🎮 Play Now](#quick-start) • [📖 Documentation](#documentation) • [🤝 Contributing](#contributing)
+[🎮 Play Live](https://sharancode3.github.io/CHEAT-LABZ/) • [📖 Docs](#quick-start) • [🤝 Contributing](#contributing)
 
 </div>
 
@@ -28,6 +28,23 @@ Hyper Plays is a production-grade gaming platform built for the modern browser. 
 - **⚡ Fullscreen Gaming**: Immersive game experience with in-game controls
 - **🌐 Guest Mode**: Play without authentication
 - **💾 Offline Support**: Local fallback storage ensures uninterrupted gameplay
+
+---
+
+## 🚀 Deployment Options
+
+### Live Demo (GitHub Pages - Frontend Only)
+**[🎮 Play Now](https://sharancode3.github.io/CHEAT-LABZ/)** - Play all games instantly, no setup required!
+- ✅ All 15+ games playable
+- ✅ Local score persistence (browser storage)
+- ⚠️ No user accounts or backend features (guest mode only)
+
+### Local Development (Full Stack)
+Follow the [Quick Start](#quick-start) below to run locally with:
+- ✅ Full authentication system
+- ✅ Real-time leaderboards
+- ✅ Progress sync to backend
+- ✅ Multi-user accounts
 
 ---
 

@@ -1,4 +1,8 @@
-const API_URL = 'http://localhost:3000/api';
+// Detect environment: GitHub Pages or local
+const isGitHubPages = window.location.hostname.includes('github.io');
+const API_URL = isGitHubPages 
+  ? null  // No backend on GitHub Pages
+  : 'http://localhost:3000/api';
 
 const GAMES = [
   { id:'snake', title:'Neon Serpent', category:'arcade', embed:'./games/snake/index.html', blurb:'Synth snake combos with chaining boosts.' },
