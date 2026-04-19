@@ -23,7 +23,7 @@ Hyper Plays is a production-grade gaming platform built for the modern browser. 
 - **🎯 Modern Architecture**: Express.js backend with JWT authentication and REST API
 - **🔐 Enterprise-Grade Security**: Secure token-based authentication with offline fallback
 - **📊 Real-Time Progress Tracking**: Persistent player statistics and leaderboards
-- **🎮 15+ Integrated Games**: Classic arcade titles and modern mini-games
+- **🎮 15+ Original Games**: All games are custom-built in-house, experimental, and constantly evolving
 - **📱 Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **⚡ Fullscreen Gaming**: Immersive game experience with in-game controls
 - **🌐 Guest Mode**: Play without authentication
@@ -136,7 +136,27 @@ Hyper Plays is a production-grade gaming platform built for the modern browser. 
 └── assets/                 # Images and resources
 ```
 
+---
+
+## 🧪 Our Game Development Philosophy
+
+At Hyper Plays, we believe in **experimental game design** and **continuous innovation**. Every game in our collection:
+
+- **🔨 Built from Scratch**: Engineered entirely by our team with pure HTML5, CSS3, and JavaScript
+- **🔬 Constantly Evolving**: Treated as living prototypes that improve with each iteration
+- **💡 Innovation Labs**: Each game tests new mechanics, aesthetics, and interaction patterns
+- **🎯 Player-Centric**: Your feedback directly shapes future versions
+- **🚀 Performance-Focused**: Optimized for smooth gameplay across all devices
+
+We embrace the experimental nature of game development—expect features to be refined, mechanics to evolve, and new game experiences to be added regularly.
+
+---
+
 ### Available Games
+
+> 🎨 **100% Original & Experimental**
+>
+> Every game in Hyper Plays is **built from scratch in-house**—not borrowed from external sites or libraries. Each title is designed as a creative experiment to showcase innovative gameplay mechanics, visual design, and interactive experiences. Our team continuously refines and evolves these games based on player feedback, making each release better than the last. Think of them as a living laboratory of browser-based gaming innovation.
 
 | Game | Type | Description |
 |------|------|-------------|
