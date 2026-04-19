@@ -424,7 +424,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, issues, or questions:
 
-- 📧 Email: support@hyperplays.dev
+- 📧 Email: sharan18x@gmail.com
 - 🐛 Report bugs via [GitHub Issues](https://github.com/sharancode3/CHEAT-LABZ/issues)
 - 💬 Discussions: [GitHub Discussions](https://github.com/sharancode3/CHEAT-LABZ/discussions)
 
