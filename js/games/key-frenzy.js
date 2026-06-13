@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class KeyFrenzy extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class KeyFrenzy extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'key-frenzy',
       description: 'Press the key shown. Blind rounds = remember the key. 3 lives.',
       width: 600,
@@ -191,5 +191,4 @@ class KeyFrenzy extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new KeyFrenzy();
 });

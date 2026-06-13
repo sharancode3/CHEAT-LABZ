@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class HyperTap extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class HyperTap extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'hyper-tap',
       description: 'Click the target before it disappears. Missing costs a life.',
       width: 500,
@@ -40,14 +40,22 @@ class HyperTap extends GameShell {
     let r = Math.max(this.minRadius, this.baseRadius - this.level);
     
     this.target = {
-      x: r + Math.random() * (this.canvas.width - r*2),
-      y: r + Math.random() * (this.canvas.height - r*2),
+      cx: this.canvas.width / 2,
+      cy: this.canvas.height / 2,
+      A: (this.canvas.width / 2) - r - 10,
+      B: (this.canvas.height / 2) - r - 10,
+      a: 2 + Math.random() * this.level,
+      b: 3 + Math.random() * this.level,
+      d: Math.random() * Math.PI,
+      time: 0,
       r: r,
-      vx: (Math.random() - 0.5) * (50 + this.level * 10),
-      vy: (Math.random() - 0.5) * (50 + this.level * 10),
-      life: 2000 - Math.min(1200, this.level * 50), // gets faster
+      life: 2000 - Math.min(1200, this.level * 50),
       maxLife: 2000 - Math.min(1200, this.level * 50)
     };
+    
+    // Set initial position
+    this.target.x = this.target.cx + this.target.A * Math.sin(this.target.a * this.target.time + this.target.d);
+    this.target.y = this.target.cy + this.target.B * Math.sin(this.target.b * this.target.time);
   }
 
   handleMouseClick(e) {
@@ -62,11 +70,13 @@ class HyperTap extends GameShell {
     // Check distance
     const dx = x - this.target.x;
     const dy = y - this.target.y;
-    
-    if (dx*dx + dy*dy <= this.target.r * this.target.r) {
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist <= this.target.r) {
       // Hit
       Sound.playCoin();
-      this.score += 10;
+      // Distance-based score: Max 100 points, minus dist*2
+      const points = Math.max(10, Math.floor(100 - dist * 2));
+      this.score += points;
       this.level++;
       
       this.createShockwave(this.target.x, this.target.y, this.target.r);
@@ -111,26 +121,10 @@ class HyperTap extends GameShell {
         // Timeout
         this.loseLife();
       } else {
-        // Move
-        this.target.x += this.target.vx * dt;
-        this.target.y += this.target.vy * dt;
-        
-        // Bounce
-        if (this.target.x - this.target.r < 0) {
-          this.target.x = this.target.r;
-          this.target.vx *= -1;
-        } else if (this.target.x + this.target.r > this.canvas.width) {
-          this.target.x = this.canvas.width - this.target.r;
-          this.target.vx *= -1;
-        }
-        
-        if (this.target.y - this.target.r < 0) {
-          this.target.y = this.target.r;
-          this.target.vy *= -1;
-        } else if (this.target.y + this.target.r > this.canvas.height) {
-          this.target.y = this.canvas.height - this.target.r;
-          this.target.vy *= -1;
-        }
+        // Move along Lissajous curve
+        this.target.time += dt;
+        this.target.x = this.target.cx + this.target.A * Math.sin(this.target.a * this.target.time + this.target.d);
+        this.target.y = this.target.cy + this.target.B * Math.sin(this.target.b * this.target.time);
       }
     }
 
@@ -213,5 +207,4 @@ class HyperTap extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new HyperTap();
 });

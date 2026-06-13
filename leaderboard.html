@@ -15,16 +15,7 @@
 <body>
   <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
   
-  <nav class="navbar">
-    <div class="nav-container container">
-      <a href="index.html" class="nav-logo font-display">CHEAT LABZ</a>
-      <div class="nav-links">
-        <a href="games.html">GAMES</a>
-        <a href="arena.html">ARENA</a>
-        <a href="leaderboard.html" class="active">LEADERBOARD</a>
-      </div>
-    </div>
-  </nav>
+  <div id="navbar-mount"></div>
 
   <main class="container section-padding fade-in">
     <header class="leaderboard-header">
@@ -64,6 +55,9 @@
       </div>
       
       <div class="empty-state" id="my-scores-empty" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 24px;">
+          <path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10"></path><path d="M6 4v11a6 6 0 0 0 12 0V4"></path><path d="M4 4h2"></path><path d="M18 4h2"></path>
+        </svg>
         <h3>You haven't played yet.</h3>
         <p class="text-secondary" style="margin-bottom: 24px;">Pick a game and set some records.</p>
         <a href="games.html" class="btn btn-primary">BROWSE GAMES</a>
@@ -96,18 +90,9 @@
 
   <script type="module" src="js/ui/leaderboard.js"></script>
 
-  <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
-    <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-    <div class="mobile-nav-links font-display">
-      <a href="index.html">HOME</a>
-      <a href="games.html">GAMES</a>
-      <a href="arena.html">ARENA</a>
-      <a href="daily.html">DAILY</a>
-    </div>
-  </div>
+  
 
   <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
+  <script type="module" src="js/ui/navbar.js"></script>
 </body>
 </html>

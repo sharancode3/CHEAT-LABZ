@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class StackBlitz extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class StackBlitz extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'stack-blitz',
       description: 'Drop the blocks to stack. Overhangs are cut off. 3 perfects = block grows.',
       width: 400,
@@ -38,8 +38,9 @@ class StackBlitz extends GameShell {
     this.cameraY = 0;
     this.targetCameraY = 0;
     
-    this.speed = 150;
-    this.dir = 1;
+    this.speed = 2.0; // sine wave frequency multiplier
+    this.swingWidth = this.canvas.width / 2; // how far it swings
+    this.time = 0;
     this.hueCounter = 0;
     
     this.perfectDrops = 0;
@@ -63,15 +64,18 @@ class StackBlitz extends GameShell {
     this.hueCounter = (this.hueCounter + 15) % 360;
     
     this.activeBlock = {
-      x: this.dir > 0 ? -last.w : this.canvas.width,
+      x: this.canvas.width / 2, // starting x for sine
       y: last.y - this.blockH,
       w: last.w,
       h: this.blockH,
       hue: this.hueCounter
     };
     
+    // Reset time to spawn at edge of swing
+    this.time = 0;
+    
     // Speed up slightly per block
-    this.speed += 5;
+    this.speed += 0.1;
     
     // Camera pan
     if (this.blocks.length > 6) {
@@ -88,8 +92,8 @@ class StackBlitz extends GameShell {
     // Check overlap
     const overlap = curr.w - Math.abs(curr.x - prev.x);
     
-    // Tolerance for perfect drop (within 4px)
-    if (Math.abs(curr.x - prev.x) < 4) {
+    // Tolerance for perfect drop (within 3px)
+    if (Math.abs(curr.x - prev.x) <= 3) {
       // Perfect drop
       curr.x = prev.x; // align exactly
       curr.w = prev.w;
@@ -146,8 +150,6 @@ class StackBlitz extends GameShell {
     this.activeBlock = null;
     this.score++;
     this.updateUI();
-    
-    this.dir *= -1; // reverse direction
     this.spawnNextBlock();
   }
 
@@ -161,13 +163,12 @@ class StackBlitz extends GameShell {
   update(deltaTime) {
     const dt = deltaTime / 1000;
     
-    // Move active block
+    this.time += dt;
+
+    // Move active block with Sine wave
     if (this.activeBlock) {
-      this.activeBlock.x += this.speed * this.dir * dt;
-      // Bounce off walls
-      if (this.activeBlock.x > this.canvas.width || this.activeBlock.x + this.activeBlock.w < 0) {
-        this.dir *= -1;
-      }
+      const centerX = (this.canvas.width - this.activeBlock.w) / 2;
+      this.activeBlock.x = centerX + Math.sin(this.time * this.speed) * (this.canvas.width/2);
     }
     
     // Camera smooth pan
@@ -233,5 +234,4 @@ class StackBlitz extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new StackBlitz();
 });

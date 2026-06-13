@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class TurboDrift extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class TurboDrift extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'turbo-drift',
       description: '3 laps. Drift for bonus points. Hit boost pads. Best time wins.',
       width: 700,
@@ -331,5 +331,4 @@ class TurboDrift extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new TurboDrift();
 });

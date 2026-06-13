@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class TileRunner extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class TileRunner extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'tile-runner',
       description: 'Tap the black tiles when they reach the bottom zone. Don\\'t miss!',
       width: 400,
@@ -31,9 +31,12 @@ class TileRunner extends GameShell {
     
     this.tiles = [];
     this.speed = 300; // pixels per sec
+    this.tapCount = 0;
     
-    this.spawnTimer = 0;
-    this.baseSpawnRate = 600; // ms between spawns
+    this.spawnY = this.canvas.height - 200;
+    for(let i=0; i<20; i++) {
+      this.spawnTile();
+    }
     
     // Visual feedback for lanes
     this.laneFlashes = [0, 0, 0, 0];
@@ -55,13 +58,16 @@ class TileRunner extends GameShell {
 
   spawnTile() {
     const lane = Math.floor(Math.random() * this.laneCount);
+    const isGold = Math.random() < 0.05; // 5% chance
     
-    // Ensure we don't spawn overlapping too closely if speed varies
     this.tiles.push({
       lane: lane,
-      y: -this.tileHeight,
-      hit: false
+      y: this.spawnY,
+      hit: false,
+      isGold: isGold
     });
+    
+    this.spawnY -= this.tileHeight; // stack upwards
   }
 
   tapLane(lane) {
@@ -74,7 +80,7 @@ class TileRunner extends GameShell {
     for (let i = 0; i < this.tiles.length; i++) {
       let t = this.tiles[i];
       if (t.lane === lane && !t.hit) {
-        // Check if in hit zone (generous hitbox)
+        // Precise bounds: tile must be within the visual hit zone
         const tileBottom = t.y + this.tileHeight;
         if (tileBottom >= this.hitZoneY && t.y <= this.canvas.height) {
           if (!hitTile || t.y > hitTile.y) {
@@ -90,11 +96,14 @@ class TileRunner extends GameShell {
       hitTile.hit = true; // Mark to trigger flash animation
       hitTile.flashTimer = 200;
       Sound.playCoin();
-      this.score += 10;
       
-      // Speed up slightly
-      this.speed += 2;
-      this.baseSpawnRate = Math.max(250, this.baseSpawnRate - 2);
+      this.score += hitTile.isGold ? 50 : 10;
+      this.tapCount++;
+      
+      // Speed increase every 15 taps
+      if (this.tapCount % 15 === 0) {
+        this.speed += 50;
+      }
       
       this.updateUI();
     } else {
@@ -120,11 +129,12 @@ class TileRunner extends GameShell {
   update(deltaTime) {
     const dt = deltaTime / 1000;
 
-    // Spawn tiles
-    this.spawnTimer -= deltaTime;
-    if (this.spawnTimer <= 0) {
+    // Move spawn point down
+    this.spawnY += this.speed * dt;
+    
+    // Generate new rows to always maintain 20 tiles ahead
+    while (this.tiles.length < 20) {
       this.spawnTile();
-      this.spawnTimer = this.baseSpawnRate;
     }
 
     // Move tiles
@@ -209,15 +219,15 @@ class TileRunner extends GameShell {
         this.ctx.fillStyle = \`rgba(255, 255, 255, \${t.flashTimer / 200})\`;
         this.ctx.fillRect(x + 2, t.y, this.laneWidth - 4, this.tileHeight);
       } else {
-        // Normal black tile
-        this.ctx.fillStyle = '#05050a';
-        this.ctx.shadowBlur = 10;
-        this.ctx.shadowColor = '#000';
+        // Normal black tile or Gold tile
+        this.ctx.fillStyle = t.isGold ? '#ffff4d' : '#05050a';
+        this.ctx.shadowBlur = t.isGold ? 15 : 10;
+        this.ctx.shadowColor = t.isGold ? '#ffff4d' : '#000';
         this.ctx.fillRect(x + 2, t.y, this.laneWidth - 4, this.tileHeight);
         this.ctx.shadowBlur = 0;
         
         // Inner highlight
-        this.ctx.strokeStyle = '#2a2a3a';
+        this.ctx.strokeStyle = t.isGold ? '#fff' : '#2a2a3a';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(x + 4, t.y + 2, this.laneWidth - 8, this.tileHeight - 4);
       }
@@ -228,5 +238,4 @@ class TileRunner extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new TileRunner();
 });

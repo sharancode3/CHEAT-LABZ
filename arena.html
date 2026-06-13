@@ -15,7 +15,7 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      background-color: var(--bg-main);
+      background-color: var(--bg-primary);
     }
     .navbar {
       background-color: var(--bg-card);
@@ -131,52 +131,61 @@
 <body>
   <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
 
-  <nav class="navbar">
-    <a href="index.html" class="back-link">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-      HOME
-    </a>
-    <div class="font-display" style="font-size: 14px;">ARENA MODE</div>
-    <div class="nav-controls">
-      <button id="global-mute-btn" class="icon-btn" aria-label="Toggle Sound" onclick="window.Sound && window.Sound.toggleMute()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-      </button>
-      <button id="hamburger-btn" class="icon-btn mobile-only" aria-label="Menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </button>
-    </div>
-  </nav>
+  <div id="navbar-mount"></div>
 
-  <div class="arena-header fade-in">
-    <h1 class="arena-title font-display">ARENA SURVIVAL</h1>
-    <p class="font-display" style="color: var(--text-secondary); font-size: 12px; margin-top: 10px;">3 ROUNDS. ESCALATING DIFFICULTY. NO CHECKPOINTS.</p>
-    
-    <div class="total-score-box">
-      <div class="font-display" style="font-size: 12px; color: var(--text-secondary);">ARENA TOTAL SCORE</div>
-      <div class="total-score-value font-display" id="total-score">0</div>
-      <div id="completion-status" style="margin-top: 16px; font-weight: 600; color: var(--accent-2); display: none;">ARENA COMPLETED!</div>
-      <button id="reset-arena-btn" class="btn btn-outline" style="margin-top: 16px; display: none;">PLAY AGAIN</button>
+  <div class="container fade-in" style="display: flex; gap: 40px; margin-top: 40px; padding-bottom: 80px;">
+    <!-- LEFT SIDE: Game Selection Grid -->
+    <div style="flex: 2;">
+      <h2 class="font-display" style="font-size: 18px; margin-bottom: 24px;">SELECT GAME</h2>
+      <div id="arena-games-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+        <!-- JS rendered -->
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE: Info Panel -->
+    <div style="flex: 1;">
+      <div class="arena-info-panel" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 24px; position: sticky; top: 100px;">
+        <h2 class="font-display" style="color: var(--accent-3); display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5L3 6l3-3 11.5 11.5"></path><path d="M13 19l6-6"></path><path d="M16 16l4 4"></path><path d="M19 21l2-2"></path><path d="M9.5 8.5L21 20l-3 3-11.5-11.5"></path><path d="M11 5l-6 6"></path><path d="M8 8L4 4"></path><path d="M5 3L3 5"></path></svg>
+          ARENA MODE
+        </h2>
+        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">3 rounds. Score carries over. Difficulty ramps each round. Beat your arena best.</p>
+        
+        <div style="margin-bottom: 24px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">YOUR ARENA BEST</div>
+          <div id="arena-best-score" class="font-display" style="font-size: 24px; color: #fff;">0</div>
+        </div>
+
+        <button id="start-arena-btn" class="btn btn-primary" style="width: 100%; padding: 16px; opacity: 0.4; cursor: not-allowed;" disabled>START ARENA</button>
+      </div>
     </div>
   </div>
 
-  <div class="gauntlet-grid fade-in" id="arena-grid" style="animation-delay: 200ms;">
-    <!-- Rendered via JS -->
+  <!-- Arena Interstitial Modal -->
+  <div id="arena-interstitial" class="game-modal hidden" style="justify-content: center; align-items: center; text-align: center;">
+    <h2 id="arena-round-title" class="font-display" style="font-size: 32px; color: var(--accent-1); margin-bottom: 16px;">ROUND 1 COMPLETE</h2>
+    <div id="arena-round-score" class="font-display" style="font-size: 48px; color: #fff;">Score: 0</div>
   </div>
 
   <script type="module" src="js/ui/arena.js"></script>
 
-  <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
-    <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-    <div class="mobile-nav-links font-display">
-      <a href="index.html">HOME</a>
-      <a href="games.html">GAMES</a>
-      <a href="arena.html">ARENA</a>
-      <a href="daily.html">DAILY</a>
+  
+
+  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
+  <script type="module" src="js/ui/navbar.js"></script>
+
+  <!-- Global Game Modal -->
+  <div id="game-modal" class="game-modal hidden">
+    <div class="game-modal-header">
+      <button id="close-game" class="btn-icon">← BACK</button>
+      <span id="game-modal-title" class="font-display" style="font-size: 14px;"></span>
+      <span id="game-modal-score" class="font-display text-accent-1" style="font-size: 14px;">SCORE: 0</span>
+    </div>
+    <div class="game-canvas-container" id="game-canvas-container">
+      <canvas id="game-canvas"></canvas>
     </div>
   </div>
 
-  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
+  <script type="module" src="js/ui/modal.js"></script>
 </body>
 </html>

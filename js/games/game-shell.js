@@ -10,8 +10,8 @@ export class GameShell {
    * @param {string} canvasId - The ID of the canvas element
    * @param {Object} config - { name, description, instructions[], controls{}, width, height }
    */
-  constructor(canvasId, config) {
-    this.canvas = document.getElementById(canvasId);
+  constructor(canvasOrId, config) {
+    this.canvas = typeof canvasOrId === 'string' ? document.getElementById(canvasOrId) : canvasOrId;
     if (this.canvas) {
       this.ctx = this.canvas.getContext('2d');
       if (config.width) this.canvas.width = config.width;
@@ -80,6 +80,7 @@ export class GameShell {
    * Initializes the game and shows the instruction overlay
    */
   init() {
+    this._ensureOverlays();
     this.state = 'INSTRUCTIONS';
     this.score = 0;
     GameState.registerGame(this);
@@ -92,11 +93,9 @@ export class GameShell {
    */
   showInstructions() {
     this._showOverlay('instructions-overlay');
-    // The UI should have a #instructions-overlay with the game title, objective, and "PRESS SPACE TO START"
-    // that updates dynamically based on this.config.
-    const titleEl = document.getElementById('instruction-title');
-    const descEl = document.getElementById('instruction-desc');
-    if (titleEl) titleEl.innerText = this.config.name;
+    const titleEl = document.getElementById('gs-instruction-title');
+    const descEl = document.getElementById('gs-instruction-desc');
+    if (titleEl) titleEl.innerText = this.config.name.toUpperCase();
     if (descEl) descEl.innerText = this.config.description || '';
     
     // Draw the state so the user sees the first frame of the game behind the overlay
@@ -154,79 +153,25 @@ export class GameShell {
     this.state = 'GAMEOVER';
     cancelAnimationFrame(this._animationFrameId);
     
-    const urlParams = new URLSearchParams(window.location.search);
-    const dailyIndex = urlParams.get('daily');
-    const arenaIndex = urlParams.get('arena');
-    
-    let isNewRecord = false;
+    const isArena = !!this.config.difficultyMultiplier && this.config.difficultyMultiplier !== 1.0;
 
-    if (dailyIndex !== null) {
-      // Daily Challenge mode
-      const today = new Date();
-      const dateString = \`\${today.getUTCFullYear()}-\${String(today.getUTCMonth()+1).padStart(2,'0')}-\${String(today.getUTCDate()).padStart(2,'0')}\`;
-      const dailyKey = \`cheatLabz_daily_\${dateString}\`;
-      let completedIds = Storage.get(dailyKey, []);
-      
-      const pathParts = window.location.pathname.split('/');
-      const filename = pathParts[pathParts.length - 1];
-      const gameId = filename.replace('.html', '');
-
-      if (!completedIds.includes(gameId)) {
-        completedIds.push(gameId);
-        Storage.set(dailyKey, completedIds);
-      }
-
-      if (this.score > this.highScore) {
-        this.highScore = this.score;
-        Storage.set(this.config.name, this.highScore);
-      }
-      
-      this._showOverlay('gameover-overlay', { isNewRecord: false });
-      
-      const menuBtn = document.querySelector('#gameover-overlay .btn-outline');
-      if (menuBtn) {
-        menuBtn.innerText = 'CONTINUE DAILY (ESC)';
-        menuBtn.href = 'daily.html';
-      }
-    } else if (arenaIndex !== null) {
-      // Arena Mode
-      let runData = sessionStorage.getItem('cheatLabz_arena_run');
-      if (runData) {
-        runData = JSON.parse(runData);
-        const idx = parseInt(arenaIndex, 10);
-        runData.scores[idx] = Math.max(runData.scores[idx] || 0, this.score);
-        runData.currentRound = idx + 1;
-        sessionStorage.setItem('cheatLabz_arena_run', JSON.stringify(runData));
-      }
-      
-      if (this.score > this.highScore) {
-        this.highScore = this.score;
-        Storage.set(this.config.name, this.highScore);
-      }
-      
-      this._showOverlay('gameover-overlay', { isNewRecord: false });
-      
-      const menuBtn = document.querySelector('#gameover-overlay .btn-outline');
-      if (menuBtn) {
-        menuBtn.innerText = 'CONTINUE ARENA (ESC)';
-        menuBtn.href = 'arena.html';
-      }
-    } else {
-      // Normal mode
-      isNewRecord = this.score > this.highScore;
-      if (isNewRecord) {
-        this.highScore = this.score;
-        Storage.set(this.config.name, this.highScore);
-      }
-      this._showOverlay('gameover-overlay', { isNewRecord });
+    // Normal mode
+    isNewRecord = this.score > this.highScore;
+    if (isNewRecord) {
+      this.highScore = this.score;
+      Storage.set(this.config.name, this.highScore);
     }
     
-    
-    // Update score displays
-    const scoreEl = document.getElementById('gameover-score');
-    const bestEl = document.getElementById('gameover-best');
-    if (scoreEl) scoreEl.innerText = this.score;
-    if (bestEl) bestEl.innerText = this.highScore;
+    // Do not show local gameover overlay if Arena mode handles it
+    if (isArena) {
+      // Arena overrides game over handling
+    } else {
+      this._showOverlay('gameover-overlay', { isNewRecord });
+      const scoreEl = document.getElementById('gs-gameover-score');
+      const bestEl = document.getElementById('gs-gameover-best');
+      if (scoreEl) scoreEl.innerText = this.score;
+      if (bestEl) bestEl.innerText = this.highScore;
+    }
     
     // Call subclass teardown if defined
     if (typeof this.onGameOver === 'function') {
@@ -328,19 +273,57 @@ export class GameShell {
   quit() {
     this.destroy();
     
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('daily')) {
-      window.location.href = 'daily.html';
-    } else if (urlParams.has('arena')) {
-      // "If the player closes the game mid-round, arena progress resets"
-      sessionStorage.removeItem('cheatLabz_arena_run');
-      window.location.href = 'arena.html';
-    } else {
-      window.location.href = 'games.html';
-    }
+    // When using the modal system, quitting just clicks the back button.
+    const closeBtn = document.getElementById('close-game');
+    if (closeBtn) closeBtn.click();
   }
 
   // --- UI Helpers ---
+
+  _ensureOverlays() {
+    if (!this.canvas || !this.canvas.parentElement) return;
+    const parent = this.canvas.parentElement;
+    
+    if (document.getElementById('instructions-overlay')) return;
+
+    const overlayHTML = \`
+      <div id="instructions-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+        <h2 id="gs-instruction-title" class="font-display" style="font-size: 32px; color: var(--accent-1); margin-bottom: 16px;"></h2>
+        <p id="gs-instruction-desc" style="max-width: 400px; text-align: center; line-height: 1.5; margin-bottom: 32px;"></p>
+        <div class="font-display" style="animation: pulse 1.5s infinite; color: #fff;">PRESS SPACE TO START</div>
+      </div>
+
+      <div id="pause-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+        <h2 class="font-display" style="font-size: 32px; color: #fff; margin-bottom: 32px;">PAUSED</h2>
+        <div class="font-display" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">[P] RESUME</div>
+        <div class="font-display" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">[R] RESTART</div>
+        <div class="font-display" style="color: var(--text-secondary); font-size: 14px;">[ESC] QUIT</div>
+      </div>
+
+      <div id="gameover-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+        <h2 class="font-display" style="font-size: 48px; color: #fff; margin-bottom: 8px;">GAME OVER</h2>
+        <div id="new-record-banner" class="badge badge-purple" style="display: none; margin-bottom: 24px;">NEW RECORD</div>
+        <div style="display: flex; gap: 32px; margin-bottom: 32px; text-align: center;">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">SCORE</div>
+            <div id="gs-gameover-score" class="font-display" style="font-size: 32px; color: var(--accent-1);">0</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">BEST</div>
+            <div id="gs-gameover-best" class="font-display" style="font-size: 32px; color: #fff;">0</div>
+          </div>
+        </div>
+        <div class="font-display" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">[R] RETRY</div>
+        <div class="font-display" style="color: var(--text-secondary); font-size: 14px;">[ESC] BACK</div>
+      </div>
+    \`;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = overlayHTML;
+    while (wrapper.firstChild) {
+      parent.appendChild(wrapper.firstChild);
+    }
+  }
 
   _showOverlay(id, data = {}) {
     this._hideAllOverlays();

@@ -136,30 +136,43 @@ class GameLibrary {
       const best = Storage.get(g.id, 0);
       const runs = Storage.get(g.id + '_runs', 0);
       
-      const badgeClass = \`badge-difficulty-\${g.difficulty.toLowerCase()}\`;
-      const tagsHtml = g.tags.map(t => \`<span class="badge badge-purple" style="font-size: 10px; padding: 2px 6px;">\${t}</span>\`).join('');
+      const badgeClass = `badge-difficulty-${g.difficulty.toLowerCase()}`;
+      const tagsHtml = g.tags.map(t => `<span class="badge badge-purple" style="font-size: 10px; padding: 2px 6px;">${t}</span>`).join('');
 
-      return \`
-        <div class="game-card \${animate ? 'fade-in' : ''}">
+      return `
+        <div class="game-card ${animate ? 'fade-in' : ''}" data-id="${g.id}">
           <div class="game-icon">
              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
           </div>
           <div class="game-title-row">
-            <span class="game-title">\${g.name}</span>
-            <div style="display:flex; gap:4px;">
-              <span class="badge \${badgeClass}" style="font-size: 10px; padding: 2px 6px;">\${g.difficulty}</span>
-              \${tagsHtml}
-            </div>
+            <span class="game-title">${g.name}</span>
+            <span class="${badgeClass} badge">${g.difficulty}</span>
           </div>
-          <p class="game-desc">\${g.desc}</p>
+          <div class="game-category">
+            <span class="badge badge-outline">${g.category}</span>
+            ${tagsHtml}
+          </div>
+          <p class="game-desc">${g.desc}</p>
           <div class="game-stats">
-            <span>Best: \${best}</span>
-            <span>Runs: \${runs}</span>
+            <span class="stat">Best: ${best}</span>
+            <span class="stat-dot">·</span>
+            <span class="stat">Runs: ${runs}</span>
           </div>
-          <a href="\${g.id}.html" class="btn btn-primary btn-full">PLAY NOW</a>
+          <button class="btn btn-primary launch-game-btn" data-id="${g.id}" style="width: 100%; margin-top: 10px;">PLAY NOW</button>
         </div>
-      \`;
+      `;
     }).join('');
+    
+    // Bind click events for game launching
+    const cards = this.grid.querySelectorAll('.game-card');
+    cards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        const gameId = card.getAttribute('data-id');
+        if (window.launchGameModal) {
+          window.launchGameModal(gameId);
+        }
+      });
+    });
   }
 }
 

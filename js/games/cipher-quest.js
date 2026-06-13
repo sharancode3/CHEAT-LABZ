@@ -11,9 +11,9 @@ const WORD_LIST = [
   "UPLOAD", "VARIABLE", "WIRELESS", "XML", "YOTTABYTE", "ZIP"
 ];
 
-class CipherQuest extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class CipherQuest extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'cipher-quest',
       description: 'Decode the Caesar-cipher word. Type your answer. Hints cost points.',
       width: 600,
@@ -211,5 +211,4 @@ class CipherQuest extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new CipherQuest();
 });

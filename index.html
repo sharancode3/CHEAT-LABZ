@@ -27,17 +27,7 @@
     </button>
   </div>
 
-  <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
-    <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-    <div class="mobile-nav-links font-display">
-      <a href="index.html">HOME</a>
-      <a href="games.html">GAMES</a>
-      <a href="arena.html">ARENA</a>
-      <a href="daily.html">DAILY</a>
-    </div>
-  </div>
+  
 
   <!-- Hero Section -->
   <section class="hero">
@@ -123,5 +113,20 @@
 
   <script type="module" src="js/ui/home.js"></script>
   <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
+  <script type="module" src="js/ui/navbar.js"></script>
+
+  <!-- Global Game Modal -->
+  <div id="game-modal" class="game-modal hidden">
+    <div class="game-modal-header">
+      <button id="close-game" class="btn-icon">← BACK</button>
+      <span id="game-modal-title" class="font-display" style="font-size: 14px;"></span>
+      <span id="game-modal-score" class="font-display text-accent-1" style="font-size: 14px;">SCORE: 0</span>
+    </div>
+    <div class="game-canvas-container" id="game-canvas-container">
+      <canvas id="game-canvas"></canvas>
+    </div>
+  </div>
+
+  <script type="module" src="js/ui/modal.js"></script>
 </body>
 </html>

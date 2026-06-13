@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class PhantomCalc extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class PhantomCalc extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'phantom-calc',
       description: 'Find the missing number in the equation. Click the correct bubble.',
       width: 600,
@@ -309,5 +309,4 @@ class PhantomCalc extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new PhantomCalc();
 });

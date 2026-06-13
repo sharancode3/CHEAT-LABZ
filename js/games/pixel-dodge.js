@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class PixelDodge extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class PixelDodge extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'pixel-dodge',
       description: 'Bullet hell. Square follows mouse. Don\\'t touch the red dots.',
       width: 600,
@@ -45,7 +45,8 @@ class PixelDodge extends GameShell {
     this.difficultyLevel = 1;
     
     this.spawnTimer = 0;
-    this.spawnRate = 200; // ms between spawns
+    this.spawnRate = 2000; // time between patterns
+    this.patternCount = 0;
     
     this.flashEl.classList.remove('active');
     
@@ -65,14 +66,14 @@ class PixelDodge extends GameShell {
     if (this.timeSinceLastRamp >= 10000) {
       this.timeSinceLastRamp -= 10000;
       this.difficultyLevel++;
-      this.spawnRate = Math.max(20, 200 - this.difficultyLevel * 15);
+      this.spawnRate = Math.max(800, 2000 - this.difficultyLevel * 150);
       Sound.playCoin(); // small cue for level up
     }
 
-    // Spawn dots
+    // Spawn patterns
     this.spawnTimer -= deltaTime;
     if (this.spawnTimer <= 0) {
-      this.spawnDot();
+      this.spawnPattern();
       this.spawnTimer = this.spawnRate;
     }
 
@@ -87,12 +88,14 @@ class PixelDodge extends GameShell {
       if (d.trail.length > 5) d.trail.shift();
 
       // Check collision (AABB vs Circle)
-      const px = this.player.x - this.playerSize/2;
-      const py = this.player.y - this.playerSize/2;
+      // Hitbox 70% of visual size
+      const hitSize = this.playerSize * 0.7;
+      const px = this.player.x - hitSize/2;
+      const py = this.player.y - hitSize/2;
       
       // closest point on rect to circle center
-      const cx = Math.max(px, Math.min(d.x, px + this.playerSize));
-      const cy = Math.max(py, Math.min(d.y, py + this.playerSize));
+      const cx = Math.max(px, Math.min(d.x, px + hitSize));
+      const cy = Math.max(py, Math.min(d.y, py + hitSize));
       
       const dx = d.x - cx;
       const dy = d.y - cy;
@@ -112,38 +115,52 @@ class PixelDodge extends GameShell {
     this.updateUI();
   }
 
-  spawnDot() {
-    // 0: top, 1: right, 2: left
-    const side = Math.floor(Math.random() * 3);
-    let x, y, vx, vy;
-    const speed = 100 + Math.random() * 150 + this.difficultyLevel * 20;
-    const r = 4 + Math.random() * 4;
+  spawnPattern() {
+    this.patternCount++;
+    const type = this.patternCount % 4;
+    const speed = 100 + this.difficultyLevel * 20;
+    const r = 4 + Math.random() * 2;
 
-    if (side === 0) { // Top
-      x = Math.random() * this.canvas.width;
-      y = -10;
-      vx = (Math.random() - 0.5) * speed;
-      vy = speed;
-    } else if (side === 1) { // Right
-      x = this.canvas.width + 10;
-      y = Math.random() * this.canvas.height;
-      vx = -speed;
-      vy = (Math.random() - 0.5) * speed;
-    } else { // Left
-      x = -10;
-      y = Math.random() * this.canvas.height;
-      vx = speed;
-      vy = (Math.random() - 0.5) * speed;
+    if (type === 0) {
+      // Wall from top
+      for(let i=0; i<15; i++) {
+        // gap in the middle somewhere
+        if (i > 6 && i < 9) continue;
+        this.dots.push({ x: i * (this.canvas.width/15), y: -10, vx: 0, vy: speed, r, trail: [] });
+      }
+    } else if (type === 1) {
+      // Cross wave
+      for(let i=0; i<5; i++) {
+        this.dots.push({ x: -10, y: 100 + i*100, vx: speed*1.5, vy: 0, r, trail: [] });
+        this.dots.push({ x: this.canvas.width+10, y: 150 + i*100, vx: -speed*1.5, vy: 0, r, trail: [] });
+      }
+    } else if (type === 2) {
+      // Circle closing in
+      for(let i=0; i<12; i++) {
+        const angle = (i/12) * Math.PI*2;
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        this.dots.push({ 
+          x: this.canvas.width/2 + dx * 400, 
+          y: this.canvas.height/2 + dy * 400, 
+          vx: -dx * speed, 
+          vy: -dy * speed, 
+          r, trail: [] 
+        });
+      }
+    } else {
+      // Targeted burst
+      for(let i=0; i<8; i++) {
+        const angle = Math.atan2(this.player.y - (-10), this.player.x - (this.canvas.width/2)) + (Math.random()-0.5)*0.5;
+        this.dots.push({ 
+          x: this.canvas.width/2 + (Math.random()-0.5)*50, 
+          y: -10, 
+          vx: Math.cos(angle) * speed * 2, 
+          vy: Math.sin(angle) * speed * 2, 
+          r, trail: [] 
+        });
+      }
     }
-
-    // Occasionally target player directly
-    if (Math.random() < 0.2 + (this.difficultyLevel * 0.02)) {
-      const angle = Math.atan2(this.player.y - y, this.player.x - x);
-      vx = Math.cos(angle) * speed * 1.5;
-      vy = Math.sin(angle) * speed * 1.5;
-    }
-
-    this.dots.push({ x, y, vx, vy, r, trail: [] });
   }
 
   die() {
@@ -194,5 +211,4 @@ class PixelDodge extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new PixelDodge();
 });
