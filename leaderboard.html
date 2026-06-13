@@ -1,67 +1,53 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CHEAT LABZ - Leaderboard</title>
-  <meta name="description" content="View personal scores and the full game overview for CHEAT LABZ." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./css/global.css" />
-  <link rel="stylesheet" href="./css/leaderboard.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard | CHEAT LABZ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/leaderboard.css">
 </head>
-<body class="leaderboard-page">
-  <a class="skip-link" href="#main">Skip to content</a>
-  <header class="page-shell section--tight leaderboard-hero">
-    <div class="toolbar glass" style="padding:16px 20px;">
-      <div>
-        <p class="eyebrow">CHEAT LABZ</p>
-        <h1 class="page-title">LEADERBOARD</h1>
+<body>
+  <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
+  
+  <nav class="navbar">
+    <div class="nav-container container">
+      <a href="index.html" class="nav-logo font-display">CHEAT LABZ</a>
+      <div class="nav-links">
+        <a href="games.html">GAMES</a>
+        <a href="arena.html">ARENA</a>
+        <a href="leaderboard.html" class="active">LEADERBOARD</a>
       </div>
-      <nav class="tab-row" aria-label="Primary">
-        <a class="tab" href="./games.html">Games</a>
-        <a class="tab is-active" href="./leaderboard.html">Leaderboard</a>
-        <a class="tab" href="./arena.html">Arena</a>
-        <a class="tab" href="./index.html">Home</a>
-      </nav>
     </div>
-  </header>
+  </nav>
 
-  <main id="main" class="page-shell leaderboard-layout">
-    <section class="section leaderboard-panel glass">
-      <div class="leaderboard-toolbar">
-        <div>
-          <p class="eyebrow">Scores</p>
-          <h2 class="section-title">My scores are empty for now, but the table and tab structure are ready.</h2>
-        </div>
-        <div class="select-shell" style="min-width:240px;">
-          <select class="select" aria-label="Select game">
-            <option>All Games</option>
-            <option>Neon Serpent</option>
-            <option>Loop Rally</option>
-            <option>Turbo Drift</option>
-            <option>Key Frenzy</option>
-          </select>
-        </div>
+  <main class="container section-padding fade-in">
+    <header class="leaderboard-header">
+      <div class="title-row">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10"></path><path d="M6 4v11a6 6 0 0 0 12 0V4"></path><path d="M4 4h2"></path><path d="M18 4h2"></path>
+        </svg>
+        <h1 class="font-display">LEADERBOARD</h1>
       </div>
+      <p class="text-secondary">Your personal hall of fame and overview of all records.</p>
+    </header>
 
-      <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard views">
-        <button class="tab is-active" type="button" aria-selected="true">My Scores</button>
-        <button class="tab" type="button" aria-selected="false">All Games Overview</button>
+    <div class="tabs-container">
+      <div class="tab-switcher" id="leaderboard-tabs">
+        <button class="tab-pill active" data-target="my-scores">MY SCORES</button>
+        <button class="tab-pill" data-target="all-games">ALL GAMES OVERVIEW</button>
       </div>
+    </div>
 
-      <div class="card leaderboard-empty">
-        <h3 class="game-title">You have not played yet.</h3>
-        <p class="body-copy">Pick a game from the library and your personal table will fill in automatically.</p>
-        <div class="leaderboard-actions">
-          <a class="button button--primary" href="./games.html">Browse Games</a>
-          <button class="button button--danger" type="button">Reset All My Scores</button>
-        </div>
-      </div>
-
-      <div class="card leaderboard-table-wrap">
-        <table class="table leaderboard-table" aria-label="My score table">
+    <!-- View: My Scores -->
+    <section id="my-scores" class="tab-content active fade-in">
+      <div class="table-wrapper">
+        <table class="scores-table" id="scores-table">
           <thead>
             <tr>
               <th>Game</th>
@@ -71,69 +57,57 @@
               <th>Trend</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Neon Serpent</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td>Loop Rally</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td>Turbo Drift</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-            </tr>
+          <tbody id="scores-tbody">
+            <!-- Injected via JS -->
           </tbody>
         </table>
       </div>
-    </section>
-
-    <section class="section leaderboard-panel glass">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">Overview</p>
-          <h2 class="section-title">Compact game cards will appear here once the live registry is wired.</h2>
-        </div>
-        <span class="badge">Your record only</span>
+      
+      <div class="empty-state" id="my-scores-empty" style="display: none;">
+        <h3>You haven't played yet.</h3>
+        <p class="text-secondary" style="margin-bottom: 24px;">Pick a game and set some records.</p>
+        <a href="games.html" class="btn btn-primary">BROWSE GAMES</a>
       </div>
 
-      <div class="card-grid card-grid--3">
-        <article class="card game-card">
-          <h3 class="game-title">Neon Serpent</h3>
-          <p class="game-desc">YOUR RECORD</p>
-          <div class="game-footer">
-            <span class="badge">Arcade</span>
-            <span class="badge badge--accent">Best: —</span>
-          </div>
-        </article>
-        <article class="card game-card">
-          <h3 class="game-title">Key Frenzy</h3>
-          <p class="game-desc">YOUR RECORD</p>
-          <div class="game-footer">
-            <span class="badge">Skill</span>
-            <span class="badge badge--accent">Best: —</span>
-          </div>
-        </article>
-        <article class="card game-card">
-          <h3 class="game-title">Orb Pop Deluxe</h3>
-          <p class="game-desc">YOUR RECORD</p>
-          <div class="game-footer">
-            <span class="badge">Puzzle</span>
-            <span class="badge badge--accent">Best: —</span>
-          </div>
-        </article>
+      <div class="actions-row">
+        <button id="reset-scores-btn" class="btn btn-danger-outline">RESET ALL MY SCORES</button>
+      </div>
+    </section>
+
+    <!-- View: All Games Overview -->
+    <section id="all-games" class="tab-content fade-in" style="display: none;">
+      <div class="overview-controls">
+        <label for="game-select" class="text-secondary">Filter by game:</label>
+        <select class="styled-select" id="game-select">
+          <option value="ALL">All Games</option>
+          <!-- Options injected via JS -->
+        </select>
+      </div>
+
+      <div class="overview-grid" id="overview-grid">
+        <!-- Injected via JS -->
       </div>
     </section>
   </main>
+
+  <footer>
+    <p>© 2026 CHEAT LABZ — No rules. Just scores.</p>
+  </footer>
+
+  <script type="module" src="js/ui/leaderboard.js"></script>
+
+  <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
+    <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <div class="mobile-nav-links font-display">
+      <a href="index.html">HOME</a>
+      <a href="games.html">GAMES</a>
+      <a href="arena.html">ARENA</a>
+      <a href="daily.html">DAILY</a>
+    </div>
+  </div>
+
+  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
 </body>
 </html>

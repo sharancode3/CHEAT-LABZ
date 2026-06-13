@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arena Mode | CHEAT LABZ</title>
+  <title>Daily Challenge | CHEAT LABZ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -35,14 +35,18 @@
     }
     .back-link:hover { color: #fff; }
     
-    .arena-header {
+    .daily-header {
       text-align: center;
       padding: 64px 24px 32px;
     }
-    .arena-title {
+    .daily-title {
       font-size: 32px;
-      color: var(--accent-3);
+      color: var(--accent-4);
       margin-bottom: 8px;
+    }
+    .daily-date {
+      color: var(--text-secondary);
+      font-size: 16px;
     }
     .total-score-box {
       background: var(--bg-card);
@@ -75,7 +79,6 @@
       padding: 24px;
       text-align: center;
       position: relative;
-      transition: all 0.3s ease;
     }
     .gauntlet-card.completed {
       border-color: var(--accent-2);
@@ -107,13 +110,8 @@
     }
     .game-name {
       font-size: 14px;
-      margin-bottom: 8px;
-      margin-top: 8px;
-    }
-    .multiplier {
-      font-size: 10px;
-      color: var(--accent-4);
       margin-bottom: 16px;
+      margin-top: 8px;
     }
     .game-score {
       font-size: 24px;
@@ -136,7 +134,8 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
       HOME
     </a>
-    <div class="font-display" style="font-size: 14px;">ARENA MODE</div>
+    <div class="font-display" style="font-size: 14px;">GAUNTLET</div>
+    
     <div class="nav-controls">
       <button id="global-mute-btn" class="icon-btn" aria-label="Toggle Sound" onclick="window.Sound && window.Sound.toggleMute()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
@@ -145,25 +144,25 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
     </div>
+
   </nav>
 
-  <div class="arena-header fade-in">
-    <h1 class="arena-title font-display">ARENA SURVIVAL</h1>
-    <p class="font-display" style="color: var(--text-secondary); font-size: 12px; margin-top: 10px;">3 ROUNDS. ESCALATING DIFFICULTY. NO CHECKPOINTS.</p>
+  <div class="daily-header fade-in">
+    <h1 class="daily-title font-display">DAILY CHALLENGE</h1>
+    <p class="daily-date font-display" id="date-display">2026-06-13</p>
     
     <div class="total-score-box">
-      <div class="font-display" style="font-size: 12px; color: var(--text-secondary);">ARENA TOTAL SCORE</div>
+      <div class="font-display" style="font-size: 12px; color: var(--text-secondary);">TOTAL COMBINED SCORE</div>
       <div class="total-score-value font-display" id="total-score">0</div>
-      <div id="completion-status" style="margin-top: 16px; font-weight: 600; color: var(--accent-2); display: none;">ARENA COMPLETED!</div>
-      <button id="reset-arena-btn" class="btn btn-outline" style="margin-top: 16px; display: none;">PLAY AGAIN</button>
+      <div id="completion-status" style="margin-top: 16px; font-weight: 600; color: var(--accent-2); display: none;">CHALLENGE COMPLETED</div>
     </div>
   </div>
 
-  <div class="gauntlet-grid fade-in" id="arena-grid" style="animation-delay: 200ms;">
+  <div class="gauntlet-grid fade-in" id="gauntlet-grid" style="animation-delay: 200ms;">
     <!-- Rendered via JS -->
   </div>
 
-  <script type="module" src="js/ui/arena.js"></script>
+  <script type="module" src="js/ui/daily.js"></script>
 
   <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
     <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
