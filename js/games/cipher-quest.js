@@ -152,7 +152,7 @@ export default class CipherQuest extends GameShell {
 
   updateUI() {
     if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.roundEl) this.roundEl.innerText = \`ROUND \${this.round}/\${this.maxRounds}\`;
+    if (this.roundEl) this.roundEl.innerText = `ROUND ${this.round}/${this.maxRounds}`;
   }
 
   draw() {
@@ -202,7 +202,7 @@ export default class CipherQuest extends GameShell {
     this.ctx.fillText('HINTS (Press H):', cx - 100, hintY);
     hintY += 20;
     for (let k in this.hints) {
-      this.ctx.fillText(\`\${k} → \${this.hints[k]}\`, cx - 100, hintY);
+      this.ctx.fillText(`${k} → ${this.hints[k]}`, cx - 100, hintY);
       hintY += 15;
     }
   }

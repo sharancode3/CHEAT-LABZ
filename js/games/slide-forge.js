@@ -296,7 +296,7 @@ export default class SlideForge extends GameShell {
     let power = Math.log2(val);
     let hue = (60 - (power * 15)) % 360;
     if (hue < 0) hue += 360;
-    return \`hsl(\${hue}, 80%, 60%)\`;
+    return `hsl(${hue}, 80%, 60%)`;
   }
 
   draw() {
@@ -340,7 +340,7 @@ export default class SlideForge extends GameShell {
       // Text
       this.ctx.fillStyle = '#fff';
       let fontSize = t.val > 1000 ? 24 : 32;
-      this.ctx.font = \`600 \${fontSize}px "DM Sans"\`;
+      this.ctx.font = `600 ${fontSize}px "DM Sans"`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
       this.ctx.fillText(t.val, cx + cw/2, cy + ch/2 + 2);

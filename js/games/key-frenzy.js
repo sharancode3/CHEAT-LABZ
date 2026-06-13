@@ -179,7 +179,7 @@ export default class KeyFrenzy extends GameShell {
 
     // Text
     this.ctx.fillStyle = textColor;
-    this.ctx.font = \`\${32 * scale}px "Press Start 2P"\`;
+    this.ctx.font = `${32 * scale}px "Press Start 2P"`;
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.fillText(text, cx, cy);

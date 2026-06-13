@@ -19,7 +19,7 @@ export class GameShell {
       
       // Accessibility
       this.canvas.setAttribute('role', 'application');
-      this.canvas.setAttribute('aria-label', \`\${config.name} game canvas\`);
+      this.canvas.setAttribute('aria-label', `${config.name} game canvas`);
       this.canvas.tabIndex = 0; // Make canvas focusable if needed
     }
     
@@ -68,8 +68,8 @@ export class GameShell {
             finalHeight = rect.width / targetRatio;
           }
           
-          this.canvas.style.width = \`\${finalWidth}px\`;
-          this.canvas.style.height = \`\${finalHeight}px\`;
+          this.canvas.style.width = `${finalWidth}px`;
+          this.canvas.style.height = `${finalHeight}px`;
         }
       });
       this.resizeObserver.observe(this.canvas.parentElement);
@@ -286,7 +286,7 @@ export class GameShell {
     
     if (document.getElementById('instructions-overlay')) return;
 
-    const overlayHTML = \`
+    const overlayHTML = `
       <div id="instructions-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
         <h2 id="gs-instruction-title" class="font-display" style="font-size: 32px; color: var(--accent-1); margin-bottom: 16px;"></h2>
         <p id="gs-instruction-desc" style="max-width: 400px; text-align: center; line-height: 1.5; margin-bottom: 32px;"></p>
@@ -316,7 +316,7 @@ export class GameShell {
         <div class="font-display" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">[R] RETRY</div>
         <div class="font-display" style="color: var(--text-secondary); font-size: 14px;">[ESC] BACK</div>
       </div>
-    \`;
+    `;
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = overlayHTML;
@@ -373,7 +373,7 @@ export class GameShell {
         y += vy;
         rot += rotV;
         
-        conf.style.transform = \`translate(\${x - window.innerWidth/2}px, \${y - window.innerHeight/2}px) rotate(\${rot}deg)\`;
+        conf.style.transform = `translate(${x - window.innerWidth/2}px, ${y - window.innerHeight/2}px) rotate(${rot}deg)`;
         
         if (y > window.innerHeight) {
           conf.remove();

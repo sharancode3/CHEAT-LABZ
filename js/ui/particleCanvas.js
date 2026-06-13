@@ -28,7 +28,7 @@ export function initParticles(canvasId) {
       if (p.y > H) p.y = 0;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = \`rgba(255,255,255,\${p.a})\`;
+      ctx.fillStyle = `rgba(255,255,255,${p.a})`;
       ctx.fill();
     });
     requestAnimationFrame(draw);

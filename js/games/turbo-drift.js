@@ -135,7 +135,7 @@ export default class TurboDrift extends GameShell {
       // Drift score multiplier
       if (this.driftTime > 500) { // 0.5s+
         this.driftScore += Math.floor(deltaTime * 0.1);
-        this.driftEl.innerText = \`DRIFT: \${this.driftScore}\`;
+        this.driftEl.innerText = `DRIFT: ${this.driftScore}`;
       }
       
       driftFactor = 0.5; // Slide sideways
@@ -227,7 +227,7 @@ export default class TurboDrift extends GameShell {
 
   updateUI() {
     if (this.timeEl) this.timeEl.innerText = (this.elapsedTime / 1000).toFixed(2);
-    if (this.lapsEl && this.laps < this.maxLaps) this.lapsEl.innerText = \`LAP \${this.laps + 1}/\${this.maxLaps}\`;
+    if (this.lapsEl && this.laps < this.maxLaps) this.lapsEl.innerText = `LAP ${this.laps + 1}/${this.maxLaps}`;
   }
 
   draw() {
@@ -270,7 +270,7 @@ export default class TurboDrift extends GameShell {
     for (let m of this.tireMarks) {
       this.ctx.beginPath();
       this.ctx.arc(m.x, m.y, 4, 0, Math.PI*2);
-      this.ctx.fillStyle = \`rgba(20, 20, 20, \${m.life * 0.5})\`;
+      this.ctx.fillStyle = `rgba(20, 20, 20, ${m.life * 0.5})`;
       this.ctx.fill();
     }
 

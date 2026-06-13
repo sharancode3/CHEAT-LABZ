@@ -1,26 +1,6 @@
 import { Storage } from '../core/storage.js';
 
-export const GAMES_DB = [
-  { id: 'neon-serpent', name: 'Neon Serpent', desc: 'Eat the orbs. Grow longer. Don\'t hit yourself or the walls.', category: 'ARCADE', difficulty: 'MEDIUM', tags: ['TRENDING'] },
-  { id: 'loop-rally', name: 'Loop Rally', desc: 'Rally with the AI. Don\'t let the ball past you. 3 lives.', category: 'ARCADE', difficulty: 'HARD', tags: [] },
-  { id: 'turbo-drift', name: 'Turbo Drift', desc: '3 laps. Drift for bonus points. Hit boost pads. Best time wins.', category: 'RACING', difficulty: 'HARD', tags: ['NEW'] },
-  { id: 'key-frenzy', name: 'Key Frenzy', desc: 'Press the key shown. Blind rounds = remember the key. 3 lives.', category: 'SKILL', difficulty: 'HARD', tags: [] },
-  { id: 'astro-strider', name: 'Astro Strider', desc: 'Destroy asteroids and enemy ships. Collect powerups. 3 lives.', category: 'ARCADE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'cipher-quest', name: 'Cipher Quest', desc: 'Decode the Caesar-cipher word. Type your answer. Hints cost points.', category: 'PUZZLE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'phantom-calc', name: 'Phantom Calc', desc: 'Memorize the equation before it disappears. Type your answer.', category: 'SKILL', difficulty: 'HARD', tags: [] },
-  { id: 'word-pulse', name: 'Word Pulse', desc: 'Type each letter ON the beat. Watch the pulse. Rhythm matters.', category: 'SKILL', difficulty: 'MEDIUM', tags: [] },
-  { id: 'pixel-dodge', name: 'Pixel Dodge', desc: 'Dodge everything. One hit and you\'re done. Survive as long as you can.', category: 'ARCADE', difficulty: 'HARD', tags: ['HOT'] },
-  { id: 'stack-blitz', name: 'Stack Blitz', desc: 'Drop platforms to build your tower. Aim for the center.', category: 'SKILL', difficulty: 'MEDIUM', tags: [] },
-  { id: 'memory-grid', name: 'Memory Grid', desc: 'Watch the sequence light up. Repeat it back. Gets longer every round.', category: 'PUZZLE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'hyper-tap', name: 'Hyper Tap', desc: 'Tap when the dot is inside the target. Closer to center = more points.', category: 'SKILL', difficulty: 'EASY', tags: ['CHILL'] },
-  { id: 'gravity-flip', name: 'Gravity Flip', desc: 'Flip gravity to avoid spikes. Collect coins. Don\'t die.', category: 'ARCADE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'chain-burst', name: 'Chain Burst', desc: 'Drag to chain same-colored orbs. Longer chains = more points. 90 seconds.', category: 'PUZZLE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'reflex-rush', name: 'Reflex Rush', desc: 'Press the correct arrow key when the color flashes. React fast.', category: 'SKILL', difficulty: 'EASY', tags: [] },
-  { id: 'tile-runner', name: 'Tile Runner', desc: 'Tap only the dark tiles. Miss 3 and you\'re out. Don\'t stop.', category: 'ARCADE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'beat-drop', name: 'Beat Drop', desc: 'Hit D F J K when notes reach the line. Timing matters.', category: 'SKILL', difficulty: 'MEDIUM', tags: [] },
-  { id: 'slide-forge', name: 'Slide Forge', desc: 'Slide tiles with arrow keys. Same numbers merge. Reach 2048.', category: 'PUZZLE', difficulty: 'MEDIUM', tags: [] },
-  { id: 'orb-pop-deluxe', name: 'ORB POP DELUXE', desc: 'Match 3 colored orbs to pop them before they reach the bottom.', category: 'PUZZLE', difficulty: 'EASY', tags: ['classic'] }
-];
+
 
 const diffScores = { EASY: 1, MEDIUM: 2, HARD: 3 };
 
@@ -82,7 +62,7 @@ class GameLibrary {
       
       setTimeout(() => {
         // Randomize
-        GAMES_DB.sort(() => Math.random() - 0.5);
+        GAMES.sort(() => Math.random() - 0.5);
         this.render(false); // don't re-add animation on render
       }, 200);
     });
@@ -99,7 +79,7 @@ class GameLibrary {
   }
 
   getFilteredSortedGames() {
-    let result = GAMES_DB.filter(g => {
+    let result = GAMES.filter(g => {
       const matchFilter = this.currentFilter === 'ALL' || g.category === this.currentFilter;
       const matchSearch = g.name.toLowerCase().includes(this.currentSearch) || 
                           g.desc.toLowerCase().includes(this.currentSearch);
@@ -121,7 +101,7 @@ class GameLibrary {
   render(animate = true) {
     const games = this.getFilteredSortedGames();
     
-    this.countEl.innerText = \`Showing \${games.length} games\`;
+    this.countEl.innerText = `Showing ${games.length} games`;
 
     if (games.length === 0) {
       this.grid.style.display = 'none';
@@ -139,10 +119,35 @@ class GameLibrary {
       const badgeClass = `badge-difficulty-${g.difficulty.toLowerCase()}`;
       const tagsHtml = g.tags.map(t => `<span class="badge badge-purple" style="font-size: 10px; padding: 2px 6px;">${t}</span>`).join('');
 
+      let iconSvg = '';
+      let iconColor = 'var(--accent-1)';
+      
+      switch(g.category) {
+        case 'ARCADE':
+          iconColor = 'var(--accent-1)';
+          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+          break;
+        case 'SKILL':
+          iconColor = 'var(--accent-2)';
+          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+          break;
+        case 'PUZZLE':
+          iconColor = '#a855f7';
+          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11V9a2 2 0 0 0-2-2h-2"/><path d="M9 19H7a2 2 0 0 1-2-2v-2"/><path d="M11 5V3"/><path d="M5 11H3"/><path d="M13 19v2"/><path d="M19 13h2"/><circle cx="12" cy="12" r="3"/></svg>';
+          break;
+        case 'RACING':
+          iconColor = '#ef4444';
+          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>';
+          break;
+        default:
+          iconColor = 'var(--text-main)';
+          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+      }
+
       return `
         <div class="game-card ${animate ? 'fade-in' : ''}" data-id="${g.id}">
-          <div class="game-icon">
-             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          <div class="game-icon" style="color: ${iconColor}; display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 16px; background: rgba(255,255,255,0.03); margin-bottom: 20px; transition: all 0.3s ease;">
+             ${iconSvg}
           </div>
           <div class="game-title-row">
             <span class="game-title">${g.name}</span>
@@ -176,8 +181,9 @@ class GameLibrary {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('games-grid')) {
-    new GameLibrary();
-  }
-});
+// Modules are deferred, so DOM is already parsed
+const grid = document.getElementById('games-grid');
+console.log('JS EXECUTED: grid=', !!grid);
+if (grid) {
+  new GameLibrary();
+}

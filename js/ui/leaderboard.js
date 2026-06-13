@@ -1,5 +1,5 @@
 import { Storage } from '../core/storage.js';
-import { GAMES_DB } from './games.js';
+
 
 class Leaderboard {
   constructor() {
@@ -26,7 +26,7 @@ class Leaderboard {
       this.resetBtn.addEventListener('click', () => {
         if (confirm("Are you sure you want to delete all your scores? This cannot be undone.")) {
           // Clear only game scores, leave things like preferences if any
-          GAMES_DB.forEach(g => {
+          GAMES.forEach(g => {
             Storage.remove(g.id);
             Storage.remove(g.id + '_runs');
           });
@@ -57,7 +57,7 @@ class Leaderboard {
   renderMyScores() {
     const playedGames = [];
     
-    GAMES_DB.forEach(g => {
+    GAMES.forEach(g => {
       const best = Storage.get(g.id, null);
       if (best !== null) {
         playedGames.push({
@@ -86,18 +86,18 @@ class Leaderboard {
 
     this.tbody.innerHTML = playedGames.map(g => {
       const trendIcon = g.trend === 'up' 
-        ? \`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-5)" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>\`
-        : \`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-3)" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>\`;
+        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-5)" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-3)" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>`;
 
-      return \`
+      return `
         <tr>
-          <td><a href="\${g.id}.html" class="game-link">\${g.name}</a></td>
-          <td class="font-display" style="font-size: 14px;">\${g.best}</td>
-          <td>\${g.runs}</td>
-          <td>\${g.lastPlayed}</td>
-          <td>\${trendIcon}</td>
+          <td><a href="${g.id}.html" class="game-link">${g.name}</a></td>
+          <td class="font-display" style="font-size: 14px;">${g.best}</td>
+          <td>${g.runs}</td>
+          <td>${g.lastPlayed}</td>
+          <td>${trendIcon}</td>
         </tr>
-      \`;
+      `;
     }).join('');
 
     if (window.gsap) {
@@ -110,8 +110,8 @@ class Leaderboard {
 
   initOverview() {
     // Populate select
-    this.gameSelect.innerHTML = \`<option value="ALL">All Games</option>\` + 
-      GAMES_DB.map(g => \`<option value="\${g.id}">\${g.name}</option>\`).join('');
+    this.gameSelect.innerHTML = `<option value="ALL">All Games</option>` + 
+      GAMES.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
       
     this.gameSelect.addEventListener('change', () => this.renderOverview());
     this.renderOverview();
@@ -119,22 +119,23 @@ class Leaderboard {
 
   renderOverview() {
     const filterId = this.gameSelect.value;
-    const games = filterId === 'ALL' ? GAMES_DB : GAMES_DB.filter(g => g.id === filterId);
+    const games = filterId === 'ALL' ? GAMES : GAMES.filter(g => g.id === filterId);
     
     this.overviewGrid.innerHTML = games.map(g => {
       const record = Storage.get(g.id, 0);
-      return \`
+      return `
         <div class="overview-card fade-in">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          <div class="game-title font-display">\${g.name}</div>
+          <div class="game-title font-display">${g.name}</div>
           <div class="record-label">Your Record</div>
-          <div class="record-score">\${record}</div>
+          <div class="record-score">${record}</div>
         </div>
-      \`;
+      `;
     }).join('');
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Modules are deferred, so DOM is already parsed
+if (document.getElementById('overview-grid')) {
   new Leaderboard();
-});
+}

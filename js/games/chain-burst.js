@@ -207,7 +207,7 @@ export default class ChainBurst extends GameShell {
 
   updateUI() {
     if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.levelEl) this.levelEl.innerText = \`COMBO x\${this.combo}\`;
+    if (this.levelEl) this.levelEl.innerText = `COMBO x${this.combo}`;
   }
 
   draw() {

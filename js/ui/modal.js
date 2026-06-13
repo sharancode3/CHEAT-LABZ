@@ -1,4 +1,4 @@
-import { GAMES_DB } from './games.js';
+
 
 let currentGame = null;
 
@@ -10,7 +10,7 @@ window.launchGameModal = async (gameId, config = {}) => {
   
   if (!modal || !canvas) return;
 
-  const gameInfo = GAMES_DB.find(g => g.id === gameId);
+  const gameInfo = GAMES.find(g => g.id === gameId);
   if (gameInfo) {
     titleEl.innerText = gameInfo.name.toUpperCase();
   } else {
@@ -21,11 +21,11 @@ window.launchGameModal = async (gameId, config = {}) => {
 
   try {
     // Dynamically import the game module
-    const module = await import(\`../games/\${gameId}.js\`);
+    const module = await import(`../games/${gameId}.js`);
     const GameClass = module.default;
 
     if (!GameClass) {
-      console.error(\`Game module \${gameId} does not export a default class.\`);
+      console.error(`Game module ${gameId} does not export a default class.`);
       return;
     }
 
@@ -56,7 +56,7 @@ window.launchGameModal = async (gameId, config = {}) => {
 
     // Provide a callback for the game to update the modal score
     currentGame.onScoreChange = (score) => {
-      scoreEl.innerText = \`SCORE: \${score}\`;
+      scoreEl.innerText = `SCORE: ${score}`;
     };
 
     // Auto-start or show instructions based on GameShell implementation

@@ -1,5 +1,5 @@
 import { Storage } from '../core/storage.js';
-import { GAMES_DB } from './games.js';
+
 
 class DailyGauntlet {
   constructor() {
@@ -13,7 +13,7 @@ class DailyGauntlet {
 
   getDailyGames() {
     const today = new Date();
-    const dateString = \`\${today.getUTCFullYear()}-\${String(today.getUTCMonth()+1).padStart(2,'0')}-\${String(today.getUTCDate()).padStart(2,'0')}\`;
+    const dateString = `${today.getUTCFullYear()}-${String(today.getUTCMonth()+1).padStart(2,'0')}-${String(today.getUTCDate()).padStart(2,'0')}`;
     
     const d = dateString.replace(/-/g,'');
     const seed = [...d].reduce((a,c)=>a+c.charCodeAt(0),0);
@@ -25,7 +25,7 @@ class DailyGauntlet {
     if (c3 === c1 || c3 === c2) c3 = (c3 + 1) % 19;
     if (c3 === c1) c3 = (c3 + 1) % 19;
 
-    const daily = [GAMES_DB[c1], GAMES_DB[c2], GAMES_DB[c3]];
+    const daily = [GAMES[c1], GAMES[c2], GAMES[c3]];
     return { dateString, games: daily };
   }
 
@@ -33,9 +33,9 @@ class DailyGauntlet {
     const { dateString, games } = this.getDailyGames();
     this.dateString = dateString;
     this.dailyGames = games;
-    this.dailyKey = \`cheatLabz_daily_\${dateString}\`;
+    this.dailyKey = `cheatLabz_daily_${dateString}`;
     
-    if (this.dateEl) this.dateEl.innerText = \`DATE SEED: \${dateString}\`;
+    if (this.dateEl) this.dateEl.innerText = `DATE SEED: ${dateString}`;
 
     this.completedIds = Storage.get(this.dailyKey, []);
 
@@ -65,7 +65,7 @@ class DailyGauntlet {
 
     // All good, redirect to actual game shell
     const targetGame = this.dailyGames[idx].id;
-    window.location.href = \`\${targetGame}.html?daily=\${idx}\`;
+    window.location.href = `${targetGame}.html?daily=${idx}`;
   }
 
   renderHub() {
@@ -97,30 +97,31 @@ class DailyGauntlet {
       if (isCompleted) {
         statusClass = 'completed';
         const bestScore = Storage.get(g.name, 0);
-        scoreHtml = \`<div class="game-score font-display">\${bestScore}</div>\`;
-        btnHtml = \`<button class="btn btn-outline" disabled>COMPLETED</button>\`;
+        scoreHtml = `<div class="game-score font-display">${bestScore}</div>`;
+        btnHtml = `<button class="btn btn-outline" disabled>COMPLETED</button>`;
       } else if (idx === nextIdxToPlay) {
         statusClass = 'active';
-        scoreHtml = \`<div class="game-score font-display" style="color:var(--text-secondary);">---</div>\`;
-        btnHtml = \`<a href="daily.html?game=\${idx}" class="btn btn-primary">PLAY NEXT</a>\`;
+        scoreHtml = `<div class="game-score font-display" style="color:var(--text-secondary);">---</div>`;
+        btnHtml = `<a href="daily.html?game=${idx}" class="btn btn-primary">PLAY NEXT</a>`;
       } else {
         statusClass = 'locked';
-        scoreHtml = \`<div class="game-score font-display" style="color:var(--text-muted);">---</div>\`;
-        btnHtml = \`<button class="btn btn-outline" disabled>LOCKED</button>\`;
+        scoreHtml = `<div class="game-score font-display" style="color:var(--text-muted);">---</div>`;
+        btnHtml = `<button class="btn btn-outline" disabled>LOCKED</button>`;
       }
 
-      return \`
-        <div class="gauntlet-card \${statusClass}">
-          <div class="card-num">\${idx + 1}</div>
-          <div class="game-name font-display">\${g.name}</div>
-          \${scoreHtml}
-          \${btnHtml}
+      return `
+        <div class="gauntlet-card ${statusClass}">
+          <div class="card-num">${idx + 1}</div>
+          <div class="game-name font-display">${g.name}</div>
+          ${scoreHtml}
+          ${btnHtml}
         </div>
-      \`;
+      `;
     }).join('');
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Modules are deferred, so DOM is already parsed
+if (document.getElementById('gauntlet-grid')) {
   new DailyGauntlet();
-});
+}

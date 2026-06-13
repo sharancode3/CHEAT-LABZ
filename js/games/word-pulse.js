@@ -153,7 +153,7 @@ export default class WordPulse extends GameShell {
       Sound.playCoin();
       const pts = this.currentWord.length * 10;
       this.score += pts;
-      this.showStatus(\`+\${pts}\`, '#00d4aa');
+      this.showStatus(`+${pts}`, '#00d4aa');
       
       // Replace used letters
       for (let p of this.selectedPath) {
@@ -190,7 +190,7 @@ export default class WordPulse extends GameShell {
 
   updateUI() {
     if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.timeEl) this.timeEl.innerText = \`TIME: \${Math.ceil(Math.max(0, this.timeLeft / 1000))}\`;
+    if (this.timeEl) this.timeEl.innerText = `TIME: ${Math.ceil(Math.max(0, this.timeLeft / 1000))}`;
   }
 
   draw() {

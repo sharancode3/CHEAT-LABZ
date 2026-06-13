@@ -1,4 +1,4 @@
-import { GAMES_DB } from './games.js';
+
 import { Storage } from '../core/storage.js';
 
 class ArenaMode {
@@ -30,14 +30,14 @@ class ArenaMode {
 
     // Filter out games that shouldn't be in arena
     const excluded = ['dodge-blitz', 'blink-lab', 'neon-pong'];
-    const arenaGames = GAMES_DB.filter(g => !excluded.includes(g.id));
+    const arenaGames = GAMES.filter(g => !excluded.includes(g.id));
 
-    this.gridEl.innerHTML = arenaGames.map(g => \`
-      <div class="arena-game-tile" data-id="\${g.id}" style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;">
+    this.gridEl.innerHTML = arenaGames.map(g => `
+      <div class="arena-game-tile" data-id="${g.id}" style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-        <div class="font-display" style="font-size: 10px;">\${g.name}</div>
+        <div class="font-display" style="font-size: 10px;">${g.name}</div>
       </div>
-    \`).join('');
+    `).join('');
 
     const tiles = this.gridEl.querySelectorAll('.arena-game-tile');
     tiles.forEach(tile => {
@@ -73,14 +73,14 @@ class ArenaMode {
     if (!document.getElementById('arena-toast-styles')) {
       const style = document.createElement('style');
       style.id = 'arena-toast-styles';
-      style.innerHTML = \`
+      style.innerHTML = `
         .arena-toast {
           position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
           background: var(--accent-4); color: #fff; padding: 12px 24px;
           border-radius: 4px; z-index: 100000; font-family: var(--font-display); font-size: 12px;
           opacity: 0; transition: opacity 0.2s; pointer-events: none;
         }
-      \`;
+      `;
       document.head.appendChild(style);
     }
     
@@ -134,20 +134,20 @@ class ArenaMode {
     const titleEl = document.getElementById('game-modal-title');
     const scoreEl = document.getElementById('game-modal-score');
     
-    const gameInfo = GAMES_DB.find(g => g.id === this.selectedGameId);
-    titleEl.innerText = \`ARENA ROUND \${this.currentRound + 1} - \${gameInfo.name.toUpperCase()}\`;
+    const gameInfo = GAMES.find(g => g.id === this.selectedGameId);
+    titleEl.innerText = `ARENA ROUND ${this.currentRound + 1} - ${gameInfo.name.toUpperCase()}`;
     scoreEl.innerText = 'SCORE: 0';
     
     modal.classList.remove('hidden');
 
     try {
-      const module = await import(\`../games/\${this.selectedGameId}.js\`);
+      const module = await import(`../games/${this.selectedGameId}.js`);
       const GameClass = module.default;
       
       this.currentGame = new GameClass(canvas, { difficultyMultiplier: mult });
       
       this.currentGame.onScoreChange = (score) => {
-        scoreEl.innerText = \`SCORE: \${score}\`;
+        scoreEl.innerText = `SCORE: ${score}`;
       };
       
       // Override game over
@@ -183,8 +183,8 @@ class ArenaMode {
   handleRoundComplete(score) {
     this.currentRound++;
     
-    document.getElementById('arena-round-title').innerText = \`ROUND \${this.currentRound} COMPLETE\`;
-    document.getElementById('arena-round-score').innerText = \`Round Score: \${score}\`;
+    document.getElementById('arena-round-title').innerText = `ROUND ${this.currentRound} COMPLETE`;
+    document.getElementById('arena-round-score').innerText = `Round Score: ${score}`;
     
     // Clear any previous buttons from final results
     const existingBtns = this.interstitial.querySelectorAll('button');
@@ -214,14 +214,14 @@ class ArenaMode {
       if (this.bestScoreEl) this.bestScoreEl.innerText = this.totalScore;
     }
 
-    document.getElementById('arena-round-title').innerHTML = \`ARENA RESULTS\`;
-    document.getElementById('arena-round-score').innerHTML = \`
-      <div style="font-size: 24px; margin-bottom: 8px;">Round 1: \${this.scores[0]} pts</div>
-      <div style="font-size: 24px; margin-bottom: 8px;">Round 2: \${this.scores[1]} pts</div>
-      <div style="font-size: 24px; margin-bottom: 24px;">Round 3: \${this.scores[2]} pts</div>
-      <div style="font-size: 48px; color: var(--accent-1); margin-bottom: 16px;">TOTAL: \${this.totalScore}</div>
-      \${isNewBest ? '<div class="badge badge-purple" style="margin-bottom: 32px; font-size: 16px;">NEW ARENA RECORD</div>' : ''}
-    \`;
+    document.getElementById('arena-round-title').innerHTML = `ARENA RESULTS`;
+    document.getElementById('arena-round-score').innerHTML = `
+      <div style="font-size: 24px; margin-bottom: 8px;">Round 1: ${this.scores[0]} pts</div>
+      <div style="font-size: 24px; margin-bottom: 8px;">Round 2: ${this.scores[1]} pts</div>
+      <div style="font-size: 24px; margin-bottom: 24px;">Round 3: ${this.scores[2]} pts</div>
+      <div style="font-size: 48px; color: var(--accent-1); margin-bottom: 16px;">TOTAL: ${this.totalScore}</div>
+      ${isNewBest ? '<div class="badge badge-purple" style="margin-bottom: 32px; font-size: 16px;">NEW ARENA RECORD</div>' : ''}
+    `;
     
     const playAgainBtn = document.createElement('button');
     playAgainBtn.className = 'btn btn-primary';
@@ -242,6 +242,7 @@ class ArenaMode {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Modules are deferred, so DOM is already parsed
+if (document.getElementById('arena-games-grid')) {
   new ArenaMode();
-});
+}

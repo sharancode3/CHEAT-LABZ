@@ -225,7 +225,7 @@ export default class NeonSerpent extends GameShell {
       // Flash red then dissolve
       const progress = this.deathTimer / 400; // 0 to 1
       alpha = 1 - progress;
-      this.ctx.fillStyle = \`rgba(255, 107, 107, \${alpha})\`; // var(--accent-3)
+      this.ctx.fillStyle = `rgba(255, 107, 107, ${alpha})`; // var(--accent-3)
     } else {
       this.ctx.fillStyle = '#f0f0f8'; // var(--text-primary)
     }
