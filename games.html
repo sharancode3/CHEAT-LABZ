@@ -15,24 +15,7 @@
 <body>
   <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
   
-  <nav class="navbar">
-    <div class="nav-container container">
-      <a href="index.html" class="nav-logo font-display">CHEAT LABZ</a>
-      <div class="nav-links">
-        <a href="games.html" class="active">GAMES</a>
-        <a href="arena.html">ARENA</a>
-        <a href="leaderboard.html">LEADERBOARD</a>
-      </div>
-      <button id="sound-toggle" class="btn-icon" aria-label="Toggle Sound">
-        <!-- SVG for muted speaker (since muted by default) -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-          <line x1="23" y1="9" x2="17" y2="15"></line>
-          <line x1="17" y1="9" x2="23" y2="15"></line>
-        </svg>
-      </button>
-    </div>
-  </nav>
+  <div id="navbar-mount"></div>
 
   <main class="container section-padding fade-in">
     <header class="games-header">
@@ -93,18 +76,23 @@
 
   <script type="module" src="js/ui/games.js"></script>
 
-  <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
-    <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-    <div class="mobile-nav-links font-display">
-      <a href="index.html">HOME</a>
-      <a href="games.html">GAMES</a>
-      <a href="arena.html">ARENA</a>
-      <a href="daily.html">DAILY</a>
+  
+
+  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
+  <script type="module" src="js/ui/navbar.js"></script>
+
+  <!-- Global Game Modal -->
+  <div id="game-modal" class="game-modal hidden">
+    <div class="game-modal-header">
+      <button id="close-game" class="btn-icon">← BACK</button>
+      <span id="game-modal-title" class="font-display" style="font-size: 14px;"></span>
+      <span id="game-modal-score" class="font-display text-accent-1" style="font-size: 14px;">SCORE: 0</span>
+    </div>
+    <div class="game-canvas-container" id="game-canvas-container">
+      <canvas id="game-canvas"></canvas>
     </div>
   </div>
 
-  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
+  <script type="module" src="js/ui/modal.js"></script>
 </body>
 </html>

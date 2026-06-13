@@ -1,121 +1,244 @@
 import { GAMES_DB } from './games.js';
+import { Storage } from '../core/storage.js';
 
 class ArenaMode {
   constructor() {
-    this.gridEl = document.getElementById('arena-grid');
-    this.totalEl = document.getElementById('total-score');
-    this.statusEl = document.getElementById('completion-status');
-    this.resetBtn = document.getElementById('reset-arena-btn');
-
-    if (this.resetBtn) {
-      this.resetBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('cheatLabz_arena_run');
-        window.location.href = 'arena.html';
-      });
-    }
-
+    this.gridEl = document.getElementById('arena-games-grid');
+    this.bestScoreEl = document.getElementById('arena-best-score');
+    this.startBtn = document.getElementById('start-arena-btn');
+    this.interstitial = document.getElementById('arena-interstitial');
+    
+    this.selectedGameId = null;
+    this.currentRound = 0;
+    this.scores = [];
+    this.totalScore = 0;
+    
+    // Multipliers per round
+    this.multipliers = [1.0, 1.5, 2.0];
+    
     this.init();
   }
 
-  generateRun() {
-    let dbCopy = [...GAMES_DB];
-    let runGames = [];
-    for(let i=0; i<3; i++) {
-        let idx = Math.floor(Math.random() * dbCopy.length);
-        runGames.push(dbCopy.splice(idx, 1)[0].id);
-    }
-    return {
-      games: runGames,
-      scores: [null, null, null],
-      currentRound: 0
-    };
-  }
-
   init() {
-    let runData = sessionStorage.getItem('cheatLabz_arena_run');
-    if (!runData) {
-      runData = this.generateRun();
-      sessionStorage.setItem('cheatLabz_arena_run', JSON.stringify(runData));
-    } else {
-      runData = JSON.parse(runData);
+    // Load best score
+    const best = Storage.get('cheatLabz_arena_best', 0);
+    if (this.bestScoreEl) {
+      this.bestScoreEl.innerText = best > 0 ? best : 'No record yet';
     }
-    this.runData = runData;
 
-    // Check routing
-    const urlParams = new URLSearchParams(window.location.search);
-    const roundIdx = urlParams.get('round');
+    if (!this.gridEl || !this.startBtn) return;
 
-    if (roundIdx !== null) {
-      this.handleGameRedirect(parseInt(roundIdx, 10));
-    } else {
-      this.renderHub();
-    }
+    // Filter out games that shouldn't be in arena
+    const excluded = ['dodge-blitz', 'blink-lab', 'neon-pong'];
+    const arenaGames = GAMES_DB.filter(g => !excluded.includes(g.id));
+
+    this.gridEl.innerHTML = arenaGames.map(g => \`
+      <div class="arena-game-tile" data-id="\${g.id}" style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        <div class="font-display" style="font-size: 10px;">\${g.name}</div>
+      </div>
+    \`).join('');
+
+    const tiles = this.gridEl.querySelectorAll('.arena-game-tile');
+    tiles.forEach(tile => {
+      tile.addEventListener('click', () => {
+        tiles.forEach(t => {
+          t.style.borderColor = 'var(--border)';
+          t.style.background = 'var(--bg-card)';
+        });
+        tile.style.borderColor = 'var(--accent-1)';
+        tile.style.background = '#1a1423'; // slight purple tint
+        
+        this.selectedGameId = tile.getAttribute('data-id');
+        
+        this.startBtn.disabled = false;
+        this.startBtn.style.opacity = '1';
+        this.startBtn.style.cursor = 'pointer';
+      });
+    });
+
+    this.startBtn.addEventListener('click', () => {
+      if (this.selectedGameId) {
+        this.startArena();
+      }
+    });
   }
 
-  handleGameRedirect(idx) {
-    if (idx !== this.runData.currentRound || idx > 2) {
-      window.location.href = 'arena.html';
+  startArena() {
+    this.currentRound = 0;
+    this.scores = [];
+    this.totalScore = 0;
+    
+    // Inject custom CSS for toast if it doesn't exist
+    if (!document.getElementById('arena-toast-styles')) {
+      const style = document.createElement('style');
+      style.id = 'arena-toast-styles';
+      style.innerHTML = \`
+        .arena-toast {
+          position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+          background: var(--accent-4); color: #fff; padding: 12px 24px;
+          border-radius: 4px; z-index: 100000; font-family: var(--font-display); font-size: 12px;
+          opacity: 0; transition: opacity 0.2s; pointer-events: none;
+        }
+      \`;
+      document.head.appendChild(style);
+    }
+    
+    // Setup a global pause interceptor before launching modal
+    window._arenaPauseInterceptor = (e) => {
+      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        this.showToast('ARENA: Pausing disabled');
+      }
+    };
+    
+    document.addEventListener('keydown', window._arenaPauseInterceptor, true); // Use capture phase
+
+    this.playNextRound();
+  }
+
+  showToast(msg) {
+    let toast = document.getElementById('arena-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'arena-toast';
+      toast.className = 'arena-toast';
+      document.body.appendChild(toast);
+    }
+    toast.innerText = msg;
+    toast.style.opacity = '1';
+    
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      toast.style.opacity = '0';
+    }, 1500);
+  }
+
+  async playNextRound() {
+    if (this.currentRound >= 3) {
+      this.showFinalResults();
       return;
     }
 
-    const multipliers = [1.0, 1.5, 2.0];
-    const targetGame = this.runData.games[idx];
-    const mult = multipliers[idx];
-    window.location.href = \`\${targetGame}.html?arena=\${idx}&mult=\${mult}\`;
+    const mult = this.multipliers[this.currentRound];
+    
+    // Hide interstitial if showing
+    this.interstitial.classList.add('hidden');
+    
+    // We hook into the game modal
+    // Instead of using launchGameModal directly (which handles standard Game Over), 
+    // we need to instantiate it ourselves to override the game over behavior
+    const modal = document.getElementById('game-modal');
+    const canvas = document.getElementById('game-canvas');
+    const titleEl = document.getElementById('game-modal-title');
+    const scoreEl = document.getElementById('game-modal-score');
+    
+    const gameInfo = GAMES_DB.find(g => g.id === this.selectedGameId);
+    titleEl.innerText = \`ARENA ROUND \${this.currentRound + 1} - \${gameInfo.name.toUpperCase()}\`;
+    scoreEl.innerText = 'SCORE: 0';
+    
+    modal.classList.remove('hidden');
+
+    try {
+      const module = await import(\`../games/\${this.selectedGameId}.js\`);
+      const GameClass = module.default;
+      
+      this.currentGame = new GameClass(canvas, { difficultyMultiplier: mult });
+      
+      this.currentGame.onScoreChange = (score) => {
+        scoreEl.innerText = \`SCORE: \${score}\`;
+      };
+      
+      // Override game over
+      const originalGameOver = this.currentGame.gameOver.bind(this.currentGame);
+      this.currentGame.gameOver = () => {
+        // Run standard game over logic to stop loop, but we will hijack the UI
+        originalGameOver();
+        
+        // Hide standard game over screen if it drew one
+        const score = this.currentGame.score;
+        this.scores.push(score);
+        this.totalScore += score;
+        
+        this.currentGame.destroy();
+        this.currentGame = null;
+        
+        modal.classList.add('hidden');
+        this.handleRoundComplete(score);
+      };
+      
+      if (this.currentGame.showInstructions) {
+        this.currentGame.showInstructions();
+      } else {
+        this.currentGame.start();
+      }
+      
+    } catch(err) {
+      console.error(err);
+      alert('Failed to load arena game');
+    }
   }
 
-  renderHub() {
-    if (!this.gridEl) return;
+  handleRoundComplete(score) {
+    this.currentRound++;
+    
+    document.getElementById('arena-round-title').innerText = \`ROUND \${this.currentRound} COMPLETE\`;
+    document.getElementById('arena-round-score').innerText = \`Round Score: \${score}\`;
+    
+    // Clear any previous buttons from final results
+    const existingBtns = this.interstitial.querySelectorAll('button');
+    existingBtns.forEach(b => b.remove());
 
-    let totalScore = 0;
-    for (let i = 0; i < 3; i++) {
-      if (this.runData.scores[i] !== null) {
-        totalScore += this.runData.scores[i];
-      }
+    this.interstitial.classList.remove('hidden');
+    
+    if (this.currentRound < 3) {
+      setTimeout(() => {
+        this.playNextRound();
+      }, 2000);
+    } else {
+      setTimeout(() => {
+        this.playNextRound(); // will trigger showFinalResults
+      }, 1000);
+    }
+  }
+
+  showFinalResults() {
+    document.removeEventListener('keydown', window._arenaPauseInterceptor, true);
+    
+    const best = Storage.get('cheatLabz_arena_best', 0);
+    let isNewBest = false;
+    if (this.totalScore > best) {
+      isNewBest = true;
+      Storage.set('cheatLabz_arena_best', this.totalScore);
+      if (this.bestScoreEl) this.bestScoreEl.innerText = this.totalScore;
     }
 
-    if (this.totalEl) this.totalEl.innerText = totalScore;
-
-    if (this.runData.currentRound >= 3) {
-      if (this.statusEl) this.statusEl.style.display = 'block';
-      if (this.resetBtn) this.resetBtn.style.display = 'inline-flex';
-    }
-
-    const multipliers = [1.0, 1.5, 2.0];
-
-    this.gridEl.innerHTML = this.runData.games.map((gameId, idx) => {
-      const g = GAMES_DB.find(x => x.id === gameId);
-      if (!g) return '';
-
-      let statusClass = '';
-      let btnHtml = '';
-      let scoreHtml = '';
-      let mult = multipliers[idx];
-
-      if (this.runData.scores[idx] !== null) {
-        statusClass = 'completed';
-        scoreHtml = \`<div class="game-score font-display">\${this.runData.scores[idx]}</div>\`;
-        btnHtml = \`<button class="btn btn-outline" disabled>COMPLETED</button>\`;
-      } else if (idx === this.runData.currentRound) {
-        statusClass = 'active';
-        scoreHtml = \`<div class="game-score font-display" style="color:var(--text-secondary);">---</div>\`;
-        btnHtml = \`<a href="arena.html?round=\${idx}" class="btn btn-danger-outline">START ROUND \${idx + 1}</a>\`;
-      } else {
-        statusClass = 'locked';
-        scoreHtml = \`<div class="game-score font-display" style="color:var(--text-muted);">---</div>\`;
-        btnHtml = \`<button class="btn btn-outline" disabled>LOCKED</button>\`;
-      }
-
-      return \`
-        <div class="gauntlet-card \${statusClass}">
-          <div class="card-num">\${idx + 1}</div>
-          <div class="game-name font-display">\${g.name}</div>
-          <div class="multiplier font-display">\${mult}x MULTIPLIER</div>
-          \${scoreHtml}
-          \${btnHtml}
-        </div>
-      \`;
-    }).join('');
+    document.getElementById('arena-round-title').innerHTML = \`ARENA RESULTS\`;
+    document.getElementById('arena-round-score').innerHTML = \`
+      <div style="font-size: 24px; margin-bottom: 8px;">Round 1: \${this.scores[0]} pts</div>
+      <div style="font-size: 24px; margin-bottom: 8px;">Round 2: \${this.scores[1]} pts</div>
+      <div style="font-size: 24px; margin-bottom: 24px;">Round 3: \${this.scores[2]} pts</div>
+      <div style="font-size: 48px; color: var(--accent-1); margin-bottom: 16px;">TOTAL: \${this.totalScore}</div>
+      \${isNewBest ? '<div class="badge badge-purple" style="margin-bottom: 32px; font-size: 16px;">NEW ARENA RECORD</div>' : ''}
+    \`;
+    
+    const playAgainBtn = document.createElement('button');
+    playAgainBtn.className = 'btn btn-primary';
+    playAgainBtn.innerText = 'PLAY AGAIN';
+    playAgainBtn.style.marginRight = '16px';
+    playAgainBtn.onclick = () => {
+      this.interstitial.classList.add('hidden');
+      this.startArena();
+    };
+    
+    const backBtn = document.createElement('a');
+    backBtn.className = 'btn btn-outline';
+    backBtn.innerText = 'BACK TO GAMES';
+    backBtn.href = 'games.html';
+    
+    this.interstitial.appendChild(playAgainBtn);
+    this.interstitial.appendChild(backBtn);
   }
 }
 

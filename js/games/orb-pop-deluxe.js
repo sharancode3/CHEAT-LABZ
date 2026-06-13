@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class OrbPop extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class OrbPop extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'orb-pop',
       description: 'Match 3 or more orbs of the same color to pop them.',
       width: 500,
@@ -198,10 +198,64 @@ class OrbPop extends GameShell {
         this.score += 10;
       }
       this.updateUI();
-      
-      // We could also implement floating orb drops here, but skipping for MVP scale
+      this.dropOrphans();
     } else {
       Sound.playBlip(); // just stuck sound
+    }
+  }
+
+  dropOrphans() {
+    let visited = new Set();
+    let toCheck = [];
+    
+    // Start with all top row orbs
+    if (this.grid[0]) {
+      for (let c = 0; c < this.grid[0].length; c++) {
+        if (this.grid[0][c]) {
+          toCheck.push({r: 0, c: c});
+          visited.add(\`0,\${c}\`);
+        }
+      }
+    }
+    
+    while(toCheck.length > 0) {
+      let curr = toCheck.pop();
+      let neighbors = this.getNeighbors(curr.r, curr.c);
+      for (let n of neighbors) {
+        let key = \`\${n.r},\${n.c}\`;
+        if (!visited.has(key) && this.grid[n.r] && this.grid[n.r][n.c]) {
+          visited.add(key);
+          toCheck.push(n);
+        }
+      }
+    }
+    
+    // Find orphans
+    let orphans = 0;
+    for (let r = 0; r < this.grid.length; r++) {
+      if (!this.grid[r]) continue;
+      for (let c = 0; c < this.grid[r].length; c++) {
+        if (this.grid[r][c] && !visited.has(\`\${r},\${c}\`)) {
+          // Drop it!
+          let color = this.grid[r][c].color;
+          this.grid[r][c] = null;
+          orphans++;
+          
+          let pos = this.getGridXY(r, c);
+          for(let i=0; i<5; i++) {
+            this.popParticles.push({
+              x: pos.x, y: pos.y,
+              vx: (Math.random()-0.5)*100, vy: Math.random()*100 + 100, // fall down
+              color: color, life: 1.0
+            });
+          }
+        }
+      }
+    }
+    if (orphans > 0) {
+       this.score += orphans * 20;
+       Sound.playCoin();
+       this.updateUI();
     }
   }
 
@@ -308,15 +362,30 @@ class OrbPop extends GameShell {
     this.ctx.stroke();
     this.ctx.setLineDash([]);
 
-    // Launcher line
+    // Launcher line with bounce
     if (!this.activeOrb) {
-      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      this.ctx.setLineDash([4, 8]);
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.launcher.x, this.launcher.y);
-      this.ctx.lineTo(this.launcher.x + Math.cos(this.mouseAngle) * 200, this.launcher.y + Math.sin(this.mouseAngle) * 200);
-      this.ctx.stroke();
-      this.ctx.setLineDash([]);
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      let rayX = this.launcher.x;
+      let rayY = this.launcher.y;
+      let rayVx = Math.cos(this.mouseAngle) * 15;
+      let rayVy = Math.sin(this.mouseAngle) * 15;
+      
+      for(let i=0; i<40; i++) {
+        rayX += rayVx;
+        rayY += rayVy;
+        
+        if (rayX - this.orbRadius < 0 || rayX + this.orbRadius > this.canvas.width) {
+          rayVx *= -1;
+          rayX += rayVx * 2; // bounce
+        }
+        
+        this.ctx.beginPath();
+        this.ctx.arc(rayX, rayY, 3, 0, Math.PI*2);
+        this.ctx.fill();
+        
+        // Stop if it hits the ceiling
+        if (rayY < this.orbRadius) break;
+      }
     }
 
     // Active orb
@@ -347,5 +416,4 @@ class OrbPop extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new OrbPop();
 });

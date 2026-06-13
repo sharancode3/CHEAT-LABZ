@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class ReflexRush extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class ReflexRush extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'reflex-rush',
       description: 'Click the quadrant matching the WORD, ignore the COLOR of the text.',
       width: 600,
@@ -45,17 +45,33 @@ class ReflexRush extends GameShell {
     this.maxTime = 2000; // starts at 2s
     this.timeLeft = 0;
     
+    this.gameState = 'WAITING';
+    this.delayTimer = 0;
+    this.tooEarlyMsg = false;
+    
     this.flashAlpha = 0;
     this.flashColor = '#fff';
     
-    this.nextPrompt();
+    this.startDelay();
     this.updateUI();
     
     let runs = Storage.get('reflex-rush_runs', 0);
     Storage.set('reflex-rush_runs', runs + 1);
   }
 
+  startDelay() {
+    this.gameState = 'WAITING';
+    this.tooEarlyMsg = false;
+    
+    // Generate random delay between 1000ms and 3500ms using crypto
+    const randomBuffer = new Uint32Array(1);
+    window.crypto.getRandomValues(randomBuffer);
+    const randomFraction = randomBuffer[0] / (0xFFFFFFFF + 1);
+    this.delayTimer = 1000 + randomFraction * 2500;
+  }
+
   nextPrompt() {
+    this.gameState = 'PROMPT';
     const wordIdx = Math.floor(Math.random() * 4);
     let colorIdx = Math.floor(Math.random() * 4);
     
@@ -75,6 +91,15 @@ class ReflexRush extends GameShell {
 
   handleMouseClick(e) {
     if (this.state !== 'PLAYING') return;
+    
+    if (this.gameState === 'WAITING') {
+      // Too early!
+      this.tooEarlyMsg = true;
+      this.loseLife();
+      return;
+    }
+    
+    if (this.gameState !== 'PROMPT') return;
 
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
@@ -95,10 +120,10 @@ class ReflexRush extends GameShell {
       this.score += 100;
       this.maxTime = Math.max(600, this.maxTime - 50); // gets faster
       
-      this.flashAlpha = 0.5;
+      this.flashAlpha = 1.0; // full flash
       this.flashColor = '#4dff4d'; // green flash
       
-      this.nextPrompt();
+      this.startDelay();
       this.updateUI();
     } else {
       // Wrong
@@ -110,7 +135,7 @@ class ReflexRush extends GameShell {
     Sound.playDamage();
     this.lives--;
     
-    this.flashAlpha = 0.8;
+    this.flashAlpha = 1.0; // full flash
     this.flashColor = '#ff4d4d'; // red flash
     
     this.canvas.classList.add('shake');
@@ -121,20 +146,28 @@ class ReflexRush extends GameShell {
     if (this.lives <= 0) {
       setTimeout(() => { Sound.playGameOver(); this.gameOver(); }, 300);
     } else {
-      this.nextPrompt();
+      this.startDelay();
     }
   }
 
   update(deltaTime) {
-    this.timeLeft -= deltaTime;
+    if (this.gameState === 'WAITING' && !this.tooEarlyMsg) {
+      this.delayTimer -= deltaTime;
+      if (this.delayTimer <= 0) {
+        this.nextPrompt();
+      }
+    } else if (this.gameState === 'PROMPT') {
+      this.timeLeft -= deltaTime;
+      if (this.timeLeft <= 0) {
+        this.loseLife();
+      }
+    }
     
     if (this.flashAlpha > 0) {
       this.flashAlpha -= (deltaTime / 500);
       if (this.flashAlpha < 0) this.flashAlpha = 0;
     }
 
-    if (this.timeLeft <= 0) {
-      this.loseLife();
     }
   }
 
@@ -181,19 +214,26 @@ class ReflexRush extends GameShell {
     this.ctx.shadowBlur = 0;
 
     // Text
-    this.ctx.fillStyle = this.currentColor.hex;
-    this.ctx.font = '64px "Press Start 2P"';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.shadowBlur = 10;
-    this.ctx.shadowColor = this.currentColor.hex;
-    this.ctx.fillText(this.currentWord.name, cx, cy);
-    this.ctx.shadowBlur = 0;
     
-    // Timer bar
-    const ratio = Math.max(0, this.timeLeft / this.maxTime);
-    this.ctx.fillStyle = ratio > 0.3 ? '#f0f0f8' : '#ff4d4d';
-    this.ctx.fillRect(cx - 180, cy + 50, 360 * ratio, 10);
+    if (this.gameState === 'WAITING') {
+      this.ctx.fillStyle = this.tooEarlyMsg ? '#ff4d4d' : '#f0f0f8';
+      this.ctx.font = '32px "Press Start 2P"';
+      this.ctx.fillText(this.tooEarlyMsg ? "TOO EARLY!" : "WAIT...", cx, cy);
+    } else if (this.gameState === 'PROMPT') {
+      this.ctx.fillStyle = this.currentColor.hex;
+      this.ctx.font = '64px "Press Start 2P"';
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = this.currentColor.hex;
+      this.ctx.fillText(this.currentWord.name, cx, cy);
+      this.ctx.shadowBlur = 0;
+      
+      // Timer bar
+      const ratio = Math.max(0, this.timeLeft / this.maxTime);
+      this.ctx.fillStyle = ratio > 0.3 ? '#f0f0f8' : '#ff4d4d';
+      this.ctx.fillRect(cx - 180, cy + 50, 360 * ratio, 10);
+    }
 
     // Flash overlay
     if (this.flashAlpha > 0) {
@@ -208,5 +248,4 @@ class ReflexRush extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new ReflexRush();
 });

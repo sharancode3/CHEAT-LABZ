@@ -99,6 +99,13 @@ class Leaderboard {
         </tr>
       \`;
     }).join('');
+
+    if (window.gsap) {
+      gsap.fromTo(this.tbody.querySelectorAll('tr'), 
+        { x: -20, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
+      );
+    }
   }
 
   initOverview() {

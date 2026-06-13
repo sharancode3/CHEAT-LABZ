@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class WordPulse extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class WordPulse extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'word-pulse',
       description: 'Connect adjacent letters to form words. 60 seconds.',
       width: 500,
@@ -267,5 +267,4 @@ class WordPulse extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new WordPulse();
 });

@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class MemoryGrid extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class MemoryGrid extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'memory-grid',
       description: 'Watch the sequence. Click the squares in the exact same order.',
       width: 500,
@@ -58,7 +58,8 @@ class MemoryGrid extends GameShell {
           w: cellSize,
           h: cellSize,
           scale: 1.0,
-          color: '#1e1e2a' // default
+          color: '#1e1e2a', // default
+          freq: 261.63 + ((c * this.gridSize + r) * 20) // ascending frequencies starting from Middle C
         });
       }
     }
@@ -96,6 +97,29 @@ class MemoryGrid extends GameShell {
     this.stateTimer = 500;
   }
 
+  playTone(freq, type = 'sine') {
+    if (window.Sound && window.Sound.isMuted) return;
+    if (!window.audioCtx) {
+      window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+    
+    const osc = window.audioCtx.createOscillator();
+    const gainNode = window.audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, window.audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.1, window.audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, window.audioCtx.currentTime + 0.5);
+    
+    osc.connect(gainNode);
+    gainNode.connect(window.audioCtx.destination);
+    
+    osc.start();
+    osc.stop(window.audioCtx.currentTime + 0.5);
+  }
+
   handleMouseClick(e) {
     if (this.state !== 'PLAYING' || this.gameState !== 'PLAYING') return;
 
@@ -119,7 +143,7 @@ class MemoryGrid extends GameShell {
     const expectedId = this.sequence[this.playerIndex];
     if (cell.id === expectedId) {
       // Correct
-      Sound.playBlip();
+      this.playTone(cell.freq);
       this.score += 10;
       this.playerIndex++;
       
@@ -135,6 +159,7 @@ class MemoryGrid extends GameShell {
       }
     } else {
       // Wrong
+      this.playTone(100, 'sawtooth');
       Sound.playDamage();
       this.lives--;
       this.gameState = 'FAIL';
@@ -188,16 +213,16 @@ class MemoryGrid extends GameShell {
           if (cell) {
             cell.scale = 1.1; // Pop out
             cell.color = '#6c63ff'; // Blue glow
-            Sound.playBlip();
+            this.playTone(cell.freq);
           }
           this.flashIndex++;
-          this.stateTimer = Math.max(300, 800 - this.level * 20); // speeds up slightly over levels
+          this.stateTimer = 550; // 400ms highlight + 150ms gap
         } else {
           // Done showing
           this.gameState = 'PLAYING';
         }
-      } else if (this.stateTimer < Math.max(100, 400 - this.level * 10)) {
-        // Clear color right before next flash to make distinct flashes on same block visible
+      } else if (this.stateTimer <= 150) {
+        // Clear color during the 150ms gap to make distinct flashes visible
         for (let cell of this.cells) cell.color = '#1e1e2a';
       }
     } else if (this.gameState === 'SUCCESS') {
@@ -263,5 +288,4 @@ class MemoryGrid extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new MemoryGrid();
 });

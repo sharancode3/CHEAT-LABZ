@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class LoopRally extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class LoopRally extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'loop-rally',
       description: 'Rally with the AI. Don\\'t let the ball past you. 3 lives.',
       width: 500,
@@ -287,5 +287,4 @@ class LoopRally extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new LoopRally();
 });

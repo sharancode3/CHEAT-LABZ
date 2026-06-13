@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class SlideForge extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class SlideForge extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'slide-forge',
       description: 'Slide tiles to merge matching numbers. Forge the highest block!',
       width: 500,
@@ -35,8 +35,12 @@ class SlideForge extends GameShell {
     this.tiles = [];
     this.animating = false;
     
+    this.history = null;
+    
     this.addRandomTile();
     this.addRandomTile();
+    
+    this.saveState();
     
     this.updateUI();
     
@@ -95,7 +99,14 @@ class SlideForge extends GameShell {
   onInput(key, event) {
     if (this.state !== 'PLAYING' || this.animating) return;
 
+    if (key === 'u' && this.history) {
+      this.undo();
+      return;
+    }
+
     let moved = false;
+    // deep copy state before move
+    const prevState = this.serializeState();
     
     if (key === 'arrowup' || key === 'w') moved = this.slide(0, -1);
     else if (key === 'arrowdown' || key === 's') moved = this.slide(0, 1);
@@ -103,6 +114,7 @@ class SlideForge extends GameShell {
     else if (key === 'arrowright' || key === 'd') moved = this.slide(1, 0);
     
     if (moved) {
+      this.history = prevState;
       Sound.playBlip();
       this.animating = true;
       setTimeout(() => {
@@ -111,9 +123,46 @@ class SlideForge extends GameShell {
         if (this.checkGameOver()) {
           Sound.playGameOver();
           this.gameOver();
+        } else {
+          this.saveState(); // Update current state for future undo (though history holds previous)
         }
       }, 150); // animation duration
     }
+  }
+
+  serializeState() {
+    return {
+      score: this.score,
+      tiles: this.tiles.map(t => ({...t}))
+    };
+  }
+
+  saveState() {
+    this.currentState = this.serializeState();
+  }
+
+  undo() {
+    if (!this.history) return;
+    
+    Sound.playBlip();
+    this.score = this.history.score;
+    this.tiles = this.history.tiles.map(t => ({...t}));
+    
+    // rebuild grid
+    for (let c = 0; c < this.gridSize; c++) {
+      for (let r = 0; r < this.gridSize; r++) {
+        this.grid[c][r] = null;
+      }
+    }
+    
+    for (let t of this.tiles) {
+      t.c = t.tc;
+      t.r = t.tr;
+      this.grid[t.tc][t.tr] = t;
+    }
+    
+    this.history = null; // can only undo 1 step
+    this.updateUI();
   }
 
   slide(dc, dr) {
@@ -257,6 +306,14 @@ class SlideForge extends GameShell {
       this.ctx.fillStyle = '#0a0a0f';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
+    
+    // Draw Undo text
+    if (this.history) {
+      this.ctx.fillStyle = '#6c63ff';
+      this.ctx.font = '14px "Press Start 2P"';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText("Press 'U' to Undo", this.canvas.width / 2, 25);
+    }
 
     // Draw tiles
     for (let t of this.tiles) {
@@ -296,5 +353,4 @@ class SlideForge extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new SlideForge();
 });

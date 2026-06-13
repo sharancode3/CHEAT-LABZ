@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class BeatDrop extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class BeatDrop extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'beat-drop',
       description: 'Jump over the expanding rings. Move with mouse.',
       width: 600,
@@ -220,5 +220,4 @@ class BeatDrop extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new BeatDrop();
 });

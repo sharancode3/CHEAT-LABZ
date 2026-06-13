@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class GravityFlip extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class GravityFlip extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'gravity-flip',
       description: 'Avoid spikes. Flip gravity to survive.',
       width: 700,
@@ -43,6 +43,8 @@ class GravityFlip extends GameShell {
     this.particles = [];
     
     this.spawnTimer = 0;
+    this.seed = 9999;
+    this.targetAngle = 0;
     
     // Initial floor/ceiling
     this.groundH = 40;
@@ -62,15 +64,23 @@ class GravityFlip extends GameShell {
   flipGravity() {
     this.player.dir *= -1;
     this.player.isGrounded = false;
+    this.targetAngle = this.player.dir === 1 ? 0 : Math.PI;
     Sound.playBlip();
+  }
+
+  seedRandom() {
+    let t = this.seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   }
 
   spawnSpike() {
     // 0 = bottom, 1 = top
-    const side = Math.random() > 0.5 ? 1 : 0;
-    const isCluster = Math.random() > 0.7; // spawn 2-3 together
+    const side = this.seedRandom() > 0.5 ? 1 : 0;
+    const isCluster = this.seedRandom() > 0.7; // spawn 2-3 together
     
-    const num = isCluster ? Math.floor(Math.random() * 2) + 2 : 1;
+    const num = isCluster ? Math.floor(this.seedRandom() * 2) + 2 : 1;
     
     for (let i = 0; i < num; i++) {
       this.spikes.push({
@@ -107,14 +117,16 @@ class GravityFlip extends GameShell {
     // Physics
     if (!this.player.isGrounded) {
       this.player.vy += this.player.gravity * this.player.dir * dt;
-      
-      // Rotation while falling
-      this.player.angle += this.player.dir * 5 * dt;
     } else {
       this.player.vy = 0;
-      // Snap rotation
-      this.player.angle = Math.round(this.player.angle / (Math.PI/2)) * (Math.PI/2);
     }
+    
+    // Smooth flip rotate
+    let angleDiff = this.targetAngle - this.player.angle;
+    // Normalize angle difference to handle wrap around cleanly
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    this.player.angle += angleDiff * 15 * dt;
     
     // Terminal velocity
     if (this.player.vy > 1000) this.player.vy = 1000;
@@ -148,7 +160,7 @@ class GravityFlip extends GameShell {
     // Spawn rate depends on speed
     if (this.spawnTimer <= 0) {
       this.spawnSpike();
-      this.spawnTimer = 1000 + Math.random() * 1500 - (this.speed * 0.5); // ranges ~800 to 2000
+      this.spawnTimer = 1000 + this.seedRandom() * 1500 - (this.speed * 0.5); // ranges ~800 to 2000
       if (this.spawnTimer < 500) this.spawnTimer = 500;
     }
     
@@ -273,5 +285,4 @@ class GravityFlip extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new GravityFlip();
 });

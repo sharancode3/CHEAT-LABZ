@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class AstroStrider extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class AstroStrider extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'astro-strider',
       description: 'Destroy asteroids and enemy ships. Collect powerups. 3 lives.',
       width: 700,
@@ -393,5 +393,4 @@ class AstroStrider extends GameShell {
 window.GameState = GameState;
 
 document.addEventListener('DOMContentLoaded', () => {
-  new AstroStrider();
 });

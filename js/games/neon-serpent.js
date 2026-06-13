@@ -3,9 +3,9 @@ import { Sound } from '../core/sound.js';
 import { GameState } from '../core/events.js';
 import { Storage } from '../core/storage.js';
 
-class NeonSerpent extends GameShell {
-  constructor() {
-    super('game-canvas', {
+export default class NeonSerpent extends GameShell {
+  constructor(canvas, config = {}) {
+    super(canvas || 'game-canvas', { ...config, 
       name: 'neon-serpent',
       description: 'Eat the orbs. Grow longer. Don\\'t hit yourself or the walls.',
       width: 600,
@@ -256,5 +256,4 @@ window.GameState = GameState;
 
 // Start game instance on load
 document.addEventListener('DOMContentLoaded', () => {
-  new NeonSerpent();
 });
