@@ -73,7 +73,7 @@ export default class AstroStrider extends GameShell {
   }
 
   showWaveText() {
-    this.waveEl.innerText = \`WAVE \${this.wave}\`;
+    this.waveEl.innerText = `WAVE ${this.wave}`;
     this.waveEl.classList.add('active');
     setTimeout(() => this.waveEl.classList.remove('active'), 2000);
   }
@@ -287,7 +287,7 @@ export default class AstroStrider extends GameShell {
 
   updateUI() {
     if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.hpEl) this.hpEl.innerText = \`HP: \${this.hp}\`;
+    if (this.hpEl) this.hpEl.innerText = `HP: ${this.hp}`;
   }
 
   draw() {

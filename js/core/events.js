@@ -95,7 +95,7 @@ class MobileControls {
     this.container = document.createElement('div');
     this.container.id = 'mobile-controls';
     
-    this.container.innerHTML = \`
+    this.container.innerHTML = `
       <div class="dpad">
         <button class="m-btn m-up" data-key="arrowup">▲</button>
         <button class="m-btn m-left" data-key="arrowleft">◀</button>
@@ -106,7 +106,7 @@ class MobileControls {
         <button class="m-btn m-b" data-key="escape">ESC</button>
         <button class="m-btn m-a" data-key=" ">SPACE</button>
       </div>
-    \`;
+    `;
 
     document.body.appendChild(this.container);
 

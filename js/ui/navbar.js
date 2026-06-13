@@ -11,19 +11,19 @@ export function initNavbar() {
     if (saved !== null) soundEnabled = saved === 'true';
   } catch (e) {}
 
-  mount.innerHTML = \`
+  mount.innerHTML = `
     <nav class="navbar">
       <div class="nav-container container">
         <a href="index.html" class="nav-logo font-display">CHEAT LABZ</a>
         <div class="nav-links">
-          <a href="games.html" class="\${currentPath === 'games.html' ? 'active' : ''}">GAMES</a>
-          <a href="arena.html" class="\${currentPath === 'arena.html' ? 'active' : ''}">ARENA</a>
-          <a href="leaderboard.html" class="\${currentPath === 'leaderboard.html' ? 'active' : ''}">LEADERBOARD</a>
+          <a href="games.html" class="${currentPath === 'games.html' ? 'active' : ''}">GAMES</a>
+          <a href="arena.html" class="${currentPath === 'arena.html' ? 'active' : ''}">ARENA</a>
+          <a href="leaderboard.html" class="${currentPath === 'leaderboard.html' ? 'active' : ''}">LEADERBOARD</a>
         </div>
         
         <div style="display: flex; gap: 16px; align-items: center;">
           <button id="sound-toggle" class="btn-icon" aria-label="Toggle Sound">
-            \${soundEnabled ? 
+            ${soundEnabled ? 
               '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 10 0 1 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' : 
               '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>'
             }
@@ -47,7 +47,7 @@ export function initNavbar() {
         <a href="leaderboard.html">LEADERBOARD</a>
       </div>
     </div>
-  \`;
+  `;
 
   // Apply sound to global object if it exists
   if (window.Sound) {

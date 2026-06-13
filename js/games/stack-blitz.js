@@ -202,7 +202,7 @@ export default class StackBlitz extends GameShell {
     // Draw blocks
     for (let i = 0; i < this.blocks.length; i++) {
       let b = this.blocks[i];
-      this.ctx.fillStyle = \`hsl(\${b.hue}, 80%, 60%)\`;
+      this.ctx.fillStyle = `hsl(${b.hue}, 80%, 60%)`;
       this.ctx.fillRect(b.x, b.y, b.w, b.h);
       
       // highlight
@@ -213,7 +213,7 @@ export default class StackBlitz extends GameShell {
     // Draw active block
     if (this.activeBlock) {
       let b = this.activeBlock;
-      this.ctx.fillStyle = \`hsl(\${b.hue}, 80%, 60%)\`;
+      this.ctx.fillStyle = `hsl(${b.hue}, 80%, 60%)`;
       this.ctx.fillRect(b.x, b.y, b.w, b.h);
       this.ctx.fillStyle = 'rgba(255,255,255,0.2)';
       this.ctx.fillRect(b.x, b.y, b.w, 4);
@@ -221,7 +221,7 @@ export default class StackBlitz extends GameShell {
     
     // Draw debris
     for (let d of this.debris) {
-      this.ctx.fillStyle = \`hsl(\${d.hue}, 80%, 40%)\`;
+      this.ctx.fillStyle = `hsl(${d.hue}, 80%, 40%)`;
       this.ctx.globalAlpha = 0.5;
       this.ctx.fillRect(d.x, d.y, d.w, d.h);
     }

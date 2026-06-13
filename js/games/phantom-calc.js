@@ -92,13 +92,13 @@ export default class PhantomCalc extends GameShell {
     // Hide one of the components randomly
     const hideMode = Math.floor(Math.random() * 3); // 0=a, 1=b, 2=ans
     if (hideMode === 0) {
-      this.equation = \`? \${opStr} \${b} = \${ans}\`;
+      this.equation = `? ${opStr} ${b} = ${ans}`;
       this.answer = a;
     } else if (hideMode === 1) {
-      this.equation = \`\${a} \${opStr} ? = \${ans}\`;
+      this.equation = `${a} ${opStr} ? = ${ans}`;
       this.answer = b;
     } else {
-      this.equation = \`\${a} \${opStr} \${b} = ?\`;
+      this.equation = `${a} ${opStr} ${b} = ?`;
       this.answer = ans;
     }
 
@@ -289,7 +289,7 @@ export default class PhantomCalc extends GameShell {
 
       // Text
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = \`\${b.r * 0.8}px "DM Sans"\`;
+      this.ctx.font = `${b.r * 0.8}px "DM Sans"`;
       this.ctx.fontWeight = '600';
       this.ctx.fillText(b.val, b.x, b.y + b.r * 0.1);
     }

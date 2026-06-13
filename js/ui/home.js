@@ -1,6 +1,6 @@
 import { Storage } from '../core/storage.js';
 import { initParticles } from './particleCanvas.js';
-import { GAMES_DB } from './games.js';
+
 
 
 // --- Daily Challenges ---
@@ -39,7 +39,7 @@ function initDailyChallenges() {
     if (c3 === c1 || c3 === c2) c3 = (c3 + 1) % 19;
     if (c3 === c1) c3 = (c3 + 1) % 19;
 
-    const daily = [GAMES_DB[c1], GAMES_DB[c2], GAMES_DB[c3]];
+    const daily = [GAMES[c1], GAMES[c2], GAMES[c3]];
     return { dateString, games: daily };
   }
 
@@ -93,7 +93,7 @@ function initPlayerStats() {
   let lastPlayedGame = null;
   let bestStreak = Storage.get('best_streak', 0); // Assuming streak is tracked elsewhere or defaults to 0
 
-  GAMES_DB.forEach(g => {
+  GAMES.forEach(g => {
     const runs = parseInt(Storage.get(g.id + '_runs', 0), 10);
     const lastPlayed = parseInt(Storage.get(g.id + '_lastplayed', 0), 10);
     
@@ -144,10 +144,10 @@ function initHotGames() {
 
   const renderHot = (filterTag) => {
     let filtered = filterTag 
-      ? GAMES_DB.filter(g => g.tags && g.tags.includes(filterTag))
-      : GAMES_DB;
+      ? GAMES.filter(g => g.tags && g.tags.includes(filterTag))
+      : GAMES;
     
-    if (filtered.length === 0) filtered = GAMES_DB.slice(0, 6);
+    if (filtered.length === 0) filtered = GAMES.slice(0, 6);
     else filtered = filtered.slice(0, 6);
 
     container.innerHTML = filtered.map(g => `
@@ -191,8 +191,8 @@ function initHotGames() {
 }
 
 // Initialize all
-document.addEventListener('DOMContentLoaded', () => {
-  initParticles();
+// Modules are deferred, DOM is ready
+  initParticles('particles-bg');
   initDailyChallenges();
   initPlayerStats();
   initHotGames();
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const randomBtn = document.getElementById('random-game-btn');
   if (randomBtn) {
     randomBtn.addEventListener('click', () => {
-      const g = GAMES_DB[Math.floor(Math.random() * GAMES_DB.length)];
+      const g = GAMES[Math.floor(Math.random() * GAMES.length)];
       if (window.launchGameModal) window.launchGameModal(g.id);
     });
   }
@@ -218,4 +218,3 @@ document.addEventListener('DOMContentLoaded', () => {
       { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: 'back.out(1.2)', delay: 0.5 }
     );
   }
-});

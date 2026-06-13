@@ -189,7 +189,7 @@ export default class TileRunner extends GameShell {
 
       // Lane flash
       if (this.laneFlashes[i] > 0) {
-        this.ctx.fillStyle = \`rgba(108, 99, 255, \${this.laneFlashes[i] * 0.3})\`;
+        this.ctx.fillStyle = `rgba(108, 99, 255, ${this.laneFlashes[i] * 0.3})`;
         this.ctx.fillRect(x, 0, this.laneWidth, this.canvas.height);
       }
       
@@ -216,7 +216,7 @@ export default class TileRunner extends GameShell {
       
       if (t.hit) {
         // Flash white
-        this.ctx.fillStyle = \`rgba(255, 255, 255, \${t.flashTimer / 200})\`;
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${t.flashTimer / 200})`;
         this.ctx.fillRect(x + 2, t.y, this.laneWidth - 4, this.tileHeight);
       } else {
         // Normal black tile or Gold tile

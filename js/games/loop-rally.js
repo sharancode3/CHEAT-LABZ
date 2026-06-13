@@ -272,7 +272,7 @@ export default class LoopRally extends GameShell {
       const alpha = (i + 1) / this.ballTrail.length * 0.5;
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, this.ballRadius, 0, Math.PI * 2);
-      this.ctx.fillStyle = \`rgba(108, 99, 255, \${alpha})\`; // Accent 1
+      this.ctx.fillStyle = `rgba(108, 99, 255, ${alpha})`; // Accent 1
       this.ctx.fill();
     }
 

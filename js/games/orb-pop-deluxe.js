@@ -165,7 +165,7 @@ export default class OrbPop extends GameShell {
     let visited = new Set();
     let toCheck = [{r, c}];
     
-    visited.add(\`\${r},\${c}\`);
+    visited.add(`${r},${c}`);
     
     while(toCheck.length > 0) {
       let curr = toCheck.pop();
@@ -173,7 +173,7 @@ export default class OrbPop extends GameShell {
       
       let neighbors = this.getNeighbors(curr.r, curr.c);
       for (let n of neighbors) {
-        let key = \`\${n.r},\${n.c}\`;
+        let key = `${n.r},${n.c}`;
         if (!visited.has(key) && this.grid[n.r] && this.grid[n.r][n.c] && this.grid[n.r][n.c].color === color) {
           visited.add(key);
           toCheck.push(n);
@@ -213,7 +213,7 @@ export default class OrbPop extends GameShell {
       for (let c = 0; c < this.grid[0].length; c++) {
         if (this.grid[0][c]) {
           toCheck.push({r: 0, c: c});
-          visited.add(\`0,\${c}\`);
+          visited.add(`0,${c}`);
         }
       }
     }
@@ -222,7 +222,7 @@ export default class OrbPop extends GameShell {
       let curr = toCheck.pop();
       let neighbors = this.getNeighbors(curr.r, curr.c);
       for (let n of neighbors) {
-        let key = \`\${n.r},\${n.c}\`;
+        let key = `${n.r},${n.c}`;
         if (!visited.has(key) && this.grid[n.r] && this.grid[n.r][n.c]) {
           visited.add(key);
           toCheck.push(n);
@@ -235,7 +235,7 @@ export default class OrbPop extends GameShell {
     for (let r = 0; r < this.grid.length; r++) {
       if (!this.grid[r]) continue;
       for (let c = 0; c < this.grid[r].length; c++) {
-        if (this.grid[r][c] && !visited.has(\`\${r},\${c}\`)) {
+        if (this.grid[r][c] && !visited.has(`${r},${c}`)) {
           // Drop it!
           let color = this.grid[r][c].color;
           this.grid[r][c] = null;

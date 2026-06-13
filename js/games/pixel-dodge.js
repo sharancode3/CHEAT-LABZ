@@ -193,7 +193,7 @@ export default class PixelDodge extends GameShell {
       // Trail
       for (let i = 0; i < d.trail.length; i++) {
         const pt = d.trail[i];
-        this.ctx.fillStyle = \`rgba(255, 107, 107, \${i / d.trail.length * 0.5})\`;
+        this.ctx.fillStyle = `rgba(255, 107, 107, ${i / d.trail.length * 0.5})`;
         this.ctx.beginPath();
         this.ctx.arc(pt.x, pt.y, d.r, 0, Math.PI*2);
         this.ctx.fill();
