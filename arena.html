@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHEAT LABZ - Arena Mode</title>
+  <meta name="description" content="Select one game and fight through three back-to-back arena rounds." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/global.css" />
+  <link rel="stylesheet" href="./css/game-shell.css" />
+</head>
+<body class="game-shell-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="page-shell game-shell-topbar">
+    <div>
+      <p class="eyebrow">CHEAT LABZ</p>
+      <h1 class="page-title">ARENA MODE</h1>
+    </div>
+    <nav class="tab-row" aria-label="Primary">
+      <a class="tab" href="./games.html">Games</a>
+      <a class="tab" href="./leaderboard.html">Leaderboard</a>
+      <a class="tab is-active" href="./arena.html">Arena</a>
+      <a class="tab" href="./index.html">Home</a>
+    </nav>
+  </header>
+
+  <main id="main" class="page-shell game-shell-stage">
+    <section class="game-shell-frame glass game-shell-card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Select a game</p>
+          <h2 class="section-title">Three rounds, rising difficulty, no pauses once the run starts.</h2>
+        </div>
+        <span class="badge badge--warning">Round tracker ready</span>
+      </div>
+
+      <div class="card-grid card-grid--3">
+        <button class="card game-card" type="button">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Neon Serpent</h3>
+          <p class="game-desc">Arcade · Medium</p>
+        </button>
+        <button class="card game-card" type="button">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Turbo Drift</h3>
+          <p class="game-desc">Racing · Hard</p>
+        </button>
+        <button class="card game-card" type="button">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Beat Drop</h3>
+          <p class="game-desc">Skill · Medium</p>
+        </button>
+        <button class="card game-card" type="button">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Stack Blitz</h3>
+          <p class="game-desc">Skill · Medium</p>
+        </button>
+        <button class="card game-card" type="button">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Memory Grid</h3>
+          <p class="game-desc">Puzzle · Medium</p>
+        </button>
+        <button class="card game-card" type="button">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Orb Pop Deluxe</h3>
+          <p class="game-desc">Puzzle · Easy</p>
+        </button>
+      </div>
+    </section>
+
+    <aside class="game-shell-sidebar">
+      <section class="glass game-shell-card">
+        <p class="eyebrow">Rules</p>
+        <h2 class="section-title">3 rounds. Score carries over. Difficulty ramps. Beat your arena best.</h2>
+        <p class="body-copy">Pick one game, then start the arena. The right-hand panel will hold the selected game details and the round tracker once the live logic lands.</p>
+      </section>
+
+      <section class="glass game-shell-card">
+        <p class="eyebrow">Current best</p>
+        <div class="game-shell-statlist">
+          <div class="game-shell-stat">
+            <span class="muted">Arena best</span>
+            <strong>—</strong>
+          </div>
+          <div class="game-shell-stat">
+            <span class="muted">Selected game</span>
+            <strong>None</strong>
+          </div>
+        </div>
+        <div class="button-row" style="margin-top:18px;">
+          <button class="button button--primary" type="button" disabled>Start Arena</button>
+          <button class="button button--secondary" type="button">Reset Choice</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+</body>
+</html>

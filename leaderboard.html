@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHEAT LABZ - Leaderboard</title>
+  <meta name="description" content="View personal scores and the full game overview for CHEAT LABZ." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/global.css" />
+  <link rel="stylesheet" href="./css/leaderboard.css" />
+</head>
+<body class="leaderboard-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="page-shell section--tight leaderboard-hero">
+    <div class="toolbar glass" style="padding:16px 20px;">
+      <div>
+        <p class="eyebrow">CHEAT LABZ</p>
+        <h1 class="page-title">LEADERBOARD</h1>
+      </div>
+      <nav class="tab-row" aria-label="Primary">
+        <a class="tab" href="./games.html">Games</a>
+        <a class="tab is-active" href="./leaderboard.html">Leaderboard</a>
+        <a class="tab" href="./arena.html">Arena</a>
+        <a class="tab" href="./index.html">Home</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="page-shell leaderboard-layout">
+    <section class="section leaderboard-panel glass">
+      <div class="leaderboard-toolbar">
+        <div>
+          <p class="eyebrow">Scores</p>
+          <h2 class="section-title">My scores are empty for now, but the table and tab structure are ready.</h2>
+        </div>
+        <div class="select-shell" style="min-width:240px;">
+          <select class="select" aria-label="Select game">
+            <option>All Games</option>
+            <option>Neon Serpent</option>
+            <option>Loop Rally</option>
+            <option>Turbo Drift</option>
+            <option>Key Frenzy</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard views">
+        <button class="tab is-active" type="button" aria-selected="true">My Scores</button>
+        <button class="tab" type="button" aria-selected="false">All Games Overview</button>
+      </div>
+
+      <div class="card leaderboard-empty">
+        <h3 class="game-title">You have not played yet.</h3>
+        <p class="body-copy">Pick a game from the library and your personal table will fill in automatically.</p>
+        <div class="leaderboard-actions">
+          <a class="button button--primary" href="./games.html">Browse Games</a>
+          <button class="button button--danger" type="button">Reset All My Scores</button>
+        </div>
+      </div>
+
+      <div class="card leaderboard-table-wrap">
+        <table class="table leaderboard-table" aria-label="My score table">
+          <thead>
+            <tr>
+              <th>Game</th>
+              <th>Best Score</th>
+              <th>Runs</th>
+              <th>Last Played</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Neon Serpent</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Loop Rally</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Turbo Drift</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section leaderboard-panel glass">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Overview</p>
+          <h2 class="section-title">Compact game cards will appear here once the live registry is wired.</h2>
+        </div>
+        <span class="badge">Your record only</span>
+      </div>
+
+      <div class="card-grid card-grid--3">
+        <article class="card game-card">
+          <h3 class="game-title">Neon Serpent</h3>
+          <p class="game-desc">YOUR RECORD</p>
+          <div class="game-footer">
+            <span class="badge">Arcade</span>
+            <span class="badge badge--accent">Best: —</span>
+          </div>
+        </article>
+        <article class="card game-card">
+          <h3 class="game-title">Key Frenzy</h3>
+          <p class="game-desc">YOUR RECORD</p>
+          <div class="game-footer">
+            <span class="badge">Skill</span>
+            <span class="badge badge--accent">Best: —</span>
+          </div>
+        </article>
+        <article class="card game-card">
+          <h3 class="game-title">Orb Pop Deluxe</h3>
+          <p class="game-desc">YOUR RECORD</p>
+          <div class="game-footer">
+            <span class="badge">Puzzle</span>
+            <span class="badge badge--accent">Best: —</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
