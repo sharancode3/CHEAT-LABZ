@@ -1,65 +1,149 @@
-.leaderboard-page {
-  padding: 32px 0 88px;
+/* leaderboard.css */
+
+.leaderboard-header {
+  margin-bottom: 40px;
 }
 
-.leaderboard-hero {
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.title-row h1 {
+  font-size: 32px;
+}
+
+.tabs-container {
+  margin-bottom: 32px;
+}
+
+/* Table Styles */
+.table-wrapper {
+  overflow-x: auto;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   margin-bottom: 24px;
 }
 
-.leaderboard-tabs {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
 }
 
-.leaderboard-layout {
+.scores-table th, .scores-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.scores-table th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.scores-table td {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.scores-table tbody tr {
+  transition: background-color var(--transition);
+}
+
+.scores-table tbody tr:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.scores-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Game Name Link in Table */
+.game-link {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.game-link:hover {
+  color: var(--accent-1);
+}
+
+/* Actions Row */
+.actions-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* Overview Controls */
+.overview-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.overview-grid {
   display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
 }
 
-.leaderboard-panel {
+@media (max-width: 1024px) {
+  .overview-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .overview-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .overview-grid { grid-template-columns: 1fr; }
+}
+
+/* Overview Card (variation of game-card) */
+.overview-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   padding: 24px;
-}
-
-.leaderboard-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.leaderboard-table-wrap {
-  overflow-x: auto;
-}
-
-.leaderboard-table {
-  min-width: 760px;
-}
-
-.leaderboard-empty {
-  padding: 40px 24px;
   text-align: center;
 }
 
-.leaderboard-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 20px;
+.overview-card .game-title {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-size: 12px;
 }
 
-@media (max-width: 720px) {
-  .leaderboard-panel {
-    padding: 20px;
-  }
+.overview-card .record-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
 
-  .leaderboard-toolbar,
-  .leaderboard-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
+.overview-card .record-score {
+  font-family: var(--font-display);
+  color: var(--accent-4); /* Gold color for record */
+  font-size: 16px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 80px 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }

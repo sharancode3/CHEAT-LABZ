@@ -5,8 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hyper Plays • Sign In</title>
   <link rel="stylesheet" href="login.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 </head>
 <body>
+  <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
   <div class="aurora" aria-hidden="true">
     <span class="orb orb-one"></span>
     <span class="orb orb-two"></span>
@@ -93,5 +97,19 @@
     </section>
   </main>
   <script src="login.js"></script>
+
+  <div id="mobile-menu" class="mobile-menu-overlay" style="display:none;">
+    <button class="close-menu-btn" onclick="document.getElementById('mobile-menu').style.display='none'">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <div class="mobile-nav-links font-display">
+      <a href="index.html">HOME</a>
+      <a href="games.html">GAMES</a>
+      <a href="arena.html">ARENA</a>
+      <a href="daily.html">DAILY</a>
+    </div>
+  </div>
+
+  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
 </body>
 </html>

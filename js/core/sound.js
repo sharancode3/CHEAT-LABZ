@@ -1,125 +1,109 @@
-const DEFAULT_VOLUME = 0.18;
+/**
+ * Web Audio API Sound Engine
+ * Generates simple tones/beeps for game events without downloading external files.
+ */
 
-let audioContext = null;
-let masterGain = null;
-let muted = true;
-
-function getContext() {
-  if (typeof window === 'undefined') {
-    return null;
+class SoundEngine {
+  constructor() {
+    this.audioCtx = null;
+    this.muted = true; // Muted by default as per spec
   }
 
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) {
-    return null;
+  /**
+   * Initializes the AudioContext. Must be called after a user gesture.
+   */
+  init() {
+    if (!this.audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      this.audioCtx = new AudioContext();
+    }
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
   }
 
-  if (!audioContext) {
-    audioContext = new AudioContext();
-    masterGain = audioContext.createGain();
-    masterGain.gain.value = muted ? 0 : DEFAULT_VOLUME;
-    masterGain.connect(audioContext.destination);
+  toggleMute() {
+    this.muted = !this.muted;
+    return this.muted;
   }
 
-  return audioContext;
-}
+  /**
+   * Plays a simple procedural tone
+   * @param {number} freq - Frequency in Hz
+   * @param {string} type - Oscillator type ('sine', 'square', 'sawtooth', 'triangle')
+   * @param {number} duration - Duration in seconds
+   * @param {number} vol - Volume level 0 to 1
+   */
+  playTone(freq, type = 'sine', duration = 0.1, vol = 0.1) {
+    if (this.muted) return;
+    this.init(); // ensure context exists
 
-function ensureRunning() {
-  const context = getContext();
-  if (!context) {
-    return null;
+    const osc = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+    gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+
+    osc.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + duration);
   }
 
-  if (context.state === 'suspended') {
-    context.resume();
+  // Pre-defined sound effects
+
+  playBlip() {
+    this.playTone(600, 'square', 0.05, 0.05);
   }
 
-  return context;
-}
-
-function playTone({ frequency = 440, type = 'sine', duration = 0.12, volume = DEFAULT_VOLUME, bendTo = null } = {}) {
-  const context = ensureRunning();
-  if (!context || !masterGain) {
-    return null;
+  playCoin() {
+    if (this.muted) return;
+    this.init();
+    const osc = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(988, this.audioCtx.currentTime); // B5
+    osc.frequency.setValueAtTime(1319, this.audioCtx.currentTime + 0.08); // E6
+    
+    gainNode.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.3);
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+    
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 0.3);
   }
 
-  const oscillator = context.createOscillator();
-  const gainNode = context.createGain();
-  oscillator.type = type;
-  oscillator.frequency.value = frequency;
-  gainNode.gain.value = volume;
-
-  oscillator.connect(gainNode);
-  gainNode.connect(masterGain);
-  oscillator.start();
-
-  if (bendTo != null) {
-    oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, bendTo), context.currentTime + duration);
+  playDamage() {
+    this.playTone(150, 'sawtooth', 0.2, 0.1);
   }
 
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
-  oscillator.stop(context.currentTime + duration + 0.01);
-  return oscillator;
-}
-
-function playBeepUp() {
-  return playTone({ frequency: 440, bendTo: 660, type: 'triangle', duration: 0.12, volume: 0.16 });
-}
-
-function playBeepDown() {
-  return playTone({ frequency: 520, bendTo: 260, type: 'sawtooth', duration: 0.14, volume: 0.14 });
-}
-
-function playSuccess() {
-  const context = ensureRunning();
-  if (!context || !masterGain) {
-    return null;
-  }
-
-  const frequencies = [523.25, 659.25, 783.99];
-  frequencies.forEach((frequency, index) => {
-    window.setTimeout(() => playTone({ frequency, type: 'triangle', duration: 0.1, volume: 0.12 }), index * 50);
-  });
-  return true;
-}
-
-function playError() {
-  return playTone({ frequency: 160, bendTo: 90, type: 'sawtooth', duration: 0.18, volume: 0.2 });
-}
-
-function setMuted(nextMuted) {
-  muted = Boolean(nextMuted);
-  const context = getContext();
-  if (context && masterGain) {
-    masterGain.gain.value = muted ? 0 : DEFAULT_VOLUME;
+  playGameOver() {
+    if (this.muted) return;
+    this.init();
+    const osc = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(300, this.audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(100, this.audioCtx.currentTime + 0.5);
+    
+    gainNode.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.5);
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+    
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 0.5);
   }
 }
 
-function isMuted() {
-  return muted;
-}
-
-export const Sound = {
-  getContext,
-  playTone,
-  playBeepUp,
-  playBeepDown,
-  playSuccess,
-  playError,
-  setMuted,
-  isMuted,
-};
-
-export {
-  DEFAULT_VOLUME,
-  getContext,
-  playTone,
-  playBeepUp,
-  playBeepDown,
-  playSuccess,
-  playError,
-  setMuted,
-  isMuted,
-};
-
-export default Sound;
+export const Sound = new SoundEngine();
+window.Sound = Sound;
