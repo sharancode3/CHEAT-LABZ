@@ -119,13 +119,14 @@ class GameLibrary {
       const badgeClass = `badge-difficulty-${g.difficulty.toLowerCase()}`;
       const tagsHtml = g.tags.map(t => `<span class="badge badge-tag">${t}</span>`).join('');
       const gameColor = g.color || '#00f0ff';
-      const gameIcon = g.icon || '🎮';
+      const svgIcon = (window.GAME_ICONS && window.GAME_ICONS[g.id]) || '';
 
       return `
         <div class="game-card ${animate ? 'fade-in' : ''}" data-id="${g.id}" style="--card-accent: ${gameColor};">
           <div class="game-card-glow"></div>
-          <div class="game-icon-wrap">
-            <span class="game-emoji">${gameIcon}</span>
+          <div class="game-card-shine"></div>
+          <div class="game-icon-wrap" style="color: ${gameColor};">
+            ${svgIcon}
           </div>
           <div class="game-title-row">
             <span class="game-title">${g.name}</span>
@@ -137,9 +138,9 @@ class GameLibrary {
           </div>
           <p class="game-desc">${g.desc || g.description || ''}</p>
           <div class="game-stats">
-            <span class="stat">🏆 ${best}</span>
+            <span class="stat">BEST: ${best}</span>
             <span class="stat-dot">·</span>
-            <span class="stat">▶ ${runs}</span>
+            <span class="stat">RUNS: ${runs}</span>
           </div>
           <button class="btn btn-primary launch-game-btn" data-id="${g.id}" style="width: 100%; margin-top: auto;">PLAY NOW</button>
         </div>
