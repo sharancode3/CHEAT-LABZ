@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHEAT LABZ - Games</title>
+  <meta name="description" content="Browse the CHEAT LABZ library and launch a game instantly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/global.css" />
+  <link rel="stylesheet" href="./css/games.css" />
+</head>
+<body class="games-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="page-shell section--tight">
+    <div class="toolbar glass" style="padding:16px 20px;">
+      <div>
+        <p class="eyebrow">CHEAT LABZ</p>
+        <h1 class="page-title">GAME LIBRARY</h1>
+      </div>
+      <nav class="tab-row" aria-label="Primary">
+        <a class="tab is-active" href="./games.html">Games</a>
+        <a class="tab" href="./leaderboard.html">Leaderboard</a>
+        <a class="tab" href="./arena.html">Arena</a>
+        <a class="tab" href="./index.html">Home</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="page-shell">
+    <section class="section games-featured">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Featured</p>
+          <h2 class="section-title">Static featured strip while the live carousel is rebuilt.</h2>
+        </div>
+        <span class="badge badge--accent">19 games planned</span>
+      </div>
+      <div class="card-grid card-grid--3">
+        <article class="card game-card">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Neon Serpent</h3>
+          <p class="game-desc">Classic snake with clean grid movement, speed ramps, and a new instruction flow.</p>
+          <div class="game-footer">
+            <span class="badge">Arcade</span>
+            <a class="button button--primary" href="./index.html">Play Now</a>
+          </div>
+        </article>
+        <article class="card game-card">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Loop Rally</h3>
+          <p class="game-desc">Paddle rally with curve shots, lives, and AI pressure scaling.</p>
+          <div class="game-footer">
+            <span class="badge">Arcade</span>
+            <a class="button button--primary" href="./index.html">Play Now</a>
+          </div>
+        </article>
+        <article class="card game-card">
+          <div class="game-icon" aria-hidden="true"></div>
+          <h3 class="game-title">Turbo Drift</h3>
+          <p class="game-desc">Top-down racing with drift scoring, boost pads, and lap-based pacing.</p>
+          <div class="game-footer">
+            <span class="badge">Racing</span>
+            <a class="button button--primary" href="./index.html">Play Now</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="games-filterbar">
+        <div class="games-filterbar__left">
+          <button class="pill is-active" type="button">ALL</button>
+          <button class="pill" type="button">ARCADE</button>
+          <button class="pill" type="button">PUZZLE</button>
+          <button class="pill" type="button">RACING</button>
+          <button class="pill" type="button">SKILL</button>
+          <button class="pill" type="button">RETRO</button>
+        </div>
+        <div class="games-filterbar__right">
+          <div class="select-shell" style="min-width:220px;">
+            <select class="select" aria-label="Sort games">
+              <option>TRENDING</option>
+              <option>NEW</option>
+              <option>A-Z</option>
+              <option>EASIEST</option>
+              <option>HARDEST</option>
+            </select>
+          </div>
+          <input class="input" type="search" placeholder="Search games" aria-label="Search games" style="min-width:240px;" />
+          <button class="button button--secondary" type="button">Shuffle</button>
+        </div>
+      </div>
+
+      <div class="games-library" aria-live="polite" id="gameLibrary">
+        <article class="card game-card">
+          <div class="game-meta">
+            <span class="badge">Arcade</span>
+            <span class="badge badge--warning">Trending</span>
+          </div>
+          <h3 class="game-title">Key Frenzy</h3>
+          <p class="game-desc">Typing gauntlet with shrinking time windows and blind rounds.</p>
+          <a class="button button--primary" href="./index.html">Play Now</a>
+        </article>
+      </div>
+
+      <div class="games-footer-row">
+        <p class="countdown">Showing 6 games right now.</p>
+        <a class="button button--ghost" href="./leaderboard.html">View Leaderboard</a>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./js/pages/games.js"></script>
+</body>
+</html>

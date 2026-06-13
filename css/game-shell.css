@@ -1,0 +1,52 @@
+.game-shell-page {
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.game-shell-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.game-shell-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+  padding-bottom: 32px;
+}
+
+.game-shell-frame {
+  min-height: min(72svh, 760px);
+}
+
+.game-shell-sidebar {
+  display: grid;
+  gap: 16px;
+}
+
+.game-shell-card {
+  padding: 20px;
+}
+
+.game-shell-statlist {
+  display: grid;
+  gap: 12px;
+}
+
+.game-shell-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 980px) {
+  .game-shell-stage {
+    grid-template-columns: 1fr;
+  }
+}

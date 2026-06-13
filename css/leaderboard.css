@@ -1,0 +1,65 @@
+.leaderboard-page {
+  padding: 32px 0 88px;
+}
+
+.leaderboard-hero {
+  margin-bottom: 24px;
+}
+
+.leaderboard-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.leaderboard-layout {
+  display: grid;
+  gap: 24px;
+}
+
+.leaderboard-panel {
+  padding: 24px;
+}
+
+.leaderboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.leaderboard-table-wrap {
+  overflow-x: auto;
+}
+
+.leaderboard-table {
+  min-width: 760px;
+}
+
+.leaderboard-empty {
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.leaderboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@media (max-width: 720px) {
+  .leaderboard-panel {
+    padding: 20px;
+  }
+
+  .leaderboard-toolbar,
+  .leaderboard-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
