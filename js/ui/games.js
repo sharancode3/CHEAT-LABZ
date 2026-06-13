@@ -177,5 +177,7 @@ class GameLibrary {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  new GameLibrary();
+  if (document.getElementById('games-grid')) {
+    new GameLibrary();
+  }
 });
