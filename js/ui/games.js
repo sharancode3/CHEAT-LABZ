@@ -117,37 +117,15 @@ class GameLibrary {
       const runs = Storage.get(g.id + '_runs', 0);
       
       const badgeClass = `badge-difficulty-${g.difficulty.toLowerCase()}`;
-      const tagsHtml = g.tags.map(t => `<span class="badge badge-purple" style="font-size: 10px; padding: 2px 6px;">${t}</span>`).join('');
-
-      let iconSvg = '';
-      let iconColor = 'var(--accent-1)';
-      
-      switch(g.category) {
-        case 'ARCADE':
-          iconColor = 'var(--accent-1)';
-          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-          break;
-        case 'SKILL':
-          iconColor = 'var(--accent-2)';
-          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
-          break;
-        case 'PUZZLE':
-          iconColor = '#a855f7';
-          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11V9a2 2 0 0 0-2-2h-2"/><path d="M9 19H7a2 2 0 0 1-2-2v-2"/><path d="M11 5V3"/><path d="M5 11H3"/><path d="M13 19v2"/><path d="M19 13h2"/><circle cx="12" cy="12" r="3"/></svg>';
-          break;
-        case 'RACING':
-          iconColor = '#ef4444';
-          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>';
-          break;
-        default:
-          iconColor = 'var(--text-main)';
-          iconSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
-      }
+      const tagsHtml = g.tags.map(t => `<span class="badge badge-tag">${t}</span>`).join('');
+      const gameColor = g.color || '#00f0ff';
+      const gameIcon = g.icon || '🎮';
 
       return `
-        <div class="game-card ${animate ? 'fade-in' : ''}" data-id="${g.id}">
-          <div class="game-icon" style="color: ${iconColor}; display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 16px; background: rgba(255,255,255,0.03); margin-bottom: 20px; transition: all 0.3s ease;">
-             ${iconSvg}
+        <div class="game-card ${animate ? 'fade-in' : ''}" data-id="${g.id}" style="--card-accent: ${gameColor};">
+          <div class="game-card-glow"></div>
+          <div class="game-icon-wrap">
+            <span class="game-emoji">${gameIcon}</span>
           </div>
           <div class="game-title-row">
             <span class="game-title">${g.name}</span>
@@ -157,13 +135,13 @@ class GameLibrary {
             <span class="badge badge-outline">${g.category}</span>
             ${tagsHtml}
           </div>
-          <p class="game-desc">${g.desc}</p>
+          <p class="game-desc">${g.desc || g.description || ''}</p>
           <div class="game-stats">
-            <span class="stat">Best: ${best}</span>
+            <span class="stat">🏆 ${best}</span>
             <span class="stat-dot">·</span>
-            <span class="stat">Runs: ${runs}</span>
+            <span class="stat">▶ ${runs}</span>
           </div>
-          <button class="btn btn-primary launch-game-btn" data-id="${g.id}" style="width: 100%; margin-top: 10px;">PLAY NOW</button>
+          <button class="btn btn-primary launch-game-btn" data-id="${g.id}" style="width: 100%; margin-top: auto;">PLAY NOW</button>
         </div>
       `;
     }).join('');
@@ -183,7 +161,6 @@ class GameLibrary {
 
 // Modules are deferred, so DOM is already parsed
 const grid = document.getElementById('games-grid');
-console.log('JS EXECUTED: grid=', !!grid);
 if (grid) {
   new GameLibrary();
 }

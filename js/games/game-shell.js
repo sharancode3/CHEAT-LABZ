@@ -156,7 +156,7 @@ export class GameShell {
     const isArena = !!this.config.difficultyMultiplier && this.config.difficultyMultiplier !== 1.0;
 
     // Normal mode
-    isNewRecord = this.score > this.highScore;
+    let isNewRecord = this.score > this.highScore;
     if (isNewRecord) {
       this.highScore = this.score;
       Storage.set(this.config.name, this.highScore);

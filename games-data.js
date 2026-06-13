@@ -4,189 +4,246 @@ const GAMES = [
     name: 'Neon Serpent',
     category: 'ARCADE',
     difficulty: 'MEDIUM',
+    desc: 'Eat the orbs. Grow longer. Don\'t hit yourself or the walls.',
     description: 'Classic snake turbo-charged with combos.',
     tags: ['TRENDING'],
     file: 'js/games/neon-serpent.js',
-    className: 'NeonSerpent'
+    className: 'NeonSerpent',
+    icon: '🐍',
+    color: '#00f0ff'
   },
   {
     id: 'loop-rally',
     name: 'Loop Rally',
     category: 'ARCADE',
     difficulty: 'HARD',
+    desc: 'Rally with the AI. Don\'t let the ball past you. 3 lives.',
     description: 'Fast paddle rallies with curve shots.',
     tags: ['TRENDING'],
     file: 'js/games/loop-rally.js',
-    className: 'LoopRally'
+    className: 'LoopRally',
+    icon: '🏓',
+    color: '#ff6b6b'
   },
   {
     id: 'turbo-drift',
     name: 'Turbo Drift',
     category: 'RACING',
     difficulty: 'HARD',
+    desc: '3 laps. Drift for bonus points. Hit boost pads. Best time wins.',
     description: 'Top-down racing with drift scoring.',
     tags: ['TRENDING'],
     file: 'js/games/turbo-drift.js',
-    className: 'TurboDrift'
+    className: 'TurboDrift',
+    icon: '🏎️',
+    color: '#ef4444'
   },
   {
     id: 'key-frenzy',
     name: 'Key Frenzy',
     category: 'SKILL',
     difficulty: 'HARD',
+    desc: 'Press the key shown. Blind rounds = remember the key. 3 lives.',
     description: 'Typing gauntlet with blind rounds.',
     tags: ['NEW'],
     file: 'js/games/key-frenzy.js',
-    className: 'KeyFrenzy'
+    className: 'KeyFrenzy',
+    icon: '⌨️',
+    color: '#fbbf24'
   },
   {
     id: 'astro-strider',
     name: 'Astro Strider',
     category: 'ARCADE',
     difficulty: 'MEDIUM',
+    desc: 'Destroy asteroids and enemy ships. Collect powerups. 3 lives.',
     description: 'Side-scrolling space shooter.',
     tags: [],
     file: 'js/games/astro-strider.js',
-    className: 'AstroStrider'
+    className: 'AstroStrider',
+    icon: '🚀',
+    color: '#818cf8'
   },
   {
     id: 'cipher-quest',
     name: 'Cipher Quest',
     category: 'PUZZLE',
     difficulty: 'MEDIUM',
+    desc: 'Decode the Caesar-cipher word. Type your answer. Hints cost points.',
     description: 'Decode Caesar-cipher words fast.',
     tags: [],
     file: 'js/games/cipher-quest.js',
-    className: 'CipherQuest'
+    className: 'CipherQuest',
+    icon: '🔐',
+    color: '#a855f7'
   },
   {
     id: 'phantom-calc',
     name: 'Phantom Calc',
     category: 'SKILL',
     difficulty: 'HARD',
+    desc: 'Memorize the equation before it disappears. Type your answer.',
     description: 'Mental math before it disappears.',
     tags: [],
     file: 'js/games/phantom-calc.js',
-    className: 'PhantomCalc'
+    className: 'PhantomCalc',
+    icon: '🧮',
+    color: '#f472b6'
   },
   {
     id: 'word-pulse',
     name: 'Word Pulse',
     category: 'SKILL',
     difficulty: 'MEDIUM',
+    desc: 'Type each letter ON the beat. Watch the pulse. Rhythm matters.',
     description: 'Type in rhythm with the beat.',
     tags: [],
     file: 'js/games/word-pulse.js',
-    className: 'WordPulse'
+    className: 'WordPulse',
+    icon: '💓',
+    color: '#fb7185'
   },
   {
     id: 'pixel-dodge',
     name: 'Pixel Dodge',
     category: 'ARCADE',
     difficulty: 'HARD',
+    desc: 'Dodge everything. One hit and you\'re done. Survive as long as you can.',
     description: 'Dodge bullets. One hit and you die.',
-    tags: [],
+    tags: ['HOT'],
     file: 'js/games/pixel-dodge.js',
-    className: 'PixelDodge'
+    className: 'PixelDodge',
+    icon: '💥',
+    color: '#f97316'
   },
   {
     id: 'stack-blitz',
     name: 'Stack Blitz',
     category: 'SKILL',
     difficulty: 'MEDIUM',
+    desc: 'Drop platforms to build your tower. Aim for the center.',
     description: 'Drop platforms to build your tower.',
     tags: [],
     file: 'js/games/stack-blitz.js',
-    className: 'StackBlitz'
+    className: 'StackBlitz',
+    icon: '🏗️',
+    color: '#22d3ee'
   },
   {
     id: 'memory-grid',
     name: 'Memory Grid',
     category: 'PUZZLE',
     difficulty: 'MEDIUM',
+    desc: 'Watch the sequence light up. Repeat it back. Gets longer every round.',
     description: 'Repeat the sequence. Gets longer.',
     tags: [],
     file: 'js/games/memory-grid.js',
-    className: 'MemoryGrid'
+    className: 'MemoryGrid',
+    icon: '🧠',
+    color: '#c084fc'
   },
   {
     id: 'hyper-tap',
     name: 'Hyper Tap',
     category: 'SKILL',
     difficulty: 'EASY',
+    desc: 'Tap when the dot is inside the target. Closer to center = more points.',
     description: 'Tap when the dot hits the target.',
-    tags: [],
+    tags: ['CHILL'],
     file: 'js/games/hyper-tap.js',
-    className: 'HyperTap'
+    className: 'HyperTap',
+    icon: '🎯',
+    color: '#34d399'
   },
   {
     id: 'gravity-flip',
     name: 'Gravity Flip',
     category: 'ARCADE',
     difficulty: 'MEDIUM',
+    desc: 'Flip gravity to avoid spikes. Collect coins. Don\'t die.',
     description: 'Flip gravity to survive.',
     tags: ['TRENDING'],
     file: 'js/games/gravity-flip.js',
-    className: 'GravityFlip'
+    className: 'GravityFlip',
+    icon: '🔄',
+    color: '#2dd4bf'
   },
   {
     id: 'chain-burst',
     name: 'Chain Burst',
     category: 'PUZZLE',
     difficulty: 'MEDIUM',
+    desc: 'Drag to chain same-colored orbs. Longer chains = more points. 90 seconds.',
     description: 'Chain same-color orbs to burst them.',
     tags: [],
     file: 'js/games/chain-burst.js',
-    className: 'ChainBurst'
+    className: 'ChainBurst',
+    icon: '⛓️',
+    color: '#e879f9'
   },
   {
     id: 'reflex-rush',
     name: 'Reflex Rush',
     category: 'SKILL',
     difficulty: 'EASY',
+    desc: 'Press the correct arrow key when the color flashes. React fast.',
     description: 'React to the color flash. Fast.',
     tags: [],
     file: 'js/games/reflex-rush.js',
-    className: 'ReflexRush'
+    className: 'ReflexRush',
+    icon: '⚡',
+    color: '#facc15'
   },
   {
     id: 'tile-runner',
     name: 'Tile Runner',
     category: 'ARCADE',
     difficulty: 'MEDIUM',
+    desc: 'Tap only the dark tiles. Miss 3 and you\'re out. Don\'t stop.',
     description: 'Tap only the dark tiles.',
     tags: [],
     file: 'js/games/tile-runner.js',
-    className: 'TileRunner'
+    className: 'TileRunner',
+    icon: '🏃',
+    color: '#38bdf8'
   },
   {
     id: 'beat-drop',
     name: 'Beat Drop',
     category: 'SKILL',
     difficulty: 'MEDIUM',
+    desc: 'Hit D F J K when notes reach the line. Timing matters.',
     description: 'Hit notes when they reach the line.',
     tags: [],
     file: 'js/games/beat-drop.js',
-    className: 'BeatDrop'
+    className: 'BeatDrop',
+    icon: '🎵',
+    color: '#a78bfa'
   },
   {
     id: 'slide-forge',
     name: 'Slide Forge',
     category: 'PUZZLE',
     difficulty: 'MEDIUM',
+    desc: 'Slide tiles with arrow keys. Same numbers merge. Reach 2048.',
     description: 'Merge tiles. Reach 2048.',
     tags: [],
     file: 'js/games/slide-forge.js',
-    className: 'SlideForge'
+    className: 'SlideForge',
+    icon: '🔢',
+    color: '#4ade80'
   },
   {
     id: 'orb-pop-deluxe',
     name: 'Orb Pop Deluxe',
     category: 'PUZZLE',
     difficulty: 'EASY',
+    desc: 'Match 3 colored orbs to pop them before they reach the bottom.',
     description: 'Shoot orbs. Match 3 to pop.',
     tags: ['CHILL'],
     file: 'js/games/orb-pop-deluxe.js',
-    className: 'OrbPopDeluxe'
+    className: 'OrbPopDeluxe',
+    icon: '🫧',
+    color: '#67e8f9'
   }
 ];
