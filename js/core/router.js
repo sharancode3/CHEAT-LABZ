@@ -1,7 +1,14 @@
 const DEFAULT_ROUTES = new Map();
 
 function normalizePath(pathname) {
-  return pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+  // Strip duplicate slashes and trailing slashes
+  let clean = pathname.replace(/\/+/g, '/').replace(/\/$/, '');
+  
+  // Ensure it always starts with a leading slash for uniform Map lookups
+  if (!clean.startsWith('/')) {
+    clean = '/' + clean;
+  }
+  return clean;
 }
 
 function resolveTarget(target) {
@@ -93,3 +100,19 @@ export default {
   resolveRoute,
   startRouter,
 };
+
+// Global Hash Bridge for Game Modals
+function checkCurrentHashForGame() {
+  const currentHash = window.location.hash.replace(/^#/, '').trim();
+  
+  if (currentHash && currentHash !== '' && !currentHash.includes('/')) {
+    // If a valid game modal launcher is available on the global window context
+    if (typeof window.launchGameModal === 'function') {
+      window.launchGameModal(currentHash);
+    }
+  }
+}
+
+// Watch for changes and track initial page load events
+window.addEventListener('hashchange', checkCurrentHashForGame);
+window.addEventListener('DOMContentLoaded', checkCurrentHashForGame);
