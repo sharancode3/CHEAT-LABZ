@@ -1,210 +1,255 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
 
 export default class HyperTap extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'hyper-tap',
-      description: 'Click the target before it disappears. Missing costs a life.',
-      width: 500,
-      height: 500
-    });
-
-    this.scoreEl = document.getElementById('game-score');
-    this.livesEl = document.getElementById('game-lives');
-
-    this.canvas.addEventListener('mousedown', (e) => this.handleMouseClick(e));
-
-    this.init();
+    super(canvas, config);
   }
 
   onStart() {
-    this.lives = 3;
-    this.target = null;
-    this.shockwaves = [];
-    
-    this.level = 1;
-    this.baseRadius = 40;
-    this.minRadius = 15;
-    
-    this.spawnTarget();
-    this.updateUI();
-    
-    let runs = Storage.get('hyper-tap_runs', 0);
-    Storage.set('hyper-tap_runs', runs + 1);
-  }
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
+    };
 
-  spawnTarget() {
-    let r = Math.max(this.minRadius, this.baseRadius - this.level);
+    this.nodes = [];
+    this.spawnTimer = 0;
+    this.spawnRate = 1000 / this.mods.speedMult;
     
-    this.target = {
-      cx: this.canvas.width / 2,
-      cy: this.canvas.height / 2,
-      A: (this.canvas.width / 2) - r - 10,
-      B: (this.canvas.height / 2) - r - 10,
-      a: 2 + Math.random() * this.level,
-      b: 3 + Math.random() * this.level,
-      d: Math.random() * Math.PI,
-      time: 0,
-      r: r,
-      life: 2000 - Math.min(1200, this.level * 50),
-      maxLife: 2000 - Math.min(1200, this.level * 50)
+    this.stats = {
+      hits: 0,
+      misses: 0,
+      totalDist: 0
     };
     
-    // Set initial position
-    this.target.x = this.target.cx + this.target.A * Math.sin(this.target.a * this.target.time + this.target.d);
-    this.target.y = this.target.cy + this.target.B * Math.sin(this.target.b * this.target.time);
-  }
-
-  handleMouseClick(e) {
-    if (this.state !== 'PLAYING' || !this.target) return;
-
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-
-    // Check distance
-    const dx = x - this.target.x;
-    const dy = y - this.target.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist <= this.target.r) {
-      // Hit
-      Sound.playCoin();
-      // Distance-based score: Max 100 points, minus dist*2
-      const points = Math.max(10, Math.floor(100 - dist * 2));
-      this.score += points;
-      this.level++;
-      
-      this.createShockwave(this.target.x, this.target.y, this.target.r);
-      this.spawnTarget();
-      this.updateUI();
-    } else {
-      // Miss click
-      this.loseLife();
-      this.createShockwave(x, y, 10, '#ff6b6b');
-    }
-  }
-
-  loseLife() {
-    Sound.playDamage();
-    this.lives--;
-    this.updateUI();
+    this.combo = 0;
+    this.particles = [];
+    this.floatingTexts = [];
     
-    this.canvas.classList.add('shake');
-    setTimeout(() => this.canvas.classList.remove('shake'), 200);
-
-    if (this.lives <= 0) {
-      this.target = null;
-      Sound.playGameOver();
-      this.gameOver();
-    } else {
-      this.spawnTarget();
-    }
+    this.score = 0;
+    this.updateScore(0);
   }
 
-  createShockwave(x, y, r, color = '#00d4aa') {
-    this.shockwaves.push({
-      x: x, y: y, r: r, maxR: r * 3, life: 1.0, color: color
+  spawnNode() {
+    this.nodes.push({
+      x: 100 + Math.random() * (this.canvas.width - 200),
+      y: 100 + Math.random() * (this.canvas.height - 200),
+      radius: 40,
+      maxLife: 2000 / this.mods.speedMult,
+      life: 2000 / this.mods.speedMult,
+      color: `hsl(${Math.random() * 360}, 80%, 60%)`
     });
   }
 
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-
-    if (this.target) {
-      this.target.life -= deltaTime;
-      if (this.target.life <= 0) {
-        // Timeout
-        this.loseLife();
+  onClick(x, y) {
+    let hitNodeIdx = -1;
+    let bestDist = Infinity;
+    
+    // Find closest overlapping node
+    for (let i = 0; i < this.nodes.length; i++) {
+      let n = this.nodes[i];
+      let dist = Math.hypot(n.x - x, n.y - y);
+      if (dist <= n.radius && dist < bestDist) {
+        bestDist = dist;
+        hitNodeIdx = i;
+      }
+    }
+    
+    if (hitNodeIdx !== -1) {
+      let n = this.nodes[hitNodeIdx];
+      let accuracy = 1 - (bestDist / n.radius); // 0 to 1
+      
+      this.stats.hits++;
+      this.stats.totalDist += accuracy;
+      
+      let pts = 0;
+      let text = '';
+      let color = n.color;
+      
+      if (accuracy > 0.8) {
+        pts = 100;
+        text = 'PERFECT';
+        this.combo++;
+      } else if (accuracy > 0.5) {
+        pts = 50;
+        text = 'GOOD';
+        this.combo++;
       } else {
-        // Move along Lissajous curve
-        this.target.time += dt;
-        this.target.x = this.target.cx + this.target.A * Math.sin(this.target.a * this.target.time + this.target.d);
-        this.target.y = this.target.cy + this.target.B * Math.sin(this.target.b * this.target.time);
+        pts = 10;
+        text = 'OK';
+        this.combo = 0;
+      }
+      
+      let comboMult = 1 + Math.floor(this.combo / 5) * 0.5;
+      this.score += Math.floor(pts * comboMult);
+      this.updateScore(this.score);
+      
+      this.createExplosion(n.x, n.y, color, 20);
+      this.floatingTexts.push({ x: n.x, y: n.y, text: `${text} ${Math.floor(accuracy*100)}%`, color: color, life: 1.0, vy: -2 });
+      
+      this.nodes.splice(hitNodeIdx, 1);
+      
+    } else {
+      // Missed completely
+      this.stats.misses++;
+      this.combo = 0;
+      
+      if (this.mods.suddenDeath) {
+        this.createExplosion(x, y, '#EF4444', 100);
+        this.draw();
+        return this.gameOver();
+      }
+      
+      this.score = Math.max(0, this.score - 50);
+      this.updateScore(this.score);
+      
+      this.createExplosion(x, y, '#EF4444', 10);
+      this.floatingTexts.push({ x: x, y: y, text: 'MISS', color: '#EF4444', life: 1.0, vy: 1 });
+    }
+  }
+
+  createExplosion(x, y, color, count=30) {
+    for(let i=0; i<count; i++) {
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
+      });
+    }
+  }
+
+  update(dtMs) {
+    const dtSec = dtMs / 1000;
+    
+    this.spawnTimer -= dtMs;
+    if (this.spawnTimer <= 0) {
+      this.spawnNode();
+      this.spawnRate = Math.max(300, this.spawnRate - 10);
+      this.spawnTimer = this.spawnRate;
+    }
+    
+    for (let i = this.nodes.length - 1; i >= 0; i--) {
+      let n = this.nodes[i];
+      n.life -= dtMs;
+      
+      if (this.mods.reverse) {
+         // Nodes move erratically
+         n.x += (Math.random() - 0.5) * 10;
+         n.y += (Math.random() - 0.5) * 10;
+      }
+      
+      if (n.life <= 0) {
+        // Expired = miss
+        this.stats.misses++;
+        this.combo = 0;
+        
+        if (this.mods.suddenDeath) {
+          this.createExplosion(n.x, n.y, '#EF4444', 100);
+          this.draw();
+          return this.gameOver();
+        }
+        
+        this.score = Math.max(0, this.score - 50);
+        this.updateScore(this.score);
+        
+        this.createExplosion(n.x, n.y, '#EF4444', 15);
+        this.floatingTexts.push({ x: n.x, y: n.y, text: 'EXPIRED', color: '#EF4444', life: 1.0, vy: 1 });
+        
+        this.nodes.splice(i, 1);
       }
     }
 
-    // Shockwaves
-    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
-      let sw = this.shockwaves[i];
-      sw.life -= dt * 2;
-      sw.r += dt * 50;
-      if (sw.life <= 0) this.shockwaves.splice(i, 1);
-    }
-  }
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= dtSec * 2;
+      return p.life > 0;
+    });
 
-  updateUI() {
-    if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.livesEl) this.livesEl.innerText = '♥'.repeat(this.lives);
+    this.floatingTexts = this.floatingTexts.filter(ft => {
+      ft.y += ft.vy;
+      ft.life -= dtSec;
+      return ft.life > 0;
+    });
   }
 
   draw() {
-    this.ctx.fillStyle = '#0a0a0f';
+    this.ctx.fillStyle = '#09090B';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Grid lines
-    this.ctx.strokeStyle = '#1e1e2a';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    for(let i=0; i<this.canvas.width; i+=50) {
-      this.ctx.moveTo(i, 0);
-      this.ctx.lineTo(i, this.canvas.height);
-      this.ctx.moveTo(0, i);
-      this.ctx.lineTo(this.canvas.width, i);
-    }
-    this.ctx.stroke();
-
-    // Shockwaves
-    for (let sw of this.shockwaves) {
-      this.ctx.strokeStyle = sw.color;
-      this.ctx.lineWidth = 2;
-      this.ctx.globalAlpha = sw.life;
+    this.nodes.forEach(n => {
+      // Background pulsing
+      this.ctx.fillStyle = `rgba(255,255,255,0.05)`;
       this.ctx.beginPath();
-      this.ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
-      this.ctx.stroke();
-    }
-    this.ctx.globalAlpha = 1.0;
-
-    // Target
-    if (this.target) {
-      const r = this.target.r;
-      const x = this.target.x;
-      const y = this.target.y;
-      
-      // Pulse animation based on life remaining
-      const pulse = 1.0 + 0.1 * Math.sin((this.target.maxLife - this.target.life) / 100);
-      const drawR = r * pulse;
-
-      this.ctx.fillStyle = '#ff6b6b';
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, drawR, 0, Math.PI * 2);
+      this.ctx.arc(n.x, n.y, n.radius + Math.sin(performance.now()/100)*5, 0, Math.PI*2);
       this.ctx.fill();
-
+      
+      // Target Node
+      this.ctx.fillStyle = n.color;
+      this.ctx.shadowBlur = 15;
+      this.ctx.shadowColor = n.color;
+      this.ctx.beginPath();
+      this.ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
+      this.ctx.fill();
+      this.ctx.shadowBlur = 0;
+      
+      // Exact Center dot
       this.ctx.fillStyle = '#fff';
       this.ctx.beginPath();
-      this.ctx.arc(x, y, drawR * 0.6, 0, Math.PI * 2);
+      this.ctx.arc(n.x, n.y, 4, 0, Math.PI*2);
       this.ctx.fill();
-
-      this.ctx.fillStyle = '#ff6b6b';
+      
+      // Closing Ring (Timing)
+      let ringRadius = n.radius + (n.life / n.maxLife) * 100;
+      this.ctx.strokeStyle = '#fff';
+      this.ctx.lineWidth = 2;
       this.ctx.beginPath();
-      this.ctx.arc(x, y, drawR * 0.2, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Life indicator ring
-      this.ctx.strokeStyle = '#6c63ff';
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, drawR + 5, -Math.PI/2, -Math.PI/2 + (Math.PI*2 * (this.target.life / this.target.maxLife)));
+      this.ctx.arc(n.x, n.y, ringRadius, 0, Math.PI*2);
       this.ctx.stroke();
+    });
+
+    // Particles & Texts
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      this.ctx.fill();
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    this.ctx.textAlign = 'center';
+    this.floatingTexts.forEach(ft => {
+      this.ctx.fillStyle = ft.color;
+      this.ctx.globalAlpha = Math.max(0, ft.life);
+      this.ctx.font = "bold 14px 'Press Start 2P', monospace";
+      this.ctx.fillText(ft.text, ft.x, ft.y);
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    // Limited Vision Mod
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.canvas.width/2, this.canvas.height/2, 50, this.canvas.width/2, this.canvas.height/2, 300);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // UI
+    if (!this.mods.noUI) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "14px 'JetBrains Mono', monospace";
+      this.ctx.textAlign = 'left';
+      let acc = this.stats.hits === 0 ? 100 : Math.floor((this.stats.totalDist / this.stats.hits) * 100);
+      this.ctx.fillText(`ACCURACY: ${acc}% | COMBO: ${this.combo}`, 20, 30);
     }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});

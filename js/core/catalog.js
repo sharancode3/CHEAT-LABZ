@@ -10,6 +10,8 @@ export const GAMES = [
     accent: 'accent-1',
     route: './index.html#neon-serpent',
     order: 1,
+    file: './js/games/neon-serpent.js',
+    className: 'NeonSerpent'
   },
   {
     id: 'loop-rally',
@@ -22,6 +24,8 @@ export const GAMES = [
     accent: 'accent-2',
     route: './index.html#loop-rally',
     order: 2,
+    file: './js/games/loop-rally.js',
+    className: 'LoopRally'
   },
   {
     id: 'turbo-drift',
@@ -34,6 +38,8 @@ export const GAMES = [
     accent: 'accent-4',
     route: './index.html#turbo-drift',
     order: 3,
+    file: './js/games/turbo-drift.js',
+    className: 'TurboDrift'
   },
   {
     id: 'key-frenzy',
@@ -46,6 +52,8 @@ export const GAMES = [
     accent: 'accent-3',
     route: './index.html#key-frenzy',
     order: 4,
+    file: './js/games/key-frenzy.js',
+    className: 'KeyFrenzy'
   },
   {
     id: 'astro-strider',
@@ -58,6 +66,8 @@ export const GAMES = [
     accent: 'accent-5',
     route: './index.html#astro-strider',
     order: 5,
+    file: './js/games/astro-strider.js',
+    className: 'AstroStrider'
   },
   {
     id: 'cipher-quest',
@@ -70,6 +80,8 @@ export const GAMES = [
     accent: 'accent-2',
     route: './index.html#cipher-quest',
     order: 6,
+    file: './js/games/cipher-quest.js',
+    className: 'CipherQuest'
   },
   {
     id: 'phantom-calc',
@@ -82,6 +94,8 @@ export const GAMES = [
     accent: 'accent-3',
     route: './index.html#phantom-calc',
     order: 7,
+    file: './js/games/phantom-calc.js',
+    className: 'PhantomCalc'
   },
   {
     id: 'word-pulse',
@@ -94,6 +108,8 @@ export const GAMES = [
     accent: 'accent-5',
     route: './index.html#word-pulse',
     order: 8,
+    file: './js/games/word-pulse.js',
+    className: 'WordPulse'
   },
   {
     id: 'pixel-dodge',
@@ -106,6 +122,8 @@ export const GAMES = [
     accent: 'accent-3',
     route: './index.html#pixel-dodge',
     order: 9,
+    file: './js/games/pixel-dodge.js',
+    className: 'PixelDodge'
   },
   {
     id: 'stack-blitz',
@@ -118,6 +136,8 @@ export const GAMES = [
     accent: 'accent-4',
     route: './index.html#stack-blitz',
     order: 10,
+    file: './js/games/stack-blitz.js',
+    className: 'StackBlitz'
   },
   {
     id: 'memory-grid',
@@ -130,6 +150,8 @@ export const GAMES = [
     accent: 'accent-1',
     route: './index.html#memory-grid',
     order: 11,
+    file: './js/games/memory-grid.js',
+    className: 'MemoryGrid'
   },
   {
     id: 'hyper-tap',
@@ -142,6 +164,8 @@ export const GAMES = [
     accent: 'accent-5',
     route: './index.html#hyper-tap',
     order: 12,
+    file: './js/games/hyper-tap.js',
+    className: 'HyperTap'
   },
   {
     id: 'gravity-flip',
@@ -154,6 +178,8 @@ export const GAMES = [
     accent: 'accent-2',
     route: './index.html#gravity-flip',
     order: 13,
+    file: './js/games/gravity-flip.js',
+    className: 'GravityFlip'
   },
   {
     id: 'chain-burst',
@@ -166,6 +192,8 @@ export const GAMES = [
     accent: 'accent-4',
     route: './index.html#chain-burst',
     order: 14,
+    file: './js/games/chain-burst.js',
+    className: 'ChainBurst'
   },
   {
     id: 'reflex-rush',
@@ -178,6 +206,8 @@ export const GAMES = [
     accent: 'accent-3',
     route: './index.html#reflex-rush',
     order: 15,
+    file: './js/games/reflex-rush.js',
+    className: 'ReflexRush'
   },
   {
     id: 'tile-runner',
@@ -190,6 +220,8 @@ export const GAMES = [
     accent: 'accent-1',
     route: './index.html#tile-runner',
     order: 16,
+    file: './js/games/tile-runner.js',
+    className: 'TileRunner'
   },
   {
     id: 'beat-drop',
@@ -202,6 +234,8 @@ export const GAMES = [
     accent: 'accent-5',
     route: './index.html#beat-drop',
     order: 17,
+    file: './js/games/beat-drop.js',
+    className: 'BeatDrop'
   },
   {
     id: 'slide-forge',
@@ -214,6 +248,8 @@ export const GAMES = [
     accent: 'accent-4',
     route: './index.html#slide-forge',
     order: 18,
+    file: './js/games/slide-forge.js',
+    className: 'SlideForge'
   },
   {
     id: 'orb-pop-deluxe',
@@ -226,6 +262,8 @@ export const GAMES = [
     accent: 'accent-2',
     route: './index.html#orb-pop-deluxe',
     order: 19,
+    file: './js/games/orb-pop-deluxe.js', /* Notice orb-pop.js is actually orb-pop-deluxe.js according to games-data? Wait, I named it orb-pop.js! */
+    className: 'OrbPopDeluxe'
   },
 ];
 

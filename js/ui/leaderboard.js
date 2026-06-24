@@ -1,141 +1,246 @@
-import { Storage } from '../core/storage.js';
+import { showToast } from '../core/notifications.js';
 
-
-class Leaderboard {
+class LeaderboardUI {
   constructor() {
-    this.tabs = document.querySelectorAll('#leaderboard-tabs .tab-pill');
-    this.sections = document.querySelectorAll('.tab-content');
+    this.container = document.getElementById('rankings-container');
+    this.tabs = document.querySelectorAll('.lb-tab');
+    this.currentTab = 'my-scores';
     
-    this.tbody = document.getElementById('scores-tbody');
-    this.tableWrapper = document.querySelector('.table-wrapper');
-    this.emptyState = document.getElementById('my-scores-empty');
-    this.resetBtn = document.getElementById('reset-scores-btn');
-    
-    this.gameSelect = document.getElementById('game-select');
-    this.overviewGrid = document.getElementById('overview-grid');
+    // Summary nodes
+    this.totalGamesNode = document.getElementById('lb-total-games');
+    this.totalRunsNode = document.getElementById('lb-total-runs');
+    this.bestGameNode = document.getElementById('lb-best-game');
+
+    this.gamesData = window.GAMES || [];
+    this.icons = window.GAME_ICONS || {};
     
     this.init();
   }
 
   init() {
-    this.bindTabs();
-    this.renderMyScores();
-    this.initOverview();
-    
-    if (this.resetBtn) {
-      this.resetBtn.addEventListener('click', () => {
-        if (confirm("Are you sure you want to delete all your scores? This cannot be undone.")) {
-          // Clear only game scores, leave things like preferences if any
-          GAMES.forEach(g => {
-            Storage.remove(g.id);
-            Storage.remove(g.id + '_runs');
-          });
-          Storage.remove('total_runs');
-          Storage.remove('last_played');
-          Storage.remove('most_played');
-          this.renderMyScores();
-          this.renderOverview();
-        }
-      });
-    }
-  }
-
-  bindTabs() {
     this.tabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
         this.tabs.forEach(t => t.classList.remove('active'));
         e.target.classList.add('active');
-        
-        const targetId = e.target.dataset.target;
-        this.sections.forEach(sec => {
-          sec.style.display = sec.id === targetId ? 'block' : 'none';
-        });
+        this.currentTab = e.target.dataset.tab;
+        this.render();
       });
     });
+
+    this.updateSummary();
+    this.render();
+  }
+
+  getScores() {
+    let scores = [];
+    for(let i=0; i<localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if(key.startsWith('cheatLabz_')) {
+        const gameId = key.replace('cheatLabz_', '');
+        // Exclude soundEnabled
+        if (gameId === 'soundEnabled' || gameId === 'arena_history') continue;
+        
+        try {
+          const val = JSON.parse(localStorage.getItem(key));
+          if (val && typeof val.score === 'number') {
+            const gameObj = this.gamesData.find(g => g.id === gameId);
+            scores.push({
+              id: gameId,
+              name: gameObj ? gameObj.name : gameId,
+              category: gameObj ? gameObj.category : 'Unknown',
+              best: val.score,
+              runs: val.runs || 1,
+              lastPlayed: val.lastPlayed || Date.now(),
+              trend: val.trend || 'flat'
+            });
+          }
+        } catch(e) {}
+      }
+    }
+    // Sort by best score descending
+    return scores.sort((a,b) => b.best - a.best);
+  }
+
+  updateSummary() {
+    const scores = this.getScores();
+    this.totalGamesNode.innerText = scores.length;
+    
+    const totalRuns = scores.reduce((acc, curr) => acc + curr.runs, 0);
+    this.totalRunsNode.innerText = totalRuns;
+
+    if (scores.length > 0) {
+      this.bestGameNode.innerText = scores[0].name;
+    } else {
+      this.bestGameNode.innerText = '—';
+    }
+  }
+
+  formatDate(timestamp) {
+    const diff = Date.now() - timestamp;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    return `${days} days ago`;
+  }
+
+  getTrendIcon(trend) {
+    if (trend === 'up') return '<svg class="trend-up" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>';
+    if (trend === 'down') return '<svg class="trend-down" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>';
+    return '<svg class="trend-flat" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
   }
 
   renderMyScores() {
-    const playedGames = [];
-    
-    GAMES.forEach(g => {
-      const best = Storage.get(g.id, null);
-      if (best !== null) {
-        playedGames.push({
-          ...g,
-          best: best,
-          runs: Storage.get(g.id + '_runs', 1),
-          // dummy data for last played & trend since we aren't tracking full session history in base reqs
-          lastPlayed: 'Today',
-          trend: Math.random() > 0.5 ? 'up' : 'down'
-        });
-      }
-    });
-
-    if (playedGames.length === 0) {
-      this.tableWrapper.style.display = 'none';
-      this.emptyState.style.display = 'block';
-      this.resetBtn.style.display = 'none';
-      return;
-    }
-
-    this.tableWrapper.style.display = 'block';
-    this.emptyState.style.display = 'none';
-    this.resetBtn.style.display = 'inline-flex';
-
-    playedGames.sort((a, b) => b.best - a.best);
-
-    this.tbody.innerHTML = playedGames.map(g => {
-      const trendIcon = g.trend === 'up' 
-        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-5)" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>`
-        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-3)" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>`;
-
+    const scores = this.getScores();
+    if (scores.length === 0) {
       return `
-        <tr>
-          <td><a href="${g.id}.html" class="game-link">${g.name}</a></td>
-          <td class="font-display" style="font-size: 14px;">${g.best}</td>
-          <td>${g.runs}</td>
-          <td>${g.lastPlayed}</td>
-          <td>${trendIcon}</td>
-        </tr>
-      `;
-    }).join('');
-
-    if (window.gsap) {
-      gsap.fromTo(this.tbody.querySelectorAll('tr'), 
-        { x: -20, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
-      );
-    }
-  }
-
-  initOverview() {
-    // Populate select
-    this.gameSelect.innerHTML = `<option value="ALL">All Games</option>` + 
-      GAMES.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-      
-    this.gameSelect.addEventListener('change', () => this.renderOverview());
-    this.renderOverview();
-  }
-
-  renderOverview() {
-    const filterId = this.gameSelect.value;
-    const games = filterId === 'ALL' ? GAMES : GAMES.filter(g => g.id === filterId);
-    
-    this.overviewGrid.innerHTML = games.map(g => {
-      const record = Storage.get(g.id, 0);
-      return `
-        <div class="overview-card fade-in">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          <div class="game-title font-display">${g.name}</div>
-          <div class="record-label">Your Record</div>
-          <div class="record-score">${record}</div>
+        <div class="lb-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+            <path d="M4 22h16"/>
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+          </svg>
+          <h3>No records yet.</h3>
+          <p>Play any game to see your scores here.</p>
+          <button onclick="window.location.href='games.html'">BROWSE GAMES</button>
         </div>
       `;
-    }).join('');
+    }
+
+    let html = `
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th>RANK</th>
+            <th>GAME</th>
+            <th>BEST SCORE</th>
+            <th>RUNS</th>
+            <th>LAST PLAYED</th>
+            <th>TREND</th>
+          </tr>
+        </thead>
+        <tbody id="lb-table-body">
+    `;
+
+    scores.forEach((s, i) => {
+      let rankDisplay = i + 1;
+      if (i === 0) rankDisplay = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
+      else if (i === 1) rankDisplay = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
+      else if (i === 2) rankDisplay = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
+
+      html += `
+        <tr class="lb-row" onclick="openGame('${s.id}')">
+          <td class="lb-rank">${rankDisplay}</td>
+          <td class="lb-game">
+            <div class="lb-game-icon">${this.icons[s.id] || ''}</div>
+            <div>
+              <div class="lb-game-name">${s.name}</div>
+              <div class="lb-game-cat">${s.category}</div>
+            </div>
+          </td>
+          <td class="lb-score">${s.best.toLocaleString()}</td>
+          <td class="lb-runs">${s.runs}</td>
+          <td class="lb-date">${this.formatDate(s.lastPlayed)}</td>
+          <td class="lb-trend">${this.getTrendIcon(s.trend)}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+      <div class="reset-container">
+        <button id="reset-btn" class="reset-btn">RESET ALL MY SCORES</button>
+      </div>
+    `;
+
+    return html;
+  }
+
+  renderAllGames() {
+    const scores = this.getScores();
+    let html = `<div class="lb-all-games">`;
+
+    this.gamesData.forEach(game => {
+      const scoreData = scores.find(s => s.id === game.id);
+      const isPlayed = !!scoreData;
+      
+      html += `
+        <div class="lb-game-card ${isPlayed ? '' : 'never-played'}">
+          <div class="lgc-icon">${this.icons[game.id] || ''}</div>
+          <div class="lgc-name">${game.name}</div>
+          <div class="lgc-stats">
+            <div class="lgc-best">
+              <span>BEST</span>
+              <strong>${isPlayed ? scoreData.best.toLocaleString() : '—'}</strong>
+            </div>
+            <div class="lgc-runs">
+              <span>RUNS</span>
+              <strong>${isPlayed ? scoreData.runs : '0'}</strong>
+            </div>
+          </div>
+          <button class="lgc-play" onclick="openGame('${game.id}')">PLAY</button>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    return html;
+  }
+
+  render() {
+    if (!this.container) return;
+
+    if (this.currentTab === 'my-scores') {
+      this.container.innerHTML = this.renderMyScores();
+      
+      // GSAP Stagger
+      if (document.querySelectorAll('.lb-row').length > 0 && window.gsap) {
+        gsap.from('.lb-row', {
+          opacity: 0, x: -20,
+          duration: 0.3,
+          stagger: 0.04,
+          ease: 'power2.out'
+        });
+      }
+
+      // Bind Reset
+      const btn = document.getElementById('reset-btn');
+      if (btn) {
+        let resetClickCount = 0;
+        let resetTimer;
+        btn.onclick = () => {
+          resetClickCount++;
+          if (resetClickCount === 1) {
+            btn.textContent = 'CLICK AGAIN TO CONFIRM';
+            btn.classList.add('reset-confirm');
+            resetTimer = setTimeout(() => {
+              resetClickCount = 0;
+              btn.textContent = 'RESET ALL MY SCORES';
+              btn.classList.remove('reset-confirm');
+            }, 3000);
+          } else {
+            clearTimeout(resetTimer);
+            Object.keys(localStorage)
+              .filter(k => k.startsWith('cheatLabz_'))
+              .forEach(k => localStorage.removeItem(k));
+            showToast('All scores cleared.', 'info');
+            
+            resetClickCount = 0;
+            this.updateSummary();
+            this.render();
+          }
+        };
+      }
+
+    } else {
+      this.container.innerHTML = this.renderAllGames();
+    }
   }
 }
 
-// Modules are deferred, so DOM is already parsed
-if (document.getElementById('overview-grid')) {
-  new Leaderboard();
-}
+document.addEventListener('DOMContentLoaded', () => {
+  new LeaderboardUI();
+});

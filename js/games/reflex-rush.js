@@ -1,251 +1,238 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
 
 export default class ReflexRush extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'reflex-rush',
-      description: 'Click the quadrant matching the WORD, ignore the COLOR of the text.',
-      width: 600,
-      height: 600
-    });
-
-    this.scoreEl = document.getElementById('game-score');
-    this.livesEl = document.getElementById('game-lives');
-
-    this.canvas.addEventListener('mousedown', (e) => this.handleMouseClick(e));
-
-    this.init();
+    super(canvas, config);
   }
 
   onStart() {
-    this.lives = 3;
-    
-    // Quadrants: 0: TL, 1: TR, 2: BL, 3: BR
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
+    };
+
     this.colors = [
-      { name: 'RED', hex: '#ff4d4d' },
-      { name: 'BLUE', hex: '#4d4dff' },
-      { name: 'GREEN', hex: '#4dff4d' },
-      { name: 'YELLOW', hex: '#ffff4d' }
+      { id: 'RED', hex: '#EF4444', key: 'ArrowLeft', label: 'LEFT' },
+      { id: 'GREEN', hex: '#10B981', key: 'ArrowUp', label: 'UP' },
+      { id: 'BLUE', hex: '#3B82F6', key: 'ArrowRight', label: 'RIGHT' },
+      { id: 'YELLOW', hex: '#FBBF24', key: 'ArrowDown', label: 'DOWN' }
     ];
     
-    this.quadrants = [
-      { id: 0, x: 0, y: 0, w: 300, h: 300, color: this.colors[0] },
-      { id: 1, x: 300, y: 0, w: 300, h: 300, color: this.colors[1] },
-      { id: 2, x: 0, y: 300, w: 300, h: 300, color: this.colors[2] },
-      { id: 3, x: 300, y: 300, w: 300, h: 300, color: this.colors[3] }
-    ];
+    if (this.mods.reverse) {
+      this.colors[0].key = 'ArrowRight'; this.colors[0].label = 'RIGHT';
+      this.colors[1].key = 'ArrowDown'; this.colors[1].label = 'DOWN';
+      this.colors[2].key = 'ArrowLeft'; this.colors[2].label = 'LEFT';
+      this.colors[3].key = 'ArrowUp'; this.colors[3].label = 'UP';
+    }
 
-    this.currentWord = null;
     this.currentColor = null;
-    this.targetQuadrant = null;
+    this.timeLimit = 2000 / this.mods.speedMult;
+    this.timeLeft = this.timeLimit;
     
-    this.maxTime = 2000; // starts at 2s
-    this.timeLeft = 0;
+    this.combo = 0;
+    this.particles = [];
+    this.floatingTexts = [];
     
-    this.gameState = 'WAITING';
-    this.delayTimer = 0;
-    this.tooEarlyMsg = false;
+    this.nextEventTimer = 1000;
+    this.state = 'WAITING';
     
-    this.flashAlpha = 0;
-    this.flashColor = '#fff';
-    
-    this.startDelay();
-    this.updateUI();
-    
-    let runs = Storage.get('reflex-rush_runs', 0);
-    Storage.set('reflex-rush_runs', runs + 1);
+    this.score = 0;
+    this.updateScore(0);
   }
 
-  startDelay() {
-    this.gameState = 'WAITING';
-    this.tooEarlyMsg = false;
+  spawnEvent() {
+    this.currentColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+    this.timeLimit = Math.max(400, 2000 - (this.score * 2)) / this.mods.speedMult;
+    this.timeLeft = this.timeLimit;
+    this.state = 'ACTIVE';
     
-    // Generate random delay between 1000ms and 3500ms using crypto
-    const randomBuffer = new Uint32Array(1);
-    window.crypto.getRandomValues(randomBuffer);
-    const randomFraction = randomBuffer[0] / (0xFFFFFFFF + 1);
-    this.delayTimer = 1000 + randomFraction * 2500;
+    this.createExplosion(this.canvas.width/2, this.canvas.height/2 - 50, this.currentColor.hex, 20);
   }
 
-  nextPrompt() {
-    this.gameState = 'PROMPT';
-    const wordIdx = Math.floor(Math.random() * 4);
-    let colorIdx = Math.floor(Math.random() * 4);
+  onInput(key, e, isDown) {
+    if (!isDown || this.state !== 'ACTIVE') return;
     
-    // High chance for Stroop effect (mismatch)
-    if (Math.random() > 0.3) {
-      while (colorIdx === wordIdx) {
-        colorIdx = Math.floor(Math.random() * 4);
-      }
+    let mappedKey = key;
+    if (key === 'a' || key === 'A') mappedKey = 'ArrowLeft';
+    if (key === 'w' || key === 'W') mappedKey = 'ArrowUp';
+    if (key === 'd' || key === 'D') mappedKey = 'ArrowRight';
+    if (key === 's' || key === 'S') mappedKey = 'ArrowDown';
+
+    if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(mappedKey)) {
+      this.handleInput(mappedKey);
     }
-    
-    this.currentWord = this.colors[wordIdx];
-    this.currentColor = this.colors[colorIdx];
-    this.targetQuadrant = wordIdx;
-    
-    this.timeLeft = this.maxTime;
   }
 
-  handleMouseClick(e) {
-    if (this.state !== 'PLAYING') return;
-    
-    if (this.gameState === 'WAITING') {
-      // Too early!
-      this.tooEarlyMsg = true;
-      this.loseLife();
-      return;
-    }
-    
-    if (this.gameState !== 'PROMPT') return;
-
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-
-    // Determine quadrant
-    let qIdx = -1;
-    if (x < 300 && y < 300) qIdx = 0;
-    else if (x >= 300 && y < 300) qIdx = 1;
-    else if (x < 300 && y >= 300) qIdx = 2;
-    else if (x >= 300 && y >= 300) qIdx = 3;
-
-    if (qIdx === this.targetQuadrant) {
-      // Correct
-      Sound.playCoin();
-      this.score += 100;
-      this.maxTime = Math.max(600, this.maxTime - 50); // gets faster
+  handleInput(key) {
+    if (key === this.currentColor.key) {
+      this.combo++;
+      let timeBonus = Math.floor((this.timeLeft / this.timeLimit) * 50);
+      let pts = (50 + timeBonus) * (1 + Math.floor(this.combo / 10));
+      this.score += pts;
+      this.updateScore(this.score);
       
-      this.flashAlpha = 1.0; // full flash
-      this.flashColor = '#4dff4d'; // green flash
+      this.createExplosion(this.canvas.width/2, this.canvas.height/2 - 50, '#06B6D4', 30);
+      this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2 - 100, text: 'PERFECT', color: '#06B6D4', life: 1.0, vy: -2 });
       
-      this.startDelay();
-      this.updateUI();
+      this.state = 'WAITING';
+      this.nextEventTimer = Math.random() * 500 + 200;
     } else {
-      // Wrong
-      this.loseLife();
+      this.handleMiss();
     }
   }
 
-  loseLife() {
-    Sound.playDamage();
-    this.lives--;
+  handleMiss() {
+    if (this.mods.suddenDeath) {
+      this.createExplosion(this.canvas.width/2, this.canvas.height/2, '#EF4444', 100);
+      this.draw();
+      return this.gameOver();
+    }
     
-    this.flashAlpha = 1.0; // full flash
-    this.flashColor = '#ff4d4d'; // red flash
+    this.combo = 0;
+    this.score = Math.max(0, this.score - 50);
+    this.updateScore(this.score);
     
-    this.canvas.classList.add('shake');
-    setTimeout(() => this.canvas.classList.remove('shake'), 200);
+    this.createExplosion(this.canvas.width/2, this.canvas.height/2 - 50, '#EF4444', 30);
+    this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2 - 100, text: 'MISS', color: '#EF4444', life: 1.0, vy: 1 });
+    
+    this.state = 'WAITING';
+    this.nextEventTimer = 1000;
+  }
 
-    this.updateUI();
-
-    if (this.lives <= 0) {
-      setTimeout(() => { Sound.playGameOver(); this.gameOver(); }, 300);
-    } else {
-      this.startDelay();
+  createExplosion(x, y, color, count=30) {
+    for(let i=0; i<count; i++) {
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
+      });
     }
   }
 
-  update(deltaTime) {
-    if (this.gameState === 'WAITING' && !this.tooEarlyMsg) {
-      this.delayTimer -= deltaTime;
-      if (this.delayTimer <= 0) {
-        this.nextPrompt();
+  update(dtMs) {
+    const dtSec = dtMs / 1000;
+    
+    if (this.state === 'WAITING') {
+      this.nextEventTimer -= dtMs;
+      if (this.nextEventTimer <= 0) {
+        this.spawnEvent();
       }
-    } else if (this.gameState === 'PROMPT') {
-      this.timeLeft -= deltaTime;
+    } else if (this.state === 'ACTIVE') {
+      this.timeLeft -= dtMs;
       if (this.timeLeft <= 0) {
-        this.loseLife();
+        this.handleMiss();
       }
     }
-    
-    if (this.flashAlpha > 0) {
-      this.flashAlpha -= (deltaTime / 500);
-      if (this.flashAlpha < 0) this.flashAlpha = 0;
-    }
 
-    }
-  }
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= dtSec * 2;
+      return p.life > 0;
+    });
 
-  updateUI() {
-    if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.livesEl) this.livesEl.innerText = '♥'.repeat(this.lives);
+    this.floatingTexts = this.floatingTexts.filter(ft => {
+      ft.y += ft.vy;
+      ft.life -= dtSec;
+      return ft.life > 0;
+    });
   }
 
   draw() {
-    this.ctx.fillStyle = '#0a0a0f';
+    this.ctx.fillStyle = '#09090B';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw Quadrants
-    for (let q of this.quadrants) {
-      this.ctx.fillStyle = q.color.hex;
-      this.ctx.globalAlpha = 0.2; // dim them slightly
-      this.ctx.fillRect(q.x, q.y, q.w, q.h);
-      
-      // inner border
-      this.ctx.strokeStyle = q.color.hex;
-      this.ctx.globalAlpha = 0.8;
-      this.ctx.lineWidth = 4;
-      this.ctx.strokeRect(q.x + 10, q.y + 10, q.w - 20, q.h - 20);
-    }
-    this.ctx.globalAlpha = 1.0;
-
-    // Crosshairs dividing quadrants
-    this.ctx.strokeStyle = '#2a2a3a';
-    this.ctx.lineWidth = 8;
-    this.ctx.beginPath();
-    this.ctx.moveTo(300, 0); this.ctx.lineTo(300, 600);
-    this.ctx.moveTo(0, 300); this.ctx.lineTo(600, 300);
-    this.ctx.stroke();
-
-    // Timer bar around the center text
-    const cx = 300;
-    const cy = 300;
-    
-    // Draw Text Background Box
-    this.ctx.fillStyle = '#1e1e2a';
-    this.ctx.shadowBlur = 20;
-    this.ctx.shadowColor = '#000';
-    this.ctx.fillRect(cx - 200, cy - 80, 400, 160);
-    this.ctx.shadowBlur = 0;
-
-    // Text
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     
-    if (this.gameState === 'WAITING') {
-      this.ctx.fillStyle = this.tooEarlyMsg ? '#ff4d4d' : '#f0f0f8';
-      this.ctx.font = '32px "Press Start 2P"';
-      this.ctx.fillText(this.tooEarlyMsg ? "TOO EARLY!" : "WAIT...", cx, cy);
-    } else if (this.gameState === 'PROMPT') {
+    if (this.state === 'ACTIVE' && this.currentColor) {
       this.ctx.fillStyle = this.currentColor.hex;
-      this.ctx.font = '64px "Press Start 2P"';
-      this.ctx.shadowBlur = 10;
-      this.ctx.shadowColor = this.currentColor.hex;
-      this.ctx.fillText(this.currentWord.name, cx, cy);
-      this.ctx.shadowBlur = 0;
-      
-      // Timer bar
-      const ratio = Math.max(0, this.timeLeft / this.maxTime);
-      this.ctx.fillStyle = ratio > 0.3 ? '#f0f0f8' : '#ff4d4d';
-      this.ctx.fillRect(cx - 180, cy + 50, 360 * ratio, 10);
-    }
-
-    // Flash overlay
-    if (this.flashAlpha > 0) {
-      this.ctx.fillStyle = this.flashColor;
-      this.ctx.globalAlpha = this.flashAlpha;
+      this.ctx.globalAlpha = 0.1;
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.globalAlpha = 1.0;
+      
+      this.ctx.fillStyle = this.currentColor.hex;
+      this.ctx.shadowBlur = 30;
+      this.ctx.shadowColor = this.currentColor.hex;
+      
+      const size = 100 + Math.sin(performance.now()/50)*10;
+      this.ctx.beginPath();
+      for(let i=0; i<6; i++) {
+        this.ctx.lineTo(this.canvas.width/2 + size * Math.cos(i * Math.PI / 3), this.canvas.height/2 - 50 + size * Math.sin(i * Math.PI / 3));
+      }
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.shadowBlur = 0;
+      
+      const ratio = this.timeLeft / this.timeLimit;
+      this.ctx.strokeStyle = '#fff';
+      this.ctx.lineWidth = 4;
+      this.ctx.beginPath();
+      this.ctx.arc(this.canvas.width/2, this.canvas.height/2 - 50, size + Math.max(0, ratio * 200), 0, Math.PI*2);
+      this.ctx.stroke();
+      
+    } else {
+      this.ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      this.ctx.beginPath();
+      for(let i=0; i<6; i++) {
+        this.ctx.lineTo(this.canvas.width/2 + 100 * Math.cos(i * Math.PI / 3), this.canvas.height/2 - 50 + 100 * Math.sin(i * Math.PI / 3));
+      }
+      this.ctx.closePath();
+      this.ctx.fill();
+    }
+
+    const legendY = this.canvas.height - 100;
+    this.ctx.font = "bold 14px 'JetBrains Mono', monospace";
+    this.colors.forEach((c, i) => {
+      const x = this.canvas.width/2 - 150 + i * 100;
+      this.ctx.fillStyle = c.hex;
+      this.ctx.fillText(c.label, x, legendY);
+      
+      this.ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      this.ctx.fillRect(x - 40, legendY + 15, 80, 40);
+      
+      this.ctx.fillStyle = '#fff';
+      this.ctx.fillText(c.id, x, legendY + 35);
+    });
+
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      this.ctx.fill();
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    this.floatingTexts.forEach(ft => {
+      this.ctx.fillStyle = ft.color;
+      this.ctx.globalAlpha = Math.max(0, ft.life);
+      this.ctx.font = "bold 20px 'Press Start 2P', monospace";
+      this.ctx.fillText(ft.text, ft.x, ft.y);
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.canvas.width/2, this.canvas.height/2, 50, this.canvas.width/2, this.canvas.height/2, 300);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (!this.mods.noUI) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "14px 'JetBrains Mono', monospace";
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText(`COMBO: ${this.combo}`, 20, 30);
     }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});

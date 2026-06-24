@@ -1,312 +1,248 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
 
 export default class PhantomCalc extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'phantom-calc',
-      description: 'Find the missing number in the equation. Click the correct bubble.',
-      width: 600,
-      height: 500
-    });
-
-    this.scoreEl = document.getElementById('game-score');
-    this.livesEl = document.getElementById('game-lives');
-    this.levelEl = document.getElementById('game-level');
-
-    // Mouse events
-    this.canvas.addEventListener('mousedown', (e) => this.handleMouseClick(e));
-
-    this.init();
+    super(canvas, config);
   }
 
   onStart() {
-    this.lives = 3;
-    this.level = 1;
-    this.correctAnswers = 0;
-    
-    this.timer = 0;
-    this.maxTime = 10000;
-    
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
+    };
+
     this.equation = "";
     this.answer = 0;
+    this.playerInput = "";
     
-    this.bubbles = [];
+    this.equationAlpha = 1.0;
+    this.fadeTime = 3000 / this.mods.speedMult;
+    this.timeLimit = 8000 / this.mods.speedMult;
+    this.timeLeft = this.timeLimit;
+    
+    this.combo = 0;
     this.particles = [];
+    this.floatingTexts = [];
+    
+    this.difficultyLevel = 1;
+    this.score = 0;
+    this.updateScore(0);
     
     this.generateEquation();
-    this.updateUI();
-    
-    let runs = Storage.get('phantom-calc_runs', 0);
-    Storage.set('phantom-calc_runs', runs + 1);
   }
 
   generateEquation() {
-    let a, b, ans;
-    let opStr = "";
+    this.difficultyLevel = Math.floor(this.score / 500) + 1;
     
-    // Difficulty logic
-    if (this.level <= 5) {
-      // Add / Sub 1-20
-      a = Math.floor(Math.random() * 20) + 1;
-      b = Math.floor(Math.random() * 20) + 1;
-      if (Math.random() > 0.5) {
-        opStr = "+";
-        ans = a + b;
-      } else {
-        opStr = "-";
-        // prevent negative for early levels
-        if (a < b) { let temp = a; a = b; b = temp; }
-        ans = a - b;
-      }
-    } else if (this.level <= 10) {
-      // Mult 1-10
-      a = Math.floor(Math.random() * 10) + 1;
-      b = Math.floor(Math.random() * 10) + 1;
-      opStr = "x";
-      ans = a * b;
-    } else {
-      // Mixed, larger
-      const r = Math.random();
-      if (r < 0.33) {
-        a = Math.floor(Math.random() * 50) + 10;
-        b = Math.floor(Math.random() * 50) + 10;
-        opStr = "+";
-        ans = a + b;
-      } else if (r < 0.66) {
-        a = Math.floor(Math.random() * 50) + 10;
-        b = Math.floor(Math.random() * 50) + 10;
-        opStr = "-";
-        if (a < b) { let temp = a; a = b; b = temp; }
-        ans = a - b;
-      } else {
-        a = Math.floor(Math.random() * 15) + 2;
-        b = Math.floor(Math.random() * 10) + 2;
-        opStr = "x";
-        ans = a * b;
-      }
+    const ops = ['+', '-', '*'];
+    let op = ops[Math.floor(Math.random() * (this.difficultyLevel > 2 ? 3 : 2))];
+    
+    let a, b;
+    if (op === '+') {
+      a = Math.floor(Math.random() * 20 * this.difficultyLevel) + 1;
+      b = Math.floor(Math.random() * 20 * this.difficultyLevel) + 1;
+      this.answer = a + b;
+    } else if (op === '-') {
+      a = Math.floor(Math.random() * 20 * this.difficultyLevel) + 10;
+      b = Math.floor(Math.random() * a);
+      this.answer = a - b;
+    } else if (op === '*') {
+      a = Math.floor(Math.random() * (5 + this.difficultyLevel)) + 2;
+      b = Math.floor(Math.random() * 10) + 2;
+      this.answer = a * b;
+    }
+    
+    this.equation = `${a} ${op} ${b}`;
+    
+    if (this.mods.reverse) {
+      this.equation = this.equation.split('').reverse().join('');
     }
 
-    // Hide one of the components randomly
-    const hideMode = Math.floor(Math.random() * 3); // 0=a, 1=b, 2=ans
-    if (hideMode === 0) {
-      this.equation = `? ${opStr} ${b} = ${ans}`;
-      this.answer = a;
-    } else if (hideMode === 1) {
-      this.equation = `${a} ${opStr} ? = ${ans}`;
-      this.answer = b;
-    } else {
-      this.equation = `${a} ${opStr} ${b} = ?`;
-      this.answer = ans;
-    }
-
-    this.timer = this.maxTime;
-    this.spawnBubbles();
+    this.playerInput = "";
+    
+    this.equationAlpha = 1.0;
+    this.timeLeft = this.timeLimit;
   }
 
-  spawnBubbles() {
-    this.bubbles = [];
-    const numBubbles = 4 + Math.floor(this.level / 3); // 4 to ~8 bubbles
+  onInput(keyLabel, e, isDown) {
+    if (!isDown) return;
     
-    // Add correct answer
-    this.bubbles.push(this.createBubble(this.answer));
+    const key = e.key;
     
-    // Add wrong answers close to correct answer
-    while (this.bubbles.length < numBubbles) {
-      // Offset by -10 to +10, but not 0
-      let offset = Math.floor(Math.random() * 20) - 10;
-      if (offset === 0) offset = 1;
+    if (key === 'Backspace') {
+      this.playerInput = this.playerInput.slice(0, -1);
+    } else if (key === 'Enter') {
+      this.checkAnswer();
+    } else if (key === '-' && this.playerInput === "") {
+      this.playerInput += key;
+    } else if (/[0-9]/.test(key)) {
+      if (this.playerInput.length < 5) {
+        this.playerInput += key;
+      }
+    }
+  }
+
+  checkAnswer() {
+    if (this.playerInput === "") return;
+    
+    if (parseInt(this.playerInput) === this.answer) {
+      this.combo++;
+      let basePoints = 50 * this.difficultyLevel;
+      let timeBonus = Math.floor((this.timeLeft / this.timeLimit) * 50);
+      let phantomBonus = this.equationAlpha <= 0 ? 100 : 0;
       
-      let wrongAns = this.answer + offset;
-      if (wrongAns < 0) wrongAns = Math.abs(wrongAns) + 1;
+      let points = (basePoints + timeBonus + phantomBonus) * (1 + (this.combo * 0.1));
+      points = Math.floor(points);
       
-      // Ensure unique
-      if (!this.bubbles.find(b => b.val === wrongAns)) {
-        this.bubbles.push(this.createBubble(wrongAns));
-      }
-    }
-  }
-
-  createBubble(val) {
-    const r = 25 + Math.random() * 15;
-    return {
-      val: val,
-      x: r + Math.random() * (this.canvas.width - r*2),
-      y: this.canvas.height + r + Math.random() * 200, // spawn below
-      r: r,
-      vy: -30 - Math.random() * 40 - (this.level * 2), // speed scales up
-      wobbleOffset: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.5 + Math.random()
-    };
-  }
-
-  handleMouseClick(e) {
-    if (this.state !== 'PLAYING') return;
-
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-
-    // Check hit reverse (top bubbles first)
-    for (let i = this.bubbles.length - 1; i >= 0; i--) {
-      const b = this.bubbles[i];
-      const dx = x - b.x;
-      const dy = y - b.y;
-      if (Math.sqrt(dx*dx + dy*dy) <= b.r) {
-        // Hit
-        this.popBubble(b, i);
-        return; // Only hit one
-      }
-    }
-  }
-
-  popBubble(b, index) {
-    this.createExplosion(b.x, b.y);
-    this.bubbles.splice(index, 1);
-    
-    if (b.val === this.answer) {
-      // Correct!
-      Sound.playCoin();
-      this.score += 100;
-      this.correctAnswers++;
-      if (this.correctAnswers % 3 === 0) this.level++;
+      this.score += points;
+      this.updateScore(this.score);
       
-      this.updateUI();
+      this.createExplosion(this.canvas.width/2, this.canvas.height/2, '#06B6D4', 50);
+      
+      let text = phantomBonus > 0 ? `PHANTOM CLEAR! +${points}` : `CORRECT +${points}`;
+      this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2, text: text, color: '#06B6D4', life: 1.0, vy: -2 });
+      
       this.generateEquation();
     } else {
-      // Wrong!
-      this.loseLife();
+      if (this.mods.suddenDeath) return this.gameOver();
+      
+      this.combo = 0;
+      this.score = Math.max(0, this.score - 50);
+      this.updateScore(this.score);
+      
+      this.createExplosion(this.canvas.width/2, this.canvas.height/2, '#EF4444', 30);
+      this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2, text: 'INCORRECT', color: '#EF4444', life: 1.0, vy: 1 });
+      this.playerInput = "";
+      
+      this.equationAlpha = 1.0;
     }
   }
 
-  loseLife() {
-    Sound.playDamage();
-    this.lives--;
-    this.updateUI();
-    
-    // Screen shake
-    this.canvas.classList.add('shake');
-    setTimeout(() => this.canvas.classList.remove('shake'), 200);
-
-    if (this.lives <= 0) {
-      this.gameOver();
-    } else {
-      this.generateEquation();
-    }
-  }
-
-  createExplosion(x, y) {
-    for(let i=0; i<15; i++) {
+  createExplosion(x, y, color, count=30) {
+    for(let i=0; i<count; i++) {
       this.particles.push({
-        x: x, y: y,
-        vx: (Math.random() - 0.5) * 150,
-        vy: (Math.random() - 0.5) * 150,
-        life: 200 + Math.random() * 200,
-        maxLife: 400
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
       });
     }
   }
 
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-    
-    this.timer -= deltaTime;
-    if (this.timer <= 0) {
-      this.loseLife();
+  update(dtMs) {
+    const dtSec = dtMs / 1000;
+    this.timeLeft -= dtMs;
+    if (this.timeLeft <= 0) {
+      if (this.mods.suddenDeath) return this.gameOver();
+      this.combo = 0;
+      this.score = Math.max(0, this.score - 50);
+      this.updateScore(this.score);
+      this.generateEquation();
     }
 
-    const timeSec = performance.now() / 1000;
-
-    for (let b of this.bubbles) {
-      b.y += b.vy * dt;
-      // Wobble
-      b.x += Math.sin(timeSec * b.wobbleSpeed + b.wobbleOffset) * 30 * dt;
-      
-      // If correct bubble goes off top, wrap to bottom so it's not impossible
-      if (b.val === this.answer && b.y < -b.r) {
-        b.y = this.canvas.height + b.r;
-      }
+    if (this.equationAlpha > 0) {
+      this.equationAlpha -= dtSec * (1000 / this.fadeTime);
+      if (this.equationAlpha < 0) this.equationAlpha = 0;
     }
 
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      let p = this.particles[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.life -= deltaTime;
-      if (p.life <= 0) this.particles.splice(i, 1);
-    }
-  }
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= dtSec * 2;
+      return p.life > 0;
+    });
 
-  updateUI() {
-    if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.livesEl) this.livesEl.innerText = '♥'.repeat(this.lives);
-    if (this.levelEl) this.levelEl.innerText = this.level;
+    this.floatingTexts = this.floatingTexts.filter(ft => {
+      ft.y += ft.vy;
+      ft.life -= dtSec;
+      return ft.life > 0;
+    });
   }
 
   draw() {
-    // Clear is handled by CSS mostly, but we clearRect
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = '#09090B';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Timer bar
-    const ratio = Math.max(0, this.timer / this.maxTime);
-    this.ctx.fillStyle = ratio > 0.25 ? '#6c63ff' : '#ff6b6b';
-    this.ctx.fillRect(0, 0, this.canvas.width * ratio, 6);
+    this.ctx.fillStyle = 'rgba(139, 92, 246, 0.05)';
+    this.ctx.font = "20px 'JetBrains Mono', monospace";
+    for(let i=0; i<30; i++) {
+      const syms = ['+', '-', '*', '/', '=', '%'];
+      this.ctx.fillText(syms[Math.floor(Math.random()*syms.length)], Math.random() * this.canvas.width, Math.random() * this.canvas.height);
+    }
 
-    // Equation
-    this.ctx.fillStyle = '#f0f0f8';
-    this.ctx.font = '32px "Press Start 2P"';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     
-    // Draw equation with drop shadow
-    this.ctx.shadowColor = '#6c63ff';
-    this.ctx.shadowBlur = 10;
-    this.ctx.fillText(this.equation, this.canvas.width / 2, this.canvas.height / 2);
-    this.ctx.shadowBlur = 0; // reset
-
-    // Bubbles
-    for (let b of this.bubbles) {
-      // Glow/border
+    if (this.equationAlpha > 0) {
+      this.ctx.fillStyle = `rgba(255, 255, 255, ${this.equationAlpha})`;
+      this.ctx.font = "bold 64px 'JetBrains Mono', monospace";
+      this.ctx.shadowBlur = 20 * this.equationAlpha;
+      this.ctx.shadowColor = '#fff';
+      this.ctx.fillText(this.equation + " = ?", this.canvas.width/2, this.canvas.height/2 - 60);
+      this.ctx.shadowBlur = 0;
+    } else {
+      this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.2)';
+      this.ctx.lineWidth = 1;
       this.ctx.beginPath();
-      this.ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      this.ctx.fillStyle = 'rgba(0, 212, 170, 0.1)'; // var(--accent-2)
-      this.ctx.fill();
-      
-      this.ctx.strokeStyle = 'rgba(0, 212, 170, 0.6)';
-      this.ctx.lineWidth = 2;
+      this.ctx.moveTo(0, this.canvas.height/2 - 60);
+      this.ctx.lineTo(this.canvas.width, this.canvas.height/2 - 60);
       this.ctx.stroke();
-
-      // Highlight
-      this.ctx.beginPath();
-      this.ctx.arc(b.x - b.r*0.3, b.y - b.r*0.3, b.r*0.2, 0, Math.PI * 2);
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      this.ctx.fill();
-
-      // Text
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `${b.r * 0.8}px "DM Sans"`;
-      this.ctx.fontWeight = '600';
-      this.ctx.fillText(b.val, b.x, b.y + b.r * 0.1);
     }
 
-    // Particles
-    this.ctx.fillStyle = '#00d4aa';
-    for (let p of this.particles) {
-      this.ctx.globalAlpha = p.life / p.maxLife;
+    this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    this.ctx.strokeStyle = '#8B5CF6';
+    this.ctx.beginPath();
+    this.ctx.roundRect(this.canvas.width/2 - 150, this.canvas.height/2 + 40, 300, 60, 8);
+    this.ctx.fill();
+    this.ctx.stroke();
+    
+    this.ctx.fillStyle = '#8B5CF6';
+    this.ctx.font = "bold 32px 'JetBrains Mono', monospace";
+    this.ctx.fillText(this.playerInput + (Math.floor(performance.now() / 500) % 2 === 0 ? '_' : ''), this.canvas.width/2, this.canvas.height/2 + 70);
+
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
       this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
       this.ctx.fill();
-    }
+    });
     this.ctx.globalAlpha = 1.0;
+
+    this.floatingTexts.forEach(ft => {
+      this.ctx.fillStyle = ft.color;
+      this.ctx.globalAlpha = Math.max(0, ft.life);
+      this.ctx.font = "bold 16px 'Press Start 2P', monospace";
+      this.ctx.fillText(ft.text, ft.x, ft.y);
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.canvas.width/2, this.canvas.height/2, 100, this.canvas.width/2, this.canvas.height/2, 350);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (!this.mods.noUI) {
+      const timerRatio = this.timeLeft / this.timeLimit;
+      this.ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      this.ctx.fillRect(0, 0, this.canvas.width, 5);
+      this.ctx.fillStyle = timerRatio > 0.3 ? '#8B5CF6' : '#EF4444';
+      this.ctx.fillRect(0, 0, this.canvas.width * timerRatio, 5);
+      
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "12px 'JetBrains Mono', monospace";
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText(`LEVEL ${this.difficultyLevel} | COMBO x${this.combo}`, 20, 30);
+    }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});

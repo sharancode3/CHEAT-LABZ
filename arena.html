@@ -2,192 +2,621 @@
 <html lang="en">
 <head>
   <script src="games-data.js"></script>
-  <script src="game-icons.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arena Mode | CHEAT LABZ</title>
+  <title>CHEAT LABZ | Arena Protocol</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="css/global.css">
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      background-color: var(--bg-primary);
-    }
-    .navbar {
-      background-color: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .back-link {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-secondary);
-      font-weight: 600;
-      font-size: 14px;
-    }
-    .back-link:hover { color: #fff; }
-    
-    .arena-header {
-      text-align: center;
-      padding: 64px 24px 32px;
-    }
-    .arena-title {
-      font-size: 32px;
-      color: var(--accent-3);
-      margin-bottom: 8px;
-    }
-    .total-score-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 24px;
-      display: inline-block;
-      margin-top: 32px;
-      min-width: 300px;
-      box-shadow: var(--shadow-card);
-    }
-    .total-score-value {
-      font-size: 48px;
-      color: #fff;
-      margin-top: 8px;
-    }
-    
-    .gauntlet-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      max-width: 900px;
-      margin: 0 auto 64px;
-      padding: 0 24px;
-    }
-    .gauntlet-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 24px;
-      text-align: center;
+    body { background-color: var(--bg-primary); color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+    /* SECTION 1 — ARENA HERO */
+    .arena-hero {
       position: relative;
-      transition: all 0.3s ease;
-    }
-    .gauntlet-card.completed {
-      border-color: var(--accent-2);
-    }
-    .gauntlet-card.locked {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-    .card-num {
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--bg-main);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
+      width: 100%;
+      height: 400px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      font-family: var(--font-display);
+      overflow: hidden;
+      border-bottom: 1px solid rgba(239,68,68,0.2);
     }
-    .gauntlet-card.completed .card-num {
-      border-color: var(--accent-2);
-      color: var(--accent-2);
+    .arena-hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
     }
-    .game-name {
-      font-size: 14px;
-      margin-bottom: 8px;
-      margin-top: 8px;
+    .arena-hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 24px;
     }
-    .multiplier {
-      font-size: 10px;
-      color: var(--accent-4);
+    .arena-hero-content svg {
+      color: var(--danger);
       margin-bottom: 16px;
+      filter: drop-shadow(0 0 15px rgba(239,68,68,0.5));
     }
-    .game-score {
-      font-size: 24px;
+    .arena-hero-content h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 36px;
       color: #fff;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px rgba(239,68,68,0.5);
+    }
+    .arena-hero-content p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .arena-stats-row {
+      display: flex;
+      gap: 40px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px 40px;
+      backdrop-filter: blur(10px);
+    }
+    .arena-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .arena-stat span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+    .arena-stat strong {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: var(--neon);
+    }
+
+    /* DAILY ARENA CHALLENGE */
+    .daily-arena-wrapper {
+      max-width: 900px;
+      margin: -30px auto 40px;
+      position: relative;
+      z-index: 10;
+      padding: 0 24px;
+    }
+    .daily-arena-card {
+      background: rgba(22,22,31,0.95);
+      border: 1px solid var(--danger);
+      border-radius: 16px;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(239,68,68,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .dac-badge {
+      position: absolute;
+      top: 0;
+      left: 32px;
+      background: var(--danger);
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      padding: 4px 12px;
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+    .dac-content h3 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      color: #fff;
+      margin-bottom: 8px;
+      margin-top: 12px;
+    }
+    .dac-content p {
+      font-size: 13px;
+      color: var(--muted);
       margin-bottom: 16px;
     }
+    .dac-games {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .dac-game-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-1);
+    }
+    .dac-arrow {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .btn-daily-arena {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-daily-arena:hover {
+      background: #fff;
+      color: var(--danger);
+      box-shadow: 0 0 20px rgba(239,68,68,0.4);
+    }
+
+    /* SECTION 2 — CATEGORY SELECTOR */
+    .arena-container {
+      max-width: 1200px;
+      margin: 0 auto 120px;
+      padding: 0 24px;
+    }
+    .arena-category-selector {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    .arena-category-selector h2 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 24px;
+    }
+    .arena-cat-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .arena-cat-tab {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .arena-cat-tab:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .arena-cat-tab.active {
+      background: rgba(108,99,255,0.2);
+      border-color: var(--neon);
+      color: var(--neon);
+      font-weight: bold;
+    }
+
+    /* SECTION 3 — GAME SELECTION GRID */
+    .arena-grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+    }
+    .arena-tile {
+      background: #16161f;
+      border: 2px solid #2a2a3a;
+      border-radius: 12px;
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: all 200ms ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-height: 120px;
+    }
+    .arena-tile:hover {
+      border-color: #6c63ff;
+      background: #1e1e2a;
+      transform: translateY(-2px);
+    }
+    .arena-tile.selected {
+      border-color: #6c63ff;
+      background: rgba(108,99,255,0.12);
+      box-shadow: 0 0 0 1px #6c63ff;
+    }
+    .arena-tile .tile-icon {
+      width: 40px;
+      height: 40px;
+      color: #8888a8;
+      transition: color 200ms;
+    }
+    .arena-tile.selected .tile-icon {
+      color: #6c63ff;
+    }
+    .arena-tile .tile-name {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      color: #f0f0f8;
+    }
+    .arena-tile .tile-diff {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #8888a8;
+      text-transform: uppercase;
+    }
+
+    /* SECTION 4 — ARENA LAUNCH PANEL */
+    .arena-launch-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(22,22,31,0.98);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid #3d3d55;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transform: translateY(100%);
+      transition: transform 300ms cubic-bezier(0.4,0,0.2,1);
+      z-index: 500;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+    .arena-launch-panel.visible {
+      transform: translateY(0);
+    }
+    .launch-game-preview {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      width: 30%;
+    }
+    .launch-game-preview svg {
+      width: 48px;
+      height: 48px;
+      color: var(--neon);
+    }
+    .launch-game-name {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .launch-game-desc {
+      font-size: 12px;
+      color: var(--muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .launch-round-info {
+      display: flex;
+      gap: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #fff;
+    }
+    .launch-round-info div {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+    .launch-round-info div span {
+      color: var(--danger);
+      font-size: 10px;
+    }
+    .btn-arena-start {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-arena-start:hover {
+      background: #fff;
+      color: var(--danger);
+      box-shadow: 0 0 20px rgba(239,68,68,0.4);
+    }
+
+    /* ROUND COMPLETE OVERLAY */
+    .round-complete-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    .round-complete-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .rc-round {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 32px;
+      color: #fff;
+      margin-bottom: 40px;
+      letter-spacing: 4px;
+    }
+    .rc-score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 64px;
+      font-weight: bold;
+      color: var(--neon);
+      margin-bottom: 60px;
+      text-shadow: 0 0 20px rgba(139,92,246,0.5);
+    }
+    .rc-next {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+    .rc-countdown {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 48px;
+      color: var(--danger);
+    }
+
+    /* ARENA RESULTS SCREEN */
+    .arena-results {
+      position: fixed;
+      inset: 0;
+      background: rgba(9,9,11,0.95);
+      backdrop-filter: blur(20px);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    .arena-results.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .arena-results h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 40px;
+      color: var(--danger);
+      margin-bottom: 40px;
+      text-shadow: 0 0 30px rgba(239,68,68,0.4);
+    }
+    .results-breakdown {
+      width: 100%;
+      max-width: 600px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .result-row span:first-child { color: var(--muted); font-size: 14px; }
+    .r-score { color: #fff; font-size: 18px; font-weight: bold; flex-grow: 1; text-align: right; margin-right: 24px; }
+    .r-diff { color: var(--danger); font-size: 12px; width: 100px; text-align: right; }
     
-    @media (max-width: 768px) {
-      .gauntlet-grid {
-        grid-template-columns: 1fr;
-      }
+    .result-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 24px;
+      margin-top: 8px;
+      font-family: 'Press Start 2P', monospace;
+    }
+    .result-total span:first-child { color: #fff; font-size: 18px; }
+    .r-total { color: var(--neon); font-size: 24px; }
+    
+    .results-actions {
+      display: flex;
+      gap: 16px;
+    }
+    .results-actions button {
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .btn-re {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-re:hover {
+      background: #fff;
+      color: var(--danger);
+    }
+    .btn-se {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.2) !important;
+      color: #fff;
+    }
+    .btn-se:hover {
+      background: rgba(255,255,255,0.1);
     }
   </style>
 </head>
 <body>
-  <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
-
+  
   <div id="navbar-mount"></div>
 
-  <div class="container fade-in" style="display: flex; gap: 40px; margin-top: 40px; padding-bottom: 80px;">
-    <!-- LEFT SIDE: Game Selection Grid -->
-    <div style="flex: 2;">
-      <h2 class="font-display" style="font-size: 18px; margin-bottom: 24px;">SELECT GAME</h2>
-      <div id="arena-games-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-        <!-- JS rendered -->
-      </div>
-    </div>
-
-    <!-- RIGHT SIDE: Info Panel -->
-    <div style="flex: 1;">
-      <div class="arena-info-panel" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 24px; position: sticky; top: 100px;">
-        <h2 class="font-display" style="color: var(--accent-3); display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5L3 6l3-3 11.5 11.5"></path><path d="M13 19l6-6"></path><path d="M16 16l4 4"></path><path d="M19 21l2-2"></path><path d="M9.5 8.5L21 20l-3 3-11.5-11.5"></path><path d="M11 5l-6 6"></path><path d="M8 8L4 4"></path><path d="M5 3L3 5"></path></svg>
-          ARENA MODE
-        </h2>
-        <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">3 rounds. Score carries over. Difficulty ramps each round. Beat your arena best.</p>
-        
-        <div style="margin-bottom: 24px;">
-          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">YOUR ARENA BEST</div>
-          <div id="arena-best-score" class="font-display" style="font-size: 24px; color: #fff;">0</div>
+  <!-- SECTION 1 — ARENA HERO -->
+  <div class="arena-hero">
+    <canvas class="arena-hero-bg" id="hero-particles"></canvas>
+    <div class="arena-hero-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="14" y1="4" x2="20" y2="10"></line><line x1="4" y1="20" x2="10" y2="14"></line><line x1="20" y1="4" x2="4" y2="20"></line><line x1="14" y1="20" x2="20" y2="14"></line><line x1="4" y1="4" x2="10" y2="10"></line></svg>
+      <h1>ARENA MODE</h1>
+      <p>3 rounds. Escalating difficulty. No mercy.</p>
+      <div class="arena-stats-row">
+        <div class="arena-stat">
+          <span>YOUR BEST</span>
+          <strong id="arena-best">0</strong>
         </div>
-
-        <button id="start-arena-btn" class="btn btn-primary" style="width: 100%; padding: 16px; opacity: 0.4; cursor: not-allowed;" disabled>START ARENA</button>
+        <div class="arena-stat">
+          <span>LAST ARENA</span>
+          <strong id="arena-last">—</strong>
+        </div>
+        <div class="arena-stat">
+          <span>ARENAS PLAYED</span>
+          <strong id="arena-count">0</strong>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Arena Interstitial Modal -->
-  <div id="arena-interstitial" class="game-modal hidden" style="justify-content: center; align-items: center; text-align: center;">
-    <h2 id="arena-round-title" class="font-display" style="font-size: 32px; color: var(--accent-1); margin-bottom: 16px;">ROUND 1 COMPLETE</h2>
-    <div id="arena-round-score" class="font-display" style="font-size: 48px; color: #fff;">Score: 0</div>
+  <!-- DAILY ARENA CHALLENGE -->
+  <div class="daily-arena-wrapper">
+    <div class="daily-arena-card">
+      <div class="dac-badge">DAILY CHALLENGE</div>
+      <div class="dac-content">
+        <h3>TODAY'S GAUNTLET</h3>
+        <p>3 pre-selected games in sequence. Global daily challenge — resets at midnight.</p>
+        <div class="dac-games" id="daily-games-container">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+      <button class="btn-daily-arena" id="btn-daily-play">
+        PLAY DAILY GAUNTLET
+      </button>
+    </div>
   </div>
 
-  <script type="module" src="js/ui/arena.js"></script>
-
-  
-
-  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
-  <script type="module" src="js/ui/navbar.js"></script>
-
-  <!-- Global Game Modal -->
-  <div id="game-modal" class="game-modal hidden">
-    <div class="game-modal-header">
-      <button id="close-game" class="btn-icon">← BACK</button>
-      <span id="game-modal-title" class="font-display" style="font-size: 14px;"></span>
-      <span id="game-modal-score" class="font-display text-accent-1" style="font-size: 14px;">SCORE: 0</span>
+  <div class="arena-container">
+    <!-- SECTION 2 — CATEGORY SELECTOR -->
+    <div class="arena-category-selector">
+      <h2>CHOOSE YOUR BATTLEFIELD</h2>
+      <div class="arena-cat-tabs" id="arena-cat-tabs">
+        <button class="arena-cat-tab active" data-cat="all">ALL GAMES</button>
+        <button class="arena-cat-tab" data-cat="arcade">ARCADE GAUNTLET</button>
+        <button class="arena-cat-tab" data-cat="skill">SKILL TRIAL</button>
+        <button class="arena-cat-tab" data-cat="puzzle">MIND BENDER</button>
+        <button class="arena-cat-tab" data-cat="racing">SPEED RUN</button>
+      </div>
     </div>
-    <div class="game-canvas-container" id="game-canvas-container">
+
+    <!-- SECTION 3 — GAME SELECTION GRID -->
+    <div class="arena-grid-layout" id="arena-tiles-container">
+      <!-- Injected via JS -->
+    </div>
+  </div>
+
+  <!-- SECTION 4 — ARENA LAUNCH PANEL -->
+  <div class="arena-launch-panel" id="arena-launch">
+    <div class="launch-game-preview">
+      <div id="launch-icon"></div>
+      <div>
+        <div class="launch-game-name" id="launch-name">GAME NAME</div>
+        <div class="launch-game-desc" id="launch-desc">Description</div>
+      </div>
+    </div>
+    <div class="launch-round-info">
+      <div><span>ROUND 1</span> Normal</div>
+      <div><span>ROUND 2</span> 1.5× Speed</div>
+      <div><span>ROUND 3</span> 2.0× Speed</div>
+    </div>
+    <button id="start-arena-btn" class="btn-arena-start">
+      START ARENA
+    </button>
+  </div>
+
+  <!-- ARENA ROUND TRANSITION CINEMATIC -->
+  <div class="round-complete-overlay" id="round-transition">
+    <div class="rc-round" id="rc-title">ROUND 1 COMPLETE</div>
+    <div class="rc-score" id="rc-score">0</div>
+    <div class="rc-next" id="rc-next-title">ROUND 2 STARTING IN</div>
+    <div class="rc-countdown" id="rc-countdown">3</div>
+  </div>
+
+  <!-- ARENA RESULTS SCREEN -->
+  <div class="arena-results" id="arena-results">
+    <h2>ARENA COMPLETE</h2>
+    <div class="results-breakdown">
+      <div class="result-row">
+        <span>ROUND 1</span>
+        <span class="r-score" id="res-r1-score">0</span>
+        <span class="r-diff">NORMAL</span>
+      </div>
+      <div class="result-row">
+        <span>ROUND 2</span>
+        <span class="r-score" id="res-r2-score">0</span>
+        <span class="r-diff">1.5× SPEED</span>
+      </div>
+      <div class="result-row">
+        <span>ROUND 3</span>
+        <span class="r-score" id="res-r3-score">0</span>
+        <span class="r-diff">2.0× SPEED</span>
+      </div>
+      <div class="result-total">
+        <span>TOTAL</span>
+        <span class="r-total" id="res-total-score">0</span>
+      </div>
+    </div>
+    <div class="results-actions">
+      <button class="btn-re" onclick="location.href='arena.html'">PLAY AGAIN</button>
+      <button class="btn-se" onclick="location.href='games.html'">BROWSE GAMES</button>
+      <button class="btn-se" onclick="location.href='leaderboard.html'">VIEW LEADERBOARD</button>
+    </div>
+  </div>
+
+  <!-- Global Game Modal (Recycled for Arena) -->
+  <div id="game-modal" class="hidden" style="position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column;">
+    <div style="padding: 16px 24px; background: rgba(9,9,11,0.9); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+      <button id="close-game" style="background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 8px 16px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; cursor: pointer;">← FORFEIT ARENA</button>
+      <span id="game-modal-title" style="font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--danger);">ROUND 1/3</span>
+      <span id="game-modal-score" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: bold; color: #fff;">TOTAL SCORE: 0</span>
+    </div>
+    
+    <!-- Active Modifiers HUD inside game -->
+    <div id="arena-hud-mods" style="position: absolute; top: 80px; left: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 100;"></div>
+
+    <div id="game-canvas-container" style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;">
       <canvas id="game-canvas"></canvas>
     </div>
   </div>
 
+  <script type="module" src="js/ui/navbar.js"></script>
+  <script type="module" src="js/ui/arena.js"></script>
   <script type="module" src="js/ui/modal.js"></script>
 </body>
 </html>

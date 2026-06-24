@@ -39,6 +39,30 @@ html, body {
   --shadow-glow-purple: 0 0 20px rgba(108,99,255,0.3);
 }
 
+.theme-neon {
+  --bg-primary: #0f0a14;
+  --bg-secondary: #181120;
+  --bg-card: #20162b;
+  --bg-card-hover: #291c36;
+  --border: #3d2455;
+  --border-bright: #563377;
+  --accent-1: #ff007f;
+  --accent-2: #00f0ff;
+  --shadow-glow-purple: 0 0 20px rgba(255,0,127,0.4);
+}
+
+.theme-matrix {
+  --bg-primary: #050a05;
+  --bg-secondary: #0a140a;
+  --bg-card: #0f1c0f;
+  --bg-card-hover: #142814;
+  --border: #1f3d1f;
+  --border-bright: #2d592d;
+  --accent-1: #00ff00;
+  --accent-2: #00cc00;
+  --shadow-glow-purple: 0 0 20px rgba(0,255,0,0.3);
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -46,6 +70,31 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  animation: pageFadeIn 200ms ease;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #111118; }
+::-webkit-scrollbar-thumb { 
+  background: #3d3d55; 
+  border-radius: 3px; 
+}
+::-webkit-scrollbar-thumb:hover { background: #6c63ff; }
+
+*:focus-visible {
+  outline: 2px solid #6c63ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Utility Classes */
+.hidden {
+  display: none !important;
 }
 
 /* Typography Rules */
@@ -170,6 +219,62 @@ button {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Navbar */
+.navbar {
+  width: 100%;
+  position: sticky;
+  top: 0;
+  height: 60px;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 32px;
+}
+
+.nav-logo {
+  font-size: 16px;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.nav-links a {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-decoration: none;
+  height: 60px;
+  line-height: 60px;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: #fff;
+}
+
+.nav-links a.active {
+  color: #fff;
+  border-bottom: 2px solid var(--accent-1);
 }
 
 /* Nav Controls */
@@ -312,4 +417,80 @@ button {
 }
 .game-canvas-container canvas {
   max-width: 100%; max-height: 100%;
+}
+
+.game-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(9, 9, 11, 0.9);
+  z-index: 100;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+}
+.game-loading-bar {
+  width: 150px;
+  height: 2px;
+  background: #3d3d55;
+  margin-bottom: 16px;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.game-loading-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; height: 100%; width: 40%;
+  background: #6c63ff;
+  animation: loadingSlide 1s infinite alternate ease-in-out;
+}
+@keyframes loadingSlide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e1e2a;
+  border: 1px solid #ff6b6b;
+  color: #f0f0f8;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 99999;
+}
+.toast-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast-error { border-color: #ff6b6b; }
+.toast-success { border-color: #00d4aa; }
+.toast-info { border-color: #6c63ff; }
+
+/* SVG Game Icons */
+.game-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-secondary);
+  transition: color 200ms;
+}
+.game-card:hover .game-icon,
+.premium-card:hover .game-icon,
+.hot-card:hover .game-icon {
+  color: var(--accent-1);
+}
+.game-icon svg {
+  width: 100%;
+  height: 100%;
 }

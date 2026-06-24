@@ -154,3 +154,18 @@
   margin-bottom: 10px;
 }
 
+.hidden {
+  display: none !important;
+}
+
+@keyframes particle-burst {
+  from { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  to { 
+    transform: translate(
+      calc(-50% + var(--tx)), 
+      calc(-50% + var(--ty))
+    ) scale(0);
+    opacity: 0;
+  }
+}
+

@@ -1,288 +1,243 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
 
 export default class GravityFlip extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'gravity-flip',
-      description: 'Avoid spikes. Flip gravity to survive.',
-      width: 700,
-      height: 400
-    });
-
-    this.scoreEl = document.getElementById('game-score');
-
-    this.canvas.addEventListener('mousedown', () => {
-      if (this.state === 'PLAYING') this.flipGravity();
-    });
-
-    this.init();
+    super(canvas, config);
   }
 
   onStart() {
-    this.player = {
-      x: 100,
-      y: 200,
-      w: 30,
-      h: 30,
-      vy: 0,
-      gravity: 2000,
-      jumpForce: 0, // not used, we just reverse gravity
-      dir: 1, // 1 = down, -1 = up
-      angle: 0,
-      isGrounded: false
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
     };
 
-    this.baseSpeed = 300; // pixels per second scrolling
-    this.speed = this.baseSpeed;
+    this.player = {
+      x: this.mods.reverse ? this.canvas.width - 150 : 150,
+      y: this.canvas.height - 50,
+      width: 30,
+      height: 30,
+      vy: 0,
+      gravityDir: 1,
+      gravityForce: 2500,
+      isGrounded: true,
+      color: '#06B6D4'
+    };
+
+    this.scrollSpeed = 400 * this.mods.speedMult;
     this.distance = 0;
     
-    this.spikes = [];
+    this.obstacles = [];
+    this.spawnTimer = 0;
+    this.spawnInterval = 1000 / this.mods.speedMult;
+    
     this.particles = [];
     
-    this.spawnTimer = 0;
-    this.seed = 9999;
-    this.targetAngle = 0;
-    
-    // Initial floor/ceiling
-    this.groundH = 40;
-    
-    this.updateUI();
-    
-    let runs = Storage.get('gravity-flip_runs', 0);
-    Storage.set('gravity-flip_runs', runs + 1);
+    this.score = 0;
+    this.updateScore(0);
   }
 
-  onInput(key, event) {
-    if (key === ' ' && this.state === 'PLAYING') {
+  onInput(key, e, isDown) {
+    if (!isDown) return;
+    if (e.code === 'Space' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       this.flipGravity();
     }
   }
 
   flipGravity() {
-    this.player.dir *= -1;
-    this.player.isGrounded = false;
-    this.targetAngle = this.player.dir === 1 ? 0 : Math.PI;
-    Sound.playBlip();
-  }
-
-  seedRandom() {
-    let t = this.seed += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-
-  spawnSpike() {
-    // 0 = bottom, 1 = top
-    const side = this.seedRandom() > 0.5 ? 1 : 0;
-    const isCluster = this.seedRandom() > 0.7; // spawn 2-3 together
-    
-    const num = isCluster ? Math.floor(this.seedRandom() * 2) + 2 : 1;
-    
-    for (let i = 0; i < num; i++) {
-      this.spikes.push({
-        x: this.canvas.width + i * 40,
-        y: side === 0 ? this.canvas.height - this.groundH : this.groundH,
-        w: 30,
-        h: 40,
-        side: side // 0=points up, 1=points down
-      });
+    if (this.player.isGrounded) {
+      this.player.gravityDir *= -1;
+      this.player.isGrounded = false;
+      this.createExplosion(this.player.x + this.player.width/2, this.player.y + (this.player.gravityDir===1 ? 0 : this.player.height), '#06B6D4', 10);
     }
   }
 
-  createDust() {
-    for (let i = 0; i < 5; i++) {
+  spawnObstacle() {
+    const type = Math.floor(Math.random() * 3);
+    const w = 40 + Math.random() * 40;
+    const h = 40 + Math.random() * 60;
+    
+    let y = 0;
+    if (type === 0) y = this.canvas.height - h;
+    else if (type === 1) y = 0;
+    else y = this.canvas.height/2 - h/2;
+    
+    this.obstacles.push({
+      x: this.mods.reverse ? -w : this.canvas.width,
+      y: y,
+      width: w,
+      height: h,
+      passed: false
+    });
+  }
+
+  createExplosion(x, y, color, count=30) {
+    for(let i=0; i<count; i++) {
       this.particles.push({
-        x: this.player.x + this.player.w/2 + (Math.random()-0.5)*10,
-        y: this.player.dir === 1 ? this.player.y + this.player.h : this.player.y,
-        vx: -this.speed * 0.5 + (Math.random()-0.5)*50,
-        vy: -this.player.dir * (Math.random() * 50),
-        life: 200 + Math.random() * 200,
-        maxLife: 400
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
       });
     }
   }
 
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
+  update(dtMs) {
+    const dtSec = dtMs / 1000;
     
-    // Distance & Speed
-    this.distance += (this.speed * dt) / 10; // score metric
-    this.score = Math.floor(this.distance);
-    this.speed = this.baseSpeed + this.distance * 0.5; // slow ramp up
+    this.player.vy += this.player.gravityForce * this.player.gravityDir * dtSec;
+    this.player.y += this.player.vy * dtSec;
     
-    // Physics
-    if (!this.player.isGrounded) {
-      this.player.vy += this.player.gravity * this.player.dir * dt;
-    } else {
+    if (this.player.y > this.canvas.height - this.player.height) {
+      this.player.y = this.canvas.height - this.player.height;
       this.player.vy = 0;
-    }
-    
-    // Smooth flip rotate
-    let angleDiff = this.targetAngle - this.player.angle;
-    // Normalize angle difference to handle wrap around cleanly
-    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    this.player.angle += angleDiff * 15 * dt;
-    
-    // Terminal velocity
-    if (this.player.vy > 1000) this.player.vy = 1000;
-    if (this.player.vy < -1000) this.player.vy = -1000;
-    
-    this.player.y += this.player.vy * dt;
-    
-    // Ground collision
-    this.player.isGrounded = false;
-    
-    if (this.player.y + this.player.h >= this.canvas.height - this.groundH) {
-      this.player.y = this.canvas.height - this.groundH - this.player.h;
-      this.player.vy = 0;
-      if (this.player.dir === 1) {
-        if (!this.player.wasGrounded) this.createDust();
-        this.player.isGrounded = true;
+      if (!this.player.isGrounded) {
+         this.player.isGrounded = true;
+         this.createExplosion(this.player.x + this.player.width/2, this.canvas.height, '#fff', 5);
       }
-    } else if (this.player.y <= this.groundH) {
-      this.player.y = this.groundH;
+    } else if (this.player.y < 0) {
+      this.player.y = 0;
       this.player.vy = 0;
-      if (this.player.dir === -1) {
-        if (!this.player.wasGrounded) this.createDust();
-        this.player.isGrounded = true;
+      if (!this.player.isGrounded) {
+         this.player.isGrounded = true;
+         this.createExplosion(this.player.x + this.player.width/2, 0, '#fff', 5);
       }
     }
     
-    this.player.wasGrounded = this.player.isGrounded;
-
-    // Spikes
-    this.spawnTimer -= deltaTime;
-    // Spawn rate depends on speed
+    this.scrollSpeed += 10 * dtSec * this.mods.speedMult;
+    this.distance += this.scrollSpeed * dtSec;
+    
+    this.spawnTimer -= dtMs;
     if (this.spawnTimer <= 0) {
-      this.spawnSpike();
-      this.spawnTimer = 1000 + this.seedRandom() * 1500 - (this.speed * 0.5); // ranges ~800 to 2000
-      if (this.spawnTimer < 500) this.spawnTimer = 500;
+      this.spawnObstacle();
+      this.spawnInterval = Math.max(400, this.spawnInterval - 10);
+      this.spawnTimer = this.spawnInterval;
     }
     
-    // Update spikes
-    for (let i = this.spikes.length - 1; i >= 0; i--) {
-      let s = this.spikes[i];
-      s.x -= this.speed * dt;
+    for (let i = this.obstacles.length - 1; i >= 0; i--) {
+      let obs = this.obstacles[i];
+      if (this.mods.reverse) {
+        obs.x += this.scrollSpeed * dtSec;
+      } else {
+        obs.x -= this.scrollSpeed * dtSec;
+      }
       
-      // Collision (triangle approx as rect)
-      const shrink = 8; // generous hitbox
-      if (this.player.x < s.x + s.w - shrink &&
-          this.player.x + this.player.w > s.x + shrink) {
-          
-        let hit = false;
-        if (s.side === 0) {
-          // bottom spike
-          if (this.player.y + this.player.h > s.y + shrink) hit = true;
+      if (
+        this.player.x < obs.x + obs.width &&
+        this.player.x + this.player.width > obs.x &&
+        this.player.y < obs.y + obs.height &&
+        this.player.y + this.player.height > obs.y
+      ) {
+        this.createExplosion(this.player.x + this.player.width/2, this.player.y + this.player.height/2, '#EF4444', 100);
+        this.draw();
+        this.gameOver();
+        return;
+      }
+
+      if (!obs.passed) {
+        if (this.mods.reverse) {
+          if (obs.x > this.player.x + this.player.width) {
+            obs.passed = true;
+            this.score += 10;
+            this.updateScore(this.score);
+          }
         } else {
-          // top spike
-          if (this.player.y < s.y + s.h - shrink) hit = true;
-        }
-        
-        if (hit) {
-          this.die();
-          return;
+          if (obs.x + obs.width < this.player.x) {
+            obs.passed = true;
+            this.score += 10;
+            this.updateScore(this.score);
+          }
         }
       }
       
-      if (s.x < -50) this.spikes.splice(i, 1);
+      if (this.mods.reverse) {
+        if (obs.x > this.canvas.width + 50) this.obstacles.splice(i, 1);
+      } else {
+        if (obs.x < -100) this.obstacles.splice(i, 1);
+      }
     }
 
-    // Particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      let p = this.particles[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.life -= deltaTime;
-      if (p.life <= 0) this.particles.splice(i, 1);
-    }
-
-    this.updateUI();
-  }
-
-  die() {
-    Sound.playDamage();
-    Sound.playGameOver();
-    this.gameOver();
-  }
-
-  updateUI() {
-    if (this.scoreEl) this.scoreEl.innerText = this.score;
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= dtSec * 2;
+      return p.life > 0;
+    });
   }
 
   draw() {
-    this.ctx.fillStyle = '#1e1e2a';
+    this.ctx.fillStyle = '#09090B';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw floor / ceiling
-    this.ctx.fillStyle = '#2a2a3a';
-    this.ctx.fillRect(0, 0, this.canvas.width, this.groundH);
-    this.ctx.fillRect(0, this.canvas.height - this.groundH, this.canvas.width, this.groundH);
-    
-    // Draw scrolling grid lines on ground for speed illusion
-    this.ctx.strokeStyle = '#555570';
+    this.ctx.strokeStyle = 'rgba(139, 92, 246, 0.1)';
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    const offset = -(this.distance * 10) % 40;
-    for (let x = offset; x < this.canvas.width; x += 40) {
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, this.groundH);
-      this.ctx.moveTo(x, this.canvas.height - this.groundH);
-      this.ctx.lineTo(x, this.canvas.height);
+    const offset = this.distance % 100;
+    for (let x = -100; x < this.canvas.width + 100; x += 100) {
+      let drawX = this.mods.reverse ? x + offset : x - offset;
+      this.ctx.moveTo(drawX, 0);
+      this.ctx.lineTo(drawX, this.canvas.height);
     }
     this.ctx.stroke();
 
-    // Spikes
-    this.ctx.fillStyle = '#ff6b6b';
-    for (let s of this.spikes) {
-      this.ctx.beginPath();
-      if (s.side === 0) {
-        // points up
-        this.ctx.moveTo(s.x, s.y + s.h);
-        this.ctx.lineTo(s.x + s.w/2, s.y);
-        this.ctx.lineTo(s.x + s.w, s.y + s.h);
-      } else {
-        // points down
-        this.ctx.moveTo(s.x, s.y);
-        this.ctx.lineTo(s.x + s.w/2, s.y + s.h);
-        this.ctx.lineTo(s.x + s.w, s.y);
-      }
-      this.ctx.fill();
-    }
+    this.ctx.fillStyle = '#8B5CF6';
+    this.ctx.shadowBlur = 10;
+    this.ctx.shadowColor = '#8B5CF6';
+    this.ctx.fillRect(0, 0, this.canvas.width, 2);
+    this.ctx.fillRect(0, this.canvas.height - 2, this.canvas.width, 2);
+    this.ctx.shadowBlur = 0;
 
-    // Particles
-    this.ctx.fillStyle = '#f0f0f8';
-    for (let p of this.particles) {
-      this.ctx.globalAlpha = p.life / p.maxLife;
-      this.ctx.fillRect(p.x, p.y, 4, 4);
-    }
+    this.ctx.fillStyle = '#EF4444';
+    this.ctx.shadowBlur = 15;
+    this.ctx.shadowColor = '#EF4444';
+    this.obstacles.forEach(obs => {
+      this.ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+    });
+    this.ctx.shadowBlur = 0;
+
+    this.ctx.fillStyle = this.player.color;
+    this.ctx.shadowBlur = 20;
+    this.ctx.shadowColor = this.player.color;
+    this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+    this.ctx.shadowBlur = 0;
+    
+    this.ctx.fillStyle = 'rgba(6, 182, 212, 0.3)';
+    this.ctx.fillRect(
+      this.mods.reverse ? this.player.x + this.player.width : this.player.x - 20, 
+      this.player.y + 5, 
+      20, 
+      this.player.height - 10
+    );
+
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      this.ctx.fill();
+    });
     this.ctx.globalAlpha = 1.0;
 
-    // Player
-    this.ctx.save();
-    this.ctx.translate(this.player.x + this.player.w/2, this.player.y + this.player.h/2);
-    this.ctx.rotate(this.player.angle);
-    
-    this.ctx.fillStyle = '#00d4aa';
-    this.ctx.shadowBlur = 10;
-    this.ctx.shadowColor = '#00d4aa';
-    this.ctx.fillRect(-this.player.w/2, -this.player.h/2, this.player.w, this.player.h);
-    
-    // Little eye to show orientation
-    this.ctx.fillStyle = '#05050a';
-    this.ctx.shadowBlur = 0;
-    this.ctx.fillRect(4, -8, 6, 6);
-    this.ctx.fillRect(4, 2, 6, 6);
-    
-    this.ctx.restore();
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.player.x + this.player.width/2, this.player.y + this.player.height/2, 50, this.player.x + this.player.width/2, this.player.y + this.player.height/2, 250);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (!this.mods.noUI) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "14px 'JetBrains Mono', monospace";
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText(`SPEED: ${Math.floor(this.scrollSpeed/10)} | GRAVITY: ${this.player.gravityDir === 1 ? 'DOWN' : 'UP'}`, 20, 30);
+    }
+  }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});
