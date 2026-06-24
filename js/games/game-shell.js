@@ -185,6 +185,7 @@ export class GameShell {
    * @param {number} timestamp 
    */
   loop(timestamp) {
+    // Render Loop Pruning: Cease calculations and drawing when not playing
     if (this.state !== 'PLAYING') return;
 
     const deltaTime = timestamp - this._lastTime;
@@ -266,6 +267,8 @@ export class GameShell {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+    // Clear any bound document keydown handlers to prevent input stuttering
+    // (Note: Global listeners in events.js respect GameState.isPlaying)
   }
 
   quit() {
