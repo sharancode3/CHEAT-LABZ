@@ -15,7 +15,7 @@ async function testRender() {
     setTimeout(() => {
       const grid = dom.window.document.getElementById('games-grid');
       const childrenCount = grid ? grid.children.length : 0;
-      console.log(\`[SUCCESS] Games Grid Child Elements Rendered: \${childrenCount}\`);
+      console.log(`[SUCCESS] Games Grid Child Elements Rendered: ${childrenCount}`);
       
       const homeHtml = fs.readFileSync('index.html', 'utf8');
       const homeDom = new JSDOM(homeHtml, {
@@ -27,7 +27,7 @@ async function testRender() {
         setTimeout(() => {
            const hotGames = homeDom.window.document.getElementById('hot-games-container');
            const hotCount = hotGames ? hotGames.children.length : 0;
-           console.log(\`[SUCCESS] Home Hot Games Rendered: \${hotCount}\`);
+           console.log(`[SUCCESS] Home Hot Games Rendered: ${hotCount}`);
            process.exit(0);
         }, 200);
       });

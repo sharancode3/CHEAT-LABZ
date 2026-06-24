@@ -1,167 +1,349 @@
-import { Storage } from '../core/storage.js';
+import { GAME_ICONS } from '../../assets/icons/game-icons.js';
 
+function getGameIcon(gameId) {
+  return GAME_ICONS[gameId] || GAME_ICONS['default'] || '🎮';
+}
 
+function getScores(gameId) {
+  try {
+    const raw = localStorage.getItem(`cheatlabz_scores_${gameId}`);
+    if (!raw) return [];
+    const scores = JSON.parse(raw);
+    return scores.map(s => (typeof s === 'object' ? s.score : s)).sort((a,b) => b-a);
+  } catch(e) {
+    return [];
+  }
+}
 
-const diffScores = { EASY: 1, MEDIUM: 2, HARD: 3 };
-
-class GameLibrary {
+class GamesGrid {
   constructor() {
     this.grid = document.getElementById('games-grid');
-    this.emptyState = document.getElementById('empty-state');
-    this.countEl = document.getElementById('games-count');
-    
-    this.filterTabs = document.querySelectorAll('.filter-tabs .tab-pill');
     this.searchInput = document.getElementById('search-input');
     this.sortSelect = document.getElementById('sort-select');
     this.shuffleBtn = document.getElementById('shuffle-btn');
-    
-    this.currentFilter = 'ALL';
+    this.filterTabsContainer = document.getElementById('filter-tabs-container');
+    this.showingText = document.getElementById('showing-text');
+
+    this.currentFilter = 'all';
     this.currentSearch = '';
-    this.currentSort = 'TRENDING';
-    
+    this.currentSort = 'pop';
+    this.games = window.GAMES || [];
+
     this.init();
   }
 
   init() {
-    this.bindEvents();
-    this.render();
-  }
+    if (!this.grid) return;
+    this.updateGlobalStats();
+    this.renderFilterTabs();
 
-  bindEvents() {
-    // Filter
-    this.filterTabs.forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        this.filterTabs.forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        this.currentFilter = e.target.dataset.filter;
-        this.render();
-      });
-    });
-
-    // Search (Debounced)
-    let timeout;
-    this.searchInput.addEventListener('input', (e) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
+    if (this.searchInput) {
+      this.searchInput.addEventListener('input', (e) => {
         this.currentSearch = e.target.value.toLowerCase();
-        this.render();
-      }, 200);
-    });
-
-    // Sort
-    this.sortSelect.addEventListener('change', (e) => {
-      this.currentSort = e.target.value;
-      this.render();
-    });
-
-    // Shuffle
-    this.shuffleBtn.addEventListener('click', () => {
-      // Add shuffle animation class
-      const cards = this.grid.querySelectorAll('.game-card');
-      cards.forEach(card => card.classList.add('card-flip'));
-      
-      setTimeout(() => {
-        // Randomize
-        GAMES.sort(() => Math.random() - 0.5);
-        this.render(false); // don't re-add animation on render
-      }, 200);
-    });
-
-    if (window.gsap) {
-      gsap.from('#games-grid .game-card', {
-        y: 20, 
-        opacity: 0, 
-        duration: 0.4, 
-        stagger: 0.05,
-        ease: "power2.out"
+        this.renderWithFilterAnim();
       });
     }
-  }
 
-  getFilteredSortedGames() {
-    let result = GAMES.filter(g => {
-      const matchFilter = this.currentFilter === 'ALL' || g.category === this.currentFilter;
-      const matchSearch = g.name.toLowerCase().includes(this.currentSearch) || 
-                          g.desc.toLowerCase().includes(this.currentSearch);
-      return matchFilter && matchSearch;
-    });
-
-    result.sort((a, b) => {
-      if (this.currentSort === 'AZ') return a.name.localeCompare(b.name);
-      if (this.currentSort === 'EASY') return diffScores[a.difficulty] - diffScores[b.difficulty];
-      if (this.currentSort === 'HARD') return diffScores[b.difficulty] - diffScores[a.difficulty];
-      if (this.currentSort === 'NEW') return b.tags.includes('NEW') ? 1 : -1;
-      if (this.currentSort === 'TRENDING') return b.tags.includes('TRENDING') || b.tags.includes('HOT') ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }
-
-  render(animate = true) {
-    const games = this.getFilteredSortedGames();
-    
-    this.countEl.innerText = `Showing ${games.length} games`;
-
-    if (games.length === 0) {
-      this.grid.style.display = 'none';
-      this.emptyState.style.display = 'block';
-      return;
+    if (this.sortSelect) {
+      this.sortSelect.addEventListener('change', (e) => {
+        this.currentSort = e.target.value;
+        this.renderWithFilterAnim();
+      });
     }
 
-    this.grid.style.display = 'grid';
-    this.emptyState.style.display = 'none';
+    if (this.shuffleBtn) {
+      this.shuffleBtn.addEventListener('click', () => {
+        this.renderWithShuffleAnim();
+      });
+    }
 
-    this.grid.innerHTML = games.map(g => {
-      const best = Storage.get(g.id, 0);
-      const runs = Storage.get(g.id + '_runs', 0);
+    // Initial DOM build
+    this.buildDOM();
+    this.render();
+    
+    gsap.from('.game-card', {
+      y: 32,
+      opacity: 0,
+      duration: 0.4,
+      stagger: 0.06,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+  }
+
+  updateGlobalStats() {
+    let totalRuns = 0;
+    let bestScore = 0;
+    this.games.forEach(g => {
+      const scores = getScores(g.id);
+      totalRuns += scores.length;
+      if (scores.length > 0) {
+        if (scores[0] > bestScore) bestScore = scores[0];
+      }
+    });
+
+    const elGames = document.getElementById('total-games-stat');
+    const elRuns = document.getElementById('total-runs-stat');
+    const elBest = document.getElementById('best-score-stat');
+
+    if (elGames) elGames.innerText = this.games.length;
+    if (elRuns) elRuns.innerText = totalRuns.toLocaleString();
+    if (elBest) elBest.innerText = bestScore.toLocaleString();
+  }
+
+  renderFilterTabs() {
+    if (!this.filterTabsContainer) return;
+    const cats = ['all', ...new Set(this.games.map(g => (g.category || 'arcade').toLowerCase()))];
+    
+    this.filterTabsContainer.innerHTML = cats.map(cat => {
+      const count = cat === 'all' ? this.games.length : this.games.filter(g => (g.category || 'arcade').toLowerCase() === cat).length;
+      const label = cat.toUpperCase();
+      const active = this.currentFilter === cat ? 'active' : '';
+      return `<button class="filter-tab ${active}" data-filter="${cat}">${label} <span class="count">${count}</span></button>`;
+    }).join('');
+
+    const tabs = this.filterTabsContainer.querySelectorAll('.filter-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        tabs.forEach(t => t.classList.remove('active'));
+        const btn = e.currentTarget;
+        btn.classList.add('active');
+        this.currentFilter = btn.dataset.filter;
+        this.renderWithFilterAnim();
+      });
+    });
+  }
+
+  getFilteredGames() {
+    let list = [...this.games];
+
+    if (this.currentFilter !== 'all') {
+      list = list.filter(g => (g.category || 'arcade').toLowerCase() === this.currentFilter);
+    }
+
+    if (this.currentSearch) {
+      list = list.filter(g => 
+        g.name.toLowerCase().includes(this.currentSearch) || 
+        g.id.toLowerCase().includes(this.currentSearch)
+      );
+    }
+
+    if (this.currentSort === 'pop') {
+      list.sort((a, b) => b.id.length - a.id.length);
+    } else if (this.currentSort === 'new') {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (this.currentSort === 'az') {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (this.currentSort === 'easy') {
+      const dmap = { 'EASY': 1, 'MEDIUM': 2, 'HARD': 3 };
+      list.sort((a, b) => (dmap[a.difficulty] || 1) - (dmap[b.difficulty] || 1));
+    } else if (this.currentSort === 'hard') {
+      const dmap = { 'EASY': 1, 'MEDIUM': 2, 'HARD': 3 };
+      list.sort((a, b) => (dmap[b.difficulty] || 1) - (dmap[a.difficulty] || 1));
+    }
+
+    return list;
+  }
+
+  renderWithFilterAnim() {
+    gsap.to('.game-card', {
+      opacity: 0,
+      y: -8,
+      duration: 0.15,
+      onComplete: () => {
+        this.render();
+        gsap.fromTo('.game-card', { opacity: 0, y: 16 }, {
+          opacity: 1, y: 0, duration: 0.3, stagger: 0.04, clearProps: 'all'
+        });
+      }
+    });
+  }
+
+  renderWithShuffleAnim() {
+    gsap.to('.game-card', {
+      scale: 0.95,
+      rotation: () => (Math.random() - 0.5) * 6,
+      opacity: 0,
+      duration: 0.2,
+      onComplete: () => {
+        const list = this.getFilteredGames();
+        for (let i = list.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [list[i], list[j]] = [list[j], list[i]];
+        }
+        this.renderList(list);
+        gsap.fromTo('.game-card', { scale: 0.95, opacity: 0, rotation: 0 }, {
+          scale: 1, opacity: 1, duration: 0.3, stagger: 0.04, clearProps: 'all', ease: 'back.out(1.5)'
+        });
+      }
+    });
+  }
+
+  render() {
+    this.applyFilters(this.getFilteredGames());
+  }
+
+  buildDOM() {
+    this.grid.innerHTML = this.games.map(g => {
+      const icon = getGameIcon(g.id);
+      const scores = getScores(g.id);
+      const best = scores.length > 0 ? scores[0].toLocaleString() : '--';
+      const runs = scores.length;
       
-      const badgeClass = `badge-difficulty-${g.difficulty.toLowerCase()}`;
-      const tagsHtml = g.tags.map(t => `<span class="badge badge-tag">${t}</span>`).join('');
-      const gameColor = g.color || '#00f0ff';
-      const svgIcon = (window.GAME_ICONS && window.GAME_ICONS[g.id]) || '';
+      let tooltipRows = '';
+      if (scores.length === 0) {
+        tooltipRows = '<div class="tooltip-empty">No scores yet</div>';
+      } else {
+        const top3 = scores.slice(0, 3);
+        const ranks = ['🥇', '🥈', '🥉'];
+        const classes = ['rank-1', 'rank-2', 'rank-3'];
+        top3.forEach((s, i) => {
+          tooltipRows += `
+            <div class="tooltip-row">
+              <span class="rank ${classes[i]}">${ranks[i]}</span>
+              <span class="name">You</span>
+              <span class="score ${classes[i]}">${s.toLocaleString()}</span>
+            </div>
+          `;
+        });
+      }
 
       return `
-        <div class="game-card ${animate ? 'fade-in' : ''}" data-id="${g.id}" style="--card-accent: ${gameColor};">
-          <div class="game-card-glow"></div>
-          <div class="game-card-shine"></div>
-          <div class="game-icon-wrap" style="color: ${gameColor};">
-            ${svgIcon}
+        <div class="game-card" data-id="${g.id}">
+          <div class="card-header-row">
+            <div class="card-icon">${icon}</div>
+            <div class="card-badges-col">
+              <span class="badge-tag badge-cat">${g.category || 'ARCADE'}</span>
+              <span class="badge-tag badge-diff">${g.difficulty || 'MEDIUM'}</span>
+            </div>
           </div>
-          <div class="game-title-row">
-            <span class="game-title">${g.name}</span>
-            <span class="${badgeClass} badge">${g.difficulty}</span>
+          
+          <h3 class="card-title-text">${g.name}</h3>
+          <p class="card-desc-text">${g.description || 'Survive the grid and set a new high score in this challenging module.'}</p>
+          
+          <div class="card-divider"></div>
+          
+          <div class="card-stats-row">
+            Best: <span>${best}</span> · Runs: <span>${runs}</span> · ↑ Trend
           </div>
-          <div class="game-category">
-            <span class="badge badge-outline">${g.category}</span>
-            ${tagsHtml}
+
+          <button class="play-btn launch-game-btn" data-id="${g.id}">PLAY NOW</button>
+          
+          <button class="info-btn" data-id="${g.id}">?</button>
+          
+          <div class="score-tooltip">
+            <div class="tooltip-title">TOP SCORES</div>
+            ${tooltipRows}
           </div>
-          <p class="game-desc">${g.desc || g.description || ''}</p>
-          <div class="game-stats">
-            <span class="stat">BEST: ${best}</span>
-            <span class="stat-dot">·</span>
-            <span class="stat">RUNS: ${runs}</span>
+
+          <div class="card-overlay" id="overlay-${g.id}">
+            <button class="overlay-close" data-id="${g.id}">×</button>
+            <div class="overlay-header">
+              <div style="width:24px; height:24px; color: var(--accent-1);">${icon}</div>
+              <div class="overlay-title">${g.name}</div>
+            </div>
+            <div class="overlay-desc">${g.description || 'No detailed intelligence report available.'}</div>
+            
+            <div class="overlay-section-title">HOW TO PLAY</div>
+            <div class="overlay-controls">
+              <div class="ctrl-row"><span>MOVEMENT</span><span>WASD / ARROWS</span></div>
+              <div class="ctrl-row"><span>ACTION</span><span>SPACEBAR</span></div>
+              <div class="ctrl-row"><span>PAUSE</span><span>ESC</span></div>
+            </div>
           </div>
-          <button class="btn btn-primary launch-game-btn" data-id="${g.id}" style="width: 100%; margin-top: auto;">PLAY NOW</button>
         </div>
       `;
     }).join('');
-    
-    // Bind click events for game launching
+
+    // Empty state element
+    const emptyState = document.createElement('div');
+    emptyState.id = 'games-empty-state';
+    emptyState.className = 'hidden';
+    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 100px 0;';
+    emptyState.innerHTML = `
+      <h2 style="font-family: 'Press Start 2P', monospace; font-size: 14px; color: var(--accent-3); margin-bottom: 8px;">NO SIGNAL DETECTED</h2>
+      <p style="color: var(--text-muted); font-size: 12px;">Adjust your filter parameters.</p>
+    `;
+    this.grid.appendChild(emptyState);
+
+    this.bindEvents();
+  }
+
+  applyFilters(gamesList) {
+    if (this.showingText) {
+      this.showingText.innerText = `Showing ${gamesList.length} of ${this.games.length} games`;
+    }
+
+    const emptyState = document.getElementById('games-empty-state');
+    if (emptyState) {
+      if (gamesList.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
     const cards = this.grid.querySelectorAll('.game-card');
     cards.forEach(card => {
-      card.addEventListener('click', (e) => {
-        const gameId = card.getAttribute('data-id');
-        if (window.launchGameModal) {
-          window.launchGameModal(gameId);
-        }
+      const id = card.getAttribute('data-id');
+      const index = gamesList.findIndex(g => g.id === id);
+      
+      if (index === -1) {
+        card.classList.add('hidden');
+      } else {
+        card.classList.remove('hidden');
+        card.style.order = index;
+      }
+    });
+  }
+
+  bindEvents() {
+    const cards = this.grid.querySelectorAll('.game-card');
+    
+    cards.forEach(card => {
+      // Mouse tracking
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', x + 'px');
+        card.style.setProperty('--mouse-y', y + 'px');
       });
+
+      // Play Now
+      const playBtn = card.querySelector('.launch-game-btn');
+      if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const gameId = playBtn.getAttribute('data-id');
+          if (window.launchGameModal) {
+            window.launchGameModal(gameId);
+          }
+        });
+      }
+
+      // Info toggle
+      const infoBtn = card.querySelector('.info-btn');
+      const overlay = card.querySelector('.card-overlay');
+      const closeBtn = card.querySelector('.overlay-close');
+      
+      if (infoBtn && overlay) {
+        infoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          overlay.classList.add('open');
+        });
+      }
+      
+      if (closeBtn && overlay) {
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          overlay.classList.remove('open');
+        });
+      }
     });
   }
 }
 
-// Modules are deferred, so DOM is already parsed
-const grid = document.getElementById('games-grid');
-if (grid) {
-  new GameLibrary();
-}
+document.addEventListener('DOMContentLoaded', () => {
+  new GamesGrid();
+});

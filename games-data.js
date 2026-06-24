@@ -7,7 +7,7 @@ const GAMES = [
     desc: 'Eat the orbs. Grow longer. Don\'t hit yourself or the walls.',
     description: 'Classic snake turbo-charged with combos.',
     tags: ['TRENDING'],
-    file: 'js/games/neon-serpent.js',
+    file: './js/games/neon-serpent.js',
     className: 'NeonSerpent',
     icon: '🐍',
     color: '#00f0ff'
@@ -20,7 +20,7 @@ const GAMES = [
     desc: 'Rally with the AI. Don\'t let the ball past you. 3 lives.',
     description: 'Fast paddle rallies with curve shots.',
     tags: ['TRENDING'],
-    file: 'js/games/loop-rally.js',
+    file: './js/games/loop-rally.js',
     className: 'LoopRally',
     icon: '🏓',
     color: '#ff6b6b'
@@ -33,7 +33,7 @@ const GAMES = [
     desc: '3 laps. Drift for bonus points. Hit boost pads. Best time wins.',
     description: 'Top-down racing with drift scoring.',
     tags: ['TRENDING'],
-    file: 'js/games/turbo-drift.js',
+    file: './js/games/turbo-drift.js',
     className: 'TurboDrift',
     icon: '🏎️',
     color: '#ef4444'
@@ -46,7 +46,7 @@ const GAMES = [
     desc: 'Press the key shown. Blind rounds = remember the key. 3 lives.',
     description: 'Typing gauntlet with blind rounds.',
     tags: ['NEW'],
-    file: 'js/games/key-frenzy.js',
+    file: './js/games/key-frenzy.js',
     className: 'KeyFrenzy',
     icon: '⌨️',
     color: '#fbbf24'
@@ -59,7 +59,7 @@ const GAMES = [
     desc: 'Destroy asteroids and enemy ships. Collect powerups. 3 lives.',
     description: 'Side-scrolling space shooter.',
     tags: [],
-    file: 'js/games/astro-strider.js',
+    file: './js/games/astro-strider.js',
     className: 'AstroStrider',
     icon: '🚀',
     color: '#818cf8'
@@ -72,7 +72,7 @@ const GAMES = [
     desc: 'Decode the Caesar-cipher word. Type your answer. Hints cost points.',
     description: 'Decode Caesar-cipher words fast.',
     tags: [],
-    file: 'js/games/cipher-quest.js',
+    file: './js/games/cipher-quest.js',
     className: 'CipherQuest',
     icon: '🔐',
     color: '#a855f7'
@@ -85,7 +85,7 @@ const GAMES = [
     desc: 'Memorize the equation before it disappears. Type your answer.',
     description: 'Mental math before it disappears.',
     tags: [],
-    file: 'js/games/phantom-calc.js',
+    file: './js/games/phantom-calc.js',
     className: 'PhantomCalc',
     icon: '🧮',
     color: '#f472b6'
@@ -98,7 +98,7 @@ const GAMES = [
     desc: 'Type each letter ON the beat. Watch the pulse. Rhythm matters.',
     description: 'Type in rhythm with the beat.',
     tags: [],
-    file: 'js/games/word-pulse.js',
+    file: './js/games/word-pulse.js',
     className: 'WordPulse',
     icon: '💓',
     color: '#fb7185'
@@ -111,7 +111,7 @@ const GAMES = [
     desc: 'Dodge everything. One hit and you\'re done. Survive as long as you can.',
     description: 'Dodge bullets. One hit and you die.',
     tags: ['HOT'],
-    file: 'js/games/pixel-dodge.js',
+    file: './js/games/pixel-dodge.js',
     className: 'PixelDodge',
     icon: '💥',
     color: '#f97316'
@@ -124,7 +124,7 @@ const GAMES = [
     desc: 'Drop platforms to build your tower. Aim for the center.',
     description: 'Drop platforms to build your tower.',
     tags: [],
-    file: 'js/games/stack-blitz.js',
+    file: './js/games/stack-blitz.js',
     className: 'StackBlitz',
     icon: '🏗️',
     color: '#22d3ee'
@@ -137,7 +137,7 @@ const GAMES = [
     desc: 'Watch the sequence light up. Repeat it back. Gets longer every round.',
     description: 'Repeat the sequence. Gets longer.',
     tags: [],
-    file: 'js/games/memory-grid.js',
+    file: './js/games/memory-grid.js',
     className: 'MemoryGrid',
     icon: '🧠',
     color: '#c084fc'
@@ -150,7 +150,7 @@ const GAMES = [
     desc: 'Tap when the dot is inside the target. Closer to center = more points.',
     description: 'Tap when the dot hits the target.',
     tags: ['CHILL'],
-    file: 'js/games/hyper-tap.js',
+    file: './js/games/hyper-tap.js',
     className: 'HyperTap',
     icon: '🎯',
     color: '#34d399'
@@ -163,7 +163,7 @@ const GAMES = [
     desc: 'Flip gravity to avoid spikes. Collect coins. Don\'t die.',
     description: 'Flip gravity to survive.',
     tags: ['TRENDING'],
-    file: 'js/games/gravity-flip.js',
+    file: './js/games/gravity-flip.js',
     className: 'GravityFlip',
     icon: '🔄',
     color: '#2dd4bf'
@@ -176,7 +176,7 @@ const GAMES = [
     desc: 'Drag to chain same-colored orbs. Longer chains = more points. 90 seconds.',
     description: 'Chain same-color orbs to burst them.',
     tags: [],
-    file: 'js/games/chain-burst.js',
+    file: './js/games/chain-burst.js',
     className: 'ChainBurst',
     icon: '⛓️',
     color: '#e879f9'
@@ -189,7 +189,7 @@ const GAMES = [
     desc: 'Press the correct arrow key when the color flashes. React fast.',
     description: 'React to the color flash. Fast.',
     tags: [],
-    file: 'js/games/reflex-rush.js',
+    file: './js/games/reflex-rush.js',
     className: 'ReflexRush',
     icon: '⚡',
     color: '#facc15'
@@ -202,7 +202,7 @@ const GAMES = [
     desc: 'Tap only the dark tiles. Miss 3 and you\'re out. Don\'t stop.',
     description: 'Tap only the dark tiles.',
     tags: [],
-    file: 'js/games/tile-runner.js',
+    file: './js/games/tile-runner.js',
     className: 'TileRunner',
     icon: '🏃',
     color: '#38bdf8'
@@ -215,7 +215,7 @@ const GAMES = [
     desc: 'Hit D F J K when notes reach the line. Timing matters.',
     description: 'Hit notes when they reach the line.',
     tags: [],
-    file: 'js/games/beat-drop.js',
+    file: './js/games/beat-drop.js',
     className: 'BeatDrop',
     icon: '🎵',
     color: '#a78bfa'
@@ -228,7 +228,7 @@ const GAMES = [
     desc: 'Slide tiles with arrow keys. Same numbers merge. Reach 2048.',
     description: 'Merge tiles. Reach 2048.',
     tags: [],
-    file: 'js/games/slide-forge.js',
+    file: './js/games/slide-forge.js',
     className: 'SlideForge',
     icon: '🔢',
     color: '#4ade80'
@@ -241,9 +241,11 @@ const GAMES = [
     desc: 'Match 3 colored orbs to pop them before they reach the bottom.',
     description: 'Shoot orbs. Match 3 to pop.',
     tags: ['CHILL'],
-    file: 'js/games/orb-pop-deluxe.js',
+    file: './js/games/orb-pop-deluxe.js',
     className: 'OrbPopDeluxe',
     icon: '🫧',
     color: '#67e8f9'
   }
 ];
+
+window.GAMES = GAMES;

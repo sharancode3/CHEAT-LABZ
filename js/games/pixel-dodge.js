@@ -1,214 +1,284 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
 
 export default class PixelDodge extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'pixel-dodge',
-      description: 'Bullet hell. Square follows mouse. Don\\'t touch the red dots.',
-      width: 600,
-      height: 600
-    });
-
-    this.scoreEl = document.getElementById('game-score');
-    this.flashEl = document.getElementById('game-flash');
-
-    this.playerSize = 12;
-    this.player = { x: 300, y: 300 };
-
-    this.canvas.addEventListener('mousemove', (e) => {
-      if (this.state === 'PLAYING') {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        this.player.x = (e.clientX - rect.left) * scaleX;
-        this.player.y = (e.clientY - rect.top) * scaleY;
-        
-        // Constrain
-        if (this.player.x < 0) this.player.x = 0;
-        if (this.player.x > this.canvas.width) this.player.x = this.canvas.width;
-        if (this.player.y < 0) this.player.y = 0;
-        if (this.player.y > this.canvas.height) this.player.y = this.canvas.height;
-      }
-    });
-
-    this.init();
+    super(canvas, config);
   }
 
   onStart() {
-    this.score = 0; // time in ms
-    this.dots = [];
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
+    };
+
+    this.player = {
+      x: this.canvas.width / 2,
+      y: this.canvas.height / 2,
+      radius: 8,
+      speed: 300 * (this.mods.speedMult > 1 ? 1.2 : 1),
+      color: '#06B6D4'
+    };
+
+    this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, a: false, s: false, d: false };
     
-    this.timeSinceLastRamp = 0;
-    this.difficultyLevel = 1;
+    this.bullets = [];
+    this.lasers = [];
     
-    this.spawnTimer = 0;
-    this.spawnRate = 2000; // time between patterns
-    this.patternCount = 0;
+    this.spawnerTimer = 0;
+    this.difficulty = 1;
+    this.timeSurvived = 0;
     
-    this.flashEl.classList.remove('active');
+    this.particles = [];
     
-    this.updateUI();
-    
-    let runs = Storage.get('pixel-dodge_runs', 0);
-    Storage.set('pixel-dodge_runs', runs + 1);
+    this.score = 0;
+    this.updateScore(0);
   }
 
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-    
-    this.score += deltaTime;
-    this.timeSinceLastRamp += deltaTime;
-    
-    // Difficulty ramp every 10s
-    if (this.timeSinceLastRamp >= 10000) {
-      this.timeSinceLastRamp -= 10000;
-      this.difficultyLevel++;
-      this.spawnRate = Math.max(800, 2000 - this.difficultyLevel * 150);
-      Sound.playCoin(); // small cue for level up
-    }
-
-    // Spawn patterns
-    this.spawnTimer -= deltaTime;
-    if (this.spawnTimer <= 0) {
-      this.spawnPattern();
-      this.spawnTimer = this.spawnRate;
-    }
-
-    // Move dots and check collision
-    for (let i = this.dots.length - 1; i >= 0; i--) {
-      let d = this.dots[i];
-      d.x += d.vx * dt;
-      d.y += d.vy * dt;
-      
-      // Update trail
-      d.trail.push({x: d.x, y: d.y});
-      if (d.trail.length > 5) d.trail.shift();
-
-      // Check collision (AABB vs Circle)
-      // Hitbox 70% of visual size
-      const hitSize = this.playerSize * 0.7;
-      const px = this.player.x - hitSize/2;
-      const py = this.player.y - hitSize/2;
-      
-      // closest point on rect to circle center
-      const cx = Math.max(px, Math.min(d.x, px + hitSize));
-      const cy = Math.max(py, Math.min(d.y, py + hitSize));
-      
-      const dx = d.x - cx;
-      const dy = d.y - cy;
-      
-      if (dx*dx + dy*dy <= d.r * d.r) {
-        this.die();
-        return;
-      }
-
-      // Remove if far off screen
-      if (d.x < -100 || d.x > this.canvas.width + 100 || 
-          d.y < -100 || d.y > this.canvas.height + 100) {
-        this.dots.splice(i, 1);
-      }
-    }
-
-    this.updateUI();
+  onInput(keyLabel, e, isDown) {
+    if(this.keys.hasOwnProperty(e.key)) this.keys[e.key] = isDown;
   }
 
   spawnPattern() {
-    this.patternCount++;
-    const type = this.patternCount % 4;
-    const speed = 100 + this.difficultyLevel * 20;
-    const r = 4 + Math.random() * 2;
-
-    if (type === 0) {
-      // Wall from top
-      for(let i=0; i<15; i++) {
-        // gap in the middle somewhere
-        if (i > 6 && i < 9) continue;
-        this.dots.push({ x: i * (this.canvas.width/15), y: -10, vx: 0, vy: speed, r, trail: [] });
+    const type = Math.random();
+    if (type < 0.6) {
+      const numBullets = 8 + this.difficulty * 2;
+      const x = Math.random() < 0.5 ? 0 : this.canvas.width;
+      const y = Math.random() * this.canvas.height;
+      for (let i=0; i<numBullets; i++) {
+        const angle = (Math.PI * 2 / numBullets) * i;
+        this.bullets.push({
+          x: x, y: y,
+          vx: Math.cos(angle) * (100 + this.difficulty * 20) * this.mods.speedMult,
+          vy: Math.sin(angle) * (100 + this.difficulty * 20) * this.mods.speedMult,
+          radius: 4, color: '#EF4444'
+        });
       }
-    } else if (type === 1) {
-      // Cross wave
-      for(let i=0; i<5; i++) {
-        this.dots.push({ x: -10, y: 100 + i*100, vx: speed*1.5, vy: 0, r, trail: [] });
-        this.dots.push({ x: this.canvas.width+10, y: 150 + i*100, vx: -speed*1.5, vy: 0, r, trail: [] });
-      }
-    } else if (type === 2) {
-      // Circle closing in
-      for(let i=0; i<12; i++) {
-        const angle = (i/12) * Math.PI*2;
-        const dx = Math.cos(angle);
-        const dy = Math.sin(angle);
-        this.dots.push({ 
-          x: this.canvas.width/2 + dx * 400, 
-          y: this.canvas.height/2 + dy * 400, 
-          vx: -dx * speed, 
-          vy: -dy * speed, 
-          r, trail: [] 
+    } else if (type < 0.8) {
+      const isVertical = Math.random() < 0.5;
+      const numBullets = isVertical ? this.canvas.width / 40 : this.canvas.height / 40;
+      const startX = isVertical ? 0 : (Math.random() < 0.5 ? 0 : this.canvas.width);
+      const startY = isVertical ? (Math.random() < 0.5 ? 0 : this.canvas.height) : 0;
+      
+      for(let i=0; i<numBullets; i++) {
+        this.bullets.push({
+          x: isVertical ? i * 40 : startX,
+          y: isVertical ? startY : i * 40,
+          vx: isVertical ? 0 : (startX === 0 ? 1 : -1) * (150 * this.mods.speedMult),
+          vy: isVertical ? (startY === 0 ? 1 : -1) * (150 * this.mods.speedMult) : 0,
+          radius: 5, color: '#FBBF24'
         });
       }
     } else {
-      // Targeted burst
-      for(let i=0; i<8; i++) {
-        const angle = Math.atan2(this.player.y - (-10), this.player.x - (this.canvas.width/2)) + (Math.random()-0.5)*0.5;
-        this.dots.push({ 
-          x: this.canvas.width/2 + (Math.random()-0.5)*50, 
-          y: -10, 
-          vx: Math.cos(angle) * speed * 2, 
-          vy: Math.sin(angle) * speed * 2, 
-          r, trail: [] 
-        });
+      const isVertical = Math.random() < 0.5;
+      const pos = isVertical ? Math.random() * this.canvas.width : Math.random() * this.canvas.height;
+      this.lasers.push({
+        isVertical: isVertical,
+        pos: pos,
+        width: 40 + this.difficulty * 10,
+        telegraphTime: 2000 / this.mods.speedMult,
+        activeTime: 500 / this.mods.speedMult,
+        state: 'telegraph'
+      });
+    }
+  }
+
+  createExplosion(x, y, color, count=30) {
+    for(let i=0; i<count; i++) {
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
+      });
+    }
+  }
+
+  update(dtMs) {
+    let dtSec = dtMs / 1000;
+    
+    this.timeSurvived += dtSec;
+    if (Math.floor(this.timeSurvived * 10) % 10 === 0) {
+      this.score += 1;
+      this.updateScore(this.score);
+    }
+    
+    this.difficulty = 1 + Math.floor(this.timeSurvived / 10);
+    
+    this.spawnerTimer -= dtMs;
+    if (this.spawnerTimer <= 0) {
+      this.spawnPattern();
+      this.spawnerTimer = Math.max(500, 2000 - this.difficulty * 200) / this.mods.speedMult;
+    }
+
+    let up = this.keys.ArrowUp || this.keys.w;
+    let down = this.keys.ArrowDown || this.keys.s;
+    let left = this.keys.ArrowLeft || this.keys.a;
+    let right = this.keys.ArrowRight || this.keys.d;
+
+    if (this.mods.reverse) {
+      let tempU = up; up = down; down = tempU;
+      let tempL = left; left = right; right = tempL;
+    }
+
+    let dx = 0; let dy = 0;
+    if (up) dy -= 1;
+    if (down) dy += 1;
+    if (left) dx -= 1;
+    if (right) dx += 1;
+
+    if (dx !== 0 && dy !== 0) {
+      const len = Math.hypot(dx, dy);
+      dx /= len; dy /= len;
+    }
+
+    this.player.x += dx * this.player.speed * dtSec;
+    this.player.y += dy * this.player.speed * dtSec;
+
+    this.player.x = Math.max(this.player.radius, Math.min(this.canvas.width - this.player.radius, this.player.x));
+    this.player.y = Math.max(this.player.radius, Math.min(this.canvas.height - this.player.radius, this.player.y));
+
+    for (let i = this.bullets.length - 1; i >= 0; i--) {
+      let b = this.bullets[i];
+      b.x += b.vx * dtSec;
+      b.y += b.vy * dtSec;
+
+      if (Math.hypot(this.player.x - b.x, this.player.y - b.y) < this.player.radius + b.radius) {
+         this.createExplosion(this.player.x, this.player.y, this.player.color, 100);
+         return this.gameOver();
+      }
+
+      if (b.x < -50 || b.x > this.canvas.width + 50 || b.y < -50 || b.y > this.canvas.height + 50) {
+        this.bullets.splice(i, 1);
       }
     }
-  }
 
-  die() {
-    Sound.playDamage();
-    Sound.playGameOver();
-    this.flashEl.classList.add('active');
-    this.gameOver();
-  }
+    for (let i = this.lasers.length - 1; i >= 0; i--) {
+      let l = this.lasers[i];
+      if (l.state === 'telegraph') {
+        l.telegraphTime -= dtMs;
+        if (l.telegraphTime <= 0) {
+          l.state = 'active';
+        }
+      } else if (l.state === 'active') {
+        l.activeTime -= dtMs;
+        
+        if (l.isVertical) {
+          if (Math.abs(this.player.x - l.pos) < l.width/2 + this.player.radius) {
+             this.createExplosion(this.player.x, this.player.y, this.player.color, 100);
+             return this.gameOver();
+          }
+        } else {
+          if (Math.abs(this.player.y - l.pos) < l.width/2 + this.player.radius) {
+             this.createExplosion(this.player.x, this.player.y, this.player.color, 100);
+             return this.gameOver();
+          }
+        }
 
-  updateUI() {
-    if (this.scoreEl) {
-      this.scoreEl.innerText = Math.floor(this.score);
+        if (l.activeTime <= 0) {
+          this.lasers.splice(i, 1);
+        }
+      }
     }
+
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= dtSec * 2;
+      return p.life > 0;
+    });
   }
 
   draw() {
-    // Slight fade clear for basic motion blur effect
-    this.ctx.fillStyle = 'rgba(10, 10, 15, 0.4)';
+    this.ctx.fillStyle = '#09090B';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Player
-    this.ctx.fillStyle = '#6c63ff'; // Accent 1
-    this.ctx.shadowBlur = 10;
-    this.ctx.shadowColor = '#6c63ff';
-    this.ctx.fillRect(this.player.x - this.playerSize/2, this.player.y - this.playerSize/2, this.playerSize, this.playerSize);
-    this.ctx.shadowBlur = 0;
-
-    // Dots
-    for (let d of this.dots) {
-      // Trail
-      for (let i = 0; i < d.trail.length; i++) {
-        const pt = d.trail[i];
-        this.ctx.fillStyle = `rgba(255, 107, 107, ${i / d.trail.length * 0.5})`;
-        this.ctx.beginPath();
-        this.ctx.arc(pt.x, pt.y, d.r, 0, Math.PI*2);
-        this.ctx.fill();
+    this.lasers.forEach(l => {
+      this.ctx.save();
+      if (l.state === 'telegraph') {
+        this.ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+        this.ctx.strokeStyle = '#EF4444';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([5, 5]);
+      } else {
+        this.ctx.fillStyle = '#EF4444';
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = '#EF4444';
+        this.ctx.strokeStyle = 'transparent';
+        this.ctx.setLineDash([]);
       }
 
-      // Head
-      this.ctx.fillStyle = '#ff6b6b'; // Accent 3
+      if (l.isVertical) {
+        this.ctx.fillRect(l.pos - l.width/2, 0, l.width, this.canvas.height);
+        if (l.state === 'telegraph') {
+          this.ctx.beginPath();
+          this.ctx.moveTo(l.pos, 0);
+          this.ctx.lineTo(l.pos, this.canvas.height);
+          this.ctx.stroke();
+        }
+      } else {
+        this.ctx.fillRect(0, l.pos - l.width/2, this.canvas.width, l.width);
+        if (l.state === 'telegraph') {
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, l.pos);
+          this.ctx.lineTo(this.canvas.width, l.pos);
+          this.ctx.stroke();
+        }
+      }
+      this.ctx.restore();
+    });
+
+    this.bullets.forEach(b => {
+      this.ctx.fillStyle = b.color;
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = b.color;
       this.ctx.beginPath();
-      this.ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+      this.ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2);
       this.ctx.fill();
+    });
+    this.ctx.shadowBlur = 0;
+
+    this.ctx.fillStyle = this.player.color;
+    this.ctx.shadowBlur = 15;
+    this.ctx.shadowColor = this.player.color;
+    this.ctx.beginPath();
+    this.ctx.arc(this.player.x, this.player.y, this.player.radius, 0, Math.PI*2);
+    this.ctx.fill();
+    
+    this.ctx.fillStyle = '#fff';
+    this.ctx.shadowBlur = 0;
+    this.ctx.beginPath();
+    this.ctx.arc(this.player.x, this.player.y, 2, 0, Math.PI*2);
+    this.ctx.fill();
+
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+      this.ctx.fill();
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.player.x, this.player.y, 50, this.player.x, this.player.y, 200);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (!this.mods.noUI) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "14px 'JetBrains Mono', monospace";
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText(`SURVIVED: ${Math.floor(this.timeSurvived)}s | THREAT LEVEL: ${this.difficulty}`, 20, 30);
     }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});

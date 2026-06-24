@@ -1,214 +1,235 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
-
-const WORD_LIST = [
-  "ALGORITHM", "BANDWIDTH", "COMPILER", "DEBUGGER", "ENCRYPTION",
-  "FIREWALL", "GATEWAY", "HACKER", "ITERATION", "JAVASCRIPT",
-  "KEYBOARD", "LATENCY", "MALWARE", "NETWORK", "OVERFLOW",
-  "PROTOCOL", "QUANTUM", "ROUTER", "SERVER", "TERMINAL",
-  "UPLOAD", "VARIABLE", "WIRELESS", "XML", "YOTTABYTE", "ZIP"
-];
 
 export default class CipherQuest extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'cipher-quest',
-      description: 'Decode the Caesar-cipher word. Type your answer. Hints cost points.',
-      width: 600,
-      height: 400
-    });
-
-    this.scoreEl = document.getElementById('game-score');
-    this.roundEl = document.getElementById('game-round');
-
-    this.init();
+    super(canvas, config);
   }
 
   onStart() {
-    this.round = 1;
-    this.maxRounds = 10;
-    this.maxTime = 30000; // 30 seconds
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
+    };
+
+    this.words = ["SYSTEM", "HACKER", "CYBER", "NEON", "UPLOAD", "SERVER", "PROXY", "BREACH", "VIRUS", "ACCESS", "CIPHER", "KERNEL"];
     
-    this.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    this.currentWord = "";
+    this.encryptedWord = "";
+    this.shift = 0;
+    this.playerInput = "";
+    this.hintUsed = false;
     
-    this.nextRound();
+    this.timeLimit = 15000 / this.mods.speedMult;
+    this.timeLeft = this.timeLimit;
     
-    let runs = Storage.get('cipher-quest_runs', 0);
-    Storage.set('cipher-quest_runs', runs + 1);
+    this.particles = [];
+    this.floatingTexts = [];
+    
+    this.score = 0;
+    this.updateScore(0);
+    
+    this.generateChallenge();
   }
 
-  nextRound() {
-    this.word = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
-    this.shift = Math.floor(Math.random() * 25) + 1; // 1 to 25
-    this.encryptedWord = this.encrypt(this.word, this.shift);
+  generateChallenge() {
+    this.currentWord = this.words[Math.floor(Math.random() * this.words.length)];
+    this.shift = Math.floor(Math.random() * 10) + 1;
+    if (this.mods.reverse) this.shift = -this.shift;
     
-    this.typedWord = "";
-    this.timeLeft = this.maxTime;
+    this.encryptedWord = this.currentWord.split('').map(char => {
+      let code = char.charCodeAt(0) + this.shift;
+      if (code > 90) code -= 26;
+      if (code < 65) code += 26;
+      return String.fromCharCode(code);
+    }).join('');
     
-    this.hints = {}; // Tracks which letters have been revealed as hints
+    this.playerInput = "";
+    this.hintUsed = false;
     
-    this.shakeTimer = 0;
+    let timeDecay = (this.score / 1000) * 500;
+    this.timeLimit = Math.max(3000, 15000 - timeDecay) / this.mods.speedMult;
+    this.timeLeft = this.timeLimit;
     
-    this.updateUI();
+    this.createExplosion(this.canvas.width/2, this.canvas.height/2, '#8B5CF6', 20);
   }
 
-  encrypt(word, shift) {
-    let result = "";
-    for (let i = 0; i < word.length; i++) {
-      let charCode = word.charCodeAt(i);
-      let newCode = ((charCode - 65 + shift) % 26) + 65;
-      result += String.fromCharCode(newCode);
-    }
-    return result;
-  }
-
-  onInput(key, event) {
-    if (this.state !== 'PLAYING') return;
-
-    if (key === 'h') {
-      this.useHint();
-      return;
-    }
-
-    // Only accept alphabet
-    if (key.length === 1 && /[a-z]/i.test(key)) {
-      const inputChar = key.toUpperCase();
-      const targetChar = this.word[this.typedWord.length];
-      
-      if (inputChar === targetChar) {
-        // Correct
-        Sound.playBlip();
-        this.typedWord += inputChar;
-        
-        if (this.typedWord === this.word) {
-          this.roundComplete();
-        }
-      } else {
-        // Incorrect
-        Sound.playDamage();
-        this.shakeTimer = 300; // shake the input display
+  onInput(keyLabel, e, isDown) {
+    if (!isDown) return;
+    
+    const key = e.key.toUpperCase();
+    
+    if (key === 'BACKSPACE') {
+      this.playerInput = this.playerInput.slice(0, -1);
+    } else if (key === 'ENTER') {
+      this.checkAnswer();
+    } else if (key === '?') {
+      if (!this.hintUsed && this.score >= 50) {
+        this.score -= 50;
+        this.updateScore(this.score);
+        this.hintUsed = true;
+        this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2 + 100, text: '-50 RP (HINT)', color: '#EF4444', life: 1.0, vy: -1 });
+      }
+    } else if (key.length === 1 && /[A-Z]/.test(key)) {
+      if (this.playerInput.length < this.currentWord.length) {
+        this.playerInput += key;
       }
     }
   }
 
-  useHint() {
-    // Find an unhinted letter that also hasn't been typed yet
-    let availableHints = [];
-    for (let i = 0; i < this.word.length; i++) {
-      if (!this.hints[this.encryptedWord[i]] && i >= this.typedWord.length) {
-        availableHints.push(this.encryptedWord[i]);
-      }
-    }
-    
-    if (availableHints.length > 0) {
-      Sound.playCoin();
-      // Cost 20 points
-      this.score = Math.max(0, this.score - 20);
-      this.updateUI();
+  checkAnswer() {
+    if (this.playerInput === this.currentWord) {
+      let timeBonus = Math.floor((this.timeLeft / this.timeLimit) * 100);
+      let points = 100 + timeBonus;
+      this.score += points;
+      this.updateScore(this.score);
       
-      const toHint = availableHints[Math.floor(Math.random() * availableHints.length)];
-      // calculate correct decoded letter
-      const charCode = toHint.charCodeAt(0);
-      const decodedCode = ((charCode - 65 - this.shift + 26) % 26) + 65;
-      this.hints[toHint] = String.fromCharCode(decodedCode);
-    }
-  }
-
-  roundComplete() {
-    Sound.playCoin();
-    
-    let roundScore = 100;
-    // Time bonus
-    const timeBonus = Math.floor((this.timeLeft / this.maxTime) * 50);
-    this.score += roundScore + timeBonus;
-    
-    this.round++;
-    if (this.round > this.maxRounds) {
-      Sound.playGameOver();
-      this.gameOver();
+      this.createExplosion(this.canvas.width/2, this.canvas.height/2, '#06B6D4', 50);
+      this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2, text: `DECRYPTED +${points}`, color: '#06B6D4', life: 1.0, vy: -2 });
+      
+      this.generateChallenge();
     } else {
-      this.nextRound();
+      if (this.mods.suddenDeath) return this.gameOver();
+      
+      this.score = Math.max(0, this.score - 50);
+      this.updateScore(this.score);
+      
+      this.createExplosion(this.canvas.width/2, this.canvas.height/2, '#EF4444', 30);
+      this.floatingTexts.push({ x: this.canvas.width/2, y: this.canvas.height/2, text: 'ACCESS DENIED', color: '#EF4444', life: 1.0, vy: 1 });
+      this.playerInput = "";
     }
   }
 
-  update(deltaTime) {
-    if (this.shakeTimer > 0) this.shakeTimer -= deltaTime;
-    
-    this.timeLeft -= deltaTime;
+  createExplosion(x, y, color, count=30) {
+    for(let i=0; i<count; i++) {
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
+      });
+    }
+  }
+
+  update(dtMs) {
+    const dtSec = dtMs / 1000;
+    this.timeLeft -= dtMs;
     if (this.timeLeft <= 0) {
-      // Time out -> Next round, no score, just penalize or next
-      Sound.playDamage();
-      this.round++;
-      if (this.round > this.maxRounds) {
-        Sound.playGameOver();
-        this.gameOver();
-      } else {
-        this.nextRound();
-      }
+      if (this.mods.suddenDeath) return this.gameOver();
+      this.score = Math.max(0, this.score - 100);
+      this.updateScore(this.score);
+      this.generateChallenge();
     }
-  }
 
-  updateUI() {
-    if (this.scoreEl) this.scoreEl.innerText = this.score;
-    if (this.roundEl) this.roundEl.innerText = `ROUND ${this.round}/${this.maxRounds}`;
+    this.particles = this.particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= dtSec * 2;
+      return p.life > 0;
+    });
+
+    this.floatingTexts = this.floatingTexts.filter(ft => {
+      ft.y += ft.vy;
+      ft.life -= dtSec;
+      return ft.life > 0;
+    });
   }
 
   draw() {
-    this.ctx.fillStyle = '#0a0a0f';
+    this.ctx.fillStyle = '#09090B';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw timer bar
-    const ratio = Math.max(0, this.timeLeft / this.maxTime);
-    this.ctx.fillStyle = ratio > 0.25 ? '#00d4aa' : '#ff6b6b';
-    this.ctx.fillRect(0, 0, this.canvas.width * ratio, 6);
+    this.ctx.fillStyle = 'rgba(6, 182, 212, 0.05)';
+    this.ctx.font = "14px 'JetBrains Mono', monospace";
+    for(let i=0; i<20; i++) {
+      this.ctx.fillText(Math.random().toString(36).substring(2, 10), Math.random() * this.canvas.width, Math.random() * this.canvas.height);
+    }
 
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
+    this.ctx.fillStyle = 'rgba(139,92,246,0.1)';
+    this.ctx.strokeStyle = '#8B5CF6';
+    this.ctx.lineWidth = 2;
+    this.ctx.shadowBlur = 15;
+    this.ctx.shadowColor = '#8B5CF6';
+    this.ctx.beginPath();
+    this.ctx.roundRect(this.canvas.width/2 - 250, this.canvas.height/2 - 150, 500, 100, 12);
+    this.ctx.fill();
+    this.ctx.stroke();
 
-    // Encrypted word
-    this.ctx.fillStyle = '#555570';
-    this.ctx.font = '24px "Press Start 2P"';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText(this.encryptedWord, cx, cy - 40);
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = "bold 40px 'Press Start 2P', monospace";
+    
+    let displayEncrypted = this.encryptedWord;
+    if (Math.random() < 0.1) {
+       displayEncrypted = displayEncrypted.split('').map(c => Math.random() < 0.2 ? String.fromCharCode(Math.floor(Math.random() * 26) + 65) : c).join('');
+    }
+    this.ctx.fillText(displayEncrypted, this.canvas.width/2, this.canvas.height/2 - 100);
+    this.ctx.shadowBlur = 0;
 
-    // Typed word
-    let shakeX = 0;
-    if (this.shakeTimer > 0) {
-      shakeX = (Math.random() - 0.5) * 10;
-      this.ctx.fillStyle = '#ff6b6b';
+    this.ctx.font = "16px 'JetBrains Mono', monospace";
+    if (this.hintUsed) {
+      this.ctx.fillStyle = '#06B6D4';
+      const shiftDir = this.shift > 0 ? '+' : '';
+      this.ctx.fillText(`[ DECRYPTION KEY: ${shiftDir}${this.shift} ]`, this.canvas.width/2, this.canvas.height/2 - 20);
     } else {
-      this.ctx.fillStyle = '#00d4aa';
+      this.ctx.fillStyle = '#EF4444';
+      this.ctx.fillText(`[ DECRYPTION KEY: ENCRYPTED. PRESS '?' FOR HINT (-50 RP) ]`, this.canvas.width/2, this.canvas.height/2 - 20);
     }
-    
-    // Draw typed part and underscores for rest
-    let displayStr = "";
-    for (let i = 0; i < this.word.length; i++) {
-      if (i < this.typedWord.length) {
-        displayStr += this.typedWord[i];
-      } else {
-        displayStr += "_";
-      }
-    }
-    
-    this.ctx.fillText(displayStr, cx + shakeX, cy + 20);
 
-    // Draw active hints
-    this.ctx.fillStyle = '#f0f0f8';
-    this.ctx.font = '10px "DM Sans"';
-    this.ctx.textAlign = 'left';
-    let hintY = cy + 80;
-    this.ctx.fillText('HINTS (Press H):', cx - 100, hintY);
-    hintY += 20;
-    for (let k in this.hints) {
-      this.ctx.fillText(`${k} → ${this.hints[k]}`, cx - 100, hintY);
-      hintY += 15;
+    this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    this.ctx.strokeStyle = '#06B6D4';
+    this.ctx.beginPath();
+    this.ctx.roundRect(this.canvas.width/2 - 200, this.canvas.height/2 + 40, 400, 60, 8);
+    this.ctx.fill();
+    this.ctx.stroke();
+    
+    this.ctx.fillStyle = '#06B6D4';
+    this.ctx.font = "bold 24px 'JetBrains Mono', monospace";
+    this.ctx.fillText(this.playerInput + (Math.floor(performance.now() / 500) % 2 === 0 ? '_' : ''), this.canvas.width/2, this.canvas.height/2 + 70);
+
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      this.ctx.fill();
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    this.floatingTexts.forEach(ft => {
+      this.ctx.fillStyle = ft.color;
+      this.ctx.globalAlpha = Math.max(0, ft.life);
+      this.ctx.font = "bold 16px 'Press Start 2P', monospace";
+      this.ctx.fillText(ft.text, ft.x, ft.y);
+    });
+    this.ctx.globalAlpha = 1.0;
+
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.canvas.width/2, this.canvas.height/2, 50, this.canvas.width/2, this.canvas.height/2, 350);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (!this.mods.noUI) {
+      const timerRatio = this.timeLeft / this.timeLimit;
+      this.ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      this.ctx.fillRect(0, 0, this.canvas.width, 5);
+      this.ctx.fillStyle = timerRatio > 0.3 ? '#06B6D4' : '#EF4444';
+      this.ctx.fillRect(0, 0, this.canvas.width * timerRatio, 5);
+      
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "12px 'JetBrains Mono', monospace";
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText(`ENTER to Submit | BACKSPACE to Delete`, 20, 30);
     }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});

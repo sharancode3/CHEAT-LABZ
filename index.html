@@ -2,133 +2,145 @@
 <html lang="en">
 <head>
   <script src="games-data.js"></script>
-  <script src="game-icons.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CHEAT LABZ | No Rules. Just Scores.</title>
+  <title>CHEAT LABZ | Underground Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/home.css">
+  <style>
+    /* Premium Homepage Overrides */
+    body { background-color: var(--bg-primary); color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    .hero-cyber { position: relative; height: 80vh; min-height: 600px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
+    .hero-bg-parallax { position: absolute; inset: -50px; background: radial-gradient(circle at center, rgba(139,92,246,0.15) 0%, rgba(9,9,11,1) 70%); z-index: 0; pointer-events: none; }
+    #pixel-dust-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
+    .hero-content { position: relative; z-index: 2; max-width: 800px; padding: 0 24px; }
+    .glitch-title { font-family: 'Press Start 2P', monospace; font-size: 4rem; margin-bottom: 24px; color: #fff; text-shadow: 0 0 20px var(--cyan); position: relative; display: inline-block; }
+    .glitch-title::before, .glitch-title::after { content: "CHEAT LABZ"; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; }
+    .glitch-title::before { left: 2px; text-shadow: -2px 0 var(--danger); animation: glitch-anim-1 2s infinite linear alternate-reverse; }
+    .glitch-title::after { left: -2px; text-shadow: -2px 0 var(--cyan); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+    .hero-subtitle { font-size: 1.25rem; color: var(--muted); margin-bottom: 40px; line-height: 1.6; }
+    
+    .mission-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; backdrop-filter: blur(12px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s; position: relative; overflow: hidden; }
+    .mission-card::before { content:''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+    .mission-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 20px rgba(6,182,212,0.2); }
+    
+    .carousel-container { display: flex; gap: 24px; padding: 24px 50vw 48px 24px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab; }
+    .carousel-container::-webkit-scrollbar { display: none; }
+    .carousel-container:active { cursor: grabbing; }
+    .carousel-item { flex: 0 0 320px; scroll-snap-align: center; }
+    
+    .hot-card { height: 420px; background: rgba(16,16,20,0.9); border: 1px solid rgba(139,92,246,0.2); border-radius: 20px; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); overflow: hidden; display: flex; flex-direction: column; padding: 24px; z-index: 1; }
+    .hot-card:hover { transform: scale(1.05) translateY(-10px); z-index: 10; border-color: var(--neon); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.3); }
+    /* Blur siblings on hover container */
+    .carousel-container:hover .hot-card:not(:hover) { filter: blur(4px) brightness(0.6); transform: scale(0.95); }
+    
+    .hot-card-icon { width: 80px; height: 80px; margin: 0 auto 24px auto; color: var(--cyan); transition: transform 0.3s; }
+    .hot-card:hover .hot-card-icon { transform: scale(1.1); filter: drop-shadow(0 0 15px var(--cyan)); }
+    .hot-card-title { font-family: 'Press Start 2P', monospace; font-size: 14px; text-align: center; margin-bottom: 8px; color: #fff; }
+    
+    .hot-card-metrics { opacity: 0; transform: translateY(20px); transition: all 0.4s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+    .hot-card:hover .hot-card-metrics { opacity: 1; transform: translateY(0); }
+    
+    .metric-row { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px; }
+    
+    .hot-card-footer { display: flex; justify-content: space-between; align-items: center; opacity: 0; transition: opacity 0.4s; margin-top: auto; }
+    .hot-card:hover .hot-card-footer { opacity: 1; }
+    
+    .btn-play-hidden { background: var(--cyan); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 800; cursor: pointer; transition: all 0.2s; flex-grow: 1; margin-right: 12px; }
+    .btn-play-hidden:hover { background: #fff; box-shadow: 0 0 15px var(--cyan); }
+    
+    .btn-question { width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold; cursor: help; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
+    .btn-question:hover { background: var(--neon); border-color: var(--neon); }
+    
+    /* Tooltip */
+    .premium-tooltip { position: absolute; bottom: 120%; right: 0; width: 260px; background: rgba(9,9,11,0.98); border: 1px solid var(--neon); border-radius: 12px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 100; transform: translateY(10px); pointer-events: none; text-align: left; }
+    .btn-question:hover .premium-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
+    
+    @keyframes glitch-anim-1 { 0% { clip-path: inset(20% 0 80% 0); } 20% { clip-path: inset(60% 0 10% 0); } 40% { clip-path: inset(40% 0 50% 0); } 60% { clip-path: inset(80% 0 5% 0); } 80% { clip-path: inset(10% 0 70% 0); } 100% { clip-path: inset(30% 0 20% 0); } }
+    @keyframes glitch-anim-2 { 0% { clip-path: inset(10% 0 60% 0); } 20% { clip-path: inset(30% 0 20% 0); } 40% { clip-path: inset(70% 0 10% 0); } 60% { clip-path: inset(20% 0 50% 0); } 80% { clip-path: inset(50% 0 30% 0); } 100% { clip-path: inset(5% 0 80% 0); } }
+  </style>
 </head>
 <body>
-  <div id="global-loader" class="loader"><div class="loader-bar"></div></div>
   
-  <!-- Particles Background Canvas -->
-  <canvas id="particles-bg"></canvas>
-
-  <div class="nav-controls" style="position: absolute; top: 16px; right: 24px; z-index: 100;">
+  <div class="nav-controls" style="position: absolute; top: 24px; right: 32px; z-index: 100;">
     <button id="global-mute-btn" class="icon-btn" aria-label="Toggle Sound" onclick="window.Sound && window.Sound.toggleMute()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-    </button>
-    <button id="hamburger-btn" class="icon-btn mobile-only" aria-label="Menu" onclick="document.getElementById('mobile-menu').style.display='flex'">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
     </button>
   </div>
 
-  
+  <div id="navbar-mount"></div>
 
   <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content fade-in">
-      <div class="logo-group">
-        <h1 class="logo font-display">CHEAT LABZ</h1>
-        <p class="subtitle">No rules. Just scores.</p>
+  <section class="hero-cyber">
+    <div class="hero-bg-parallax" id="hero-bg"></div>
+    <canvas id="pixel-dust-canvas"></canvas>
+    
+    <div class="hero-content">
+      <h1 class="glitch-title">CHEAT LABZ</h1>
+      <p class="hero-subtitle">The underground cyber arcade. No rules. Just pure skill.<br>Master all 19 challenges and dominate the global leaderboards.</p>
+      
+      <div style="display: flex; gap: 16px; justify-content: center;">
+        <a href="games.html" class="btn-play-hidden" style="text-decoration: none; display: inline-block;">ENTER THE GRID</a>
+        <a href="arena.html" style="padding: 12px 24px; border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; font-weight: 800; text-decoration: none; transition: all 0.2s;">SURVIVE ARENA</a>
       </div>
-
-      <h2 class="headline font-display">Pick a game.<br>Break the record.</h2>
-      <p class="sub-headline">19 browser games. One leaderboard. No excuses.</p>
-
-      <div class="cta-group">
-        <a href="games.html" class="btn btn-primary">BROWSE GAMES</a>
-        <button id="random-game-btn" class="btn btn-outline">RANDOM GAME</button>
-        <a href="arena.html" class="btn btn-danger-outline">ENTER ARENA</a>
-      </div>
-
-      <div class="live-stats">
-        <span class="badge badge-teal">19 Games Live</span>
-        <span class="badge badge-purple">Season 3 Active</span>
-      </div>
-    </div>
-
-    <!-- Scroll Indicator -->
-    <div class="scroll-indicator">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
     </div>
   </section>
 
-  <!-- Daily Challenges Section -->
-  <section class="daily-challenges container section-padding fade-in" style="animation-delay: 200ms;">
-    <div class="section-header">
-      <h3 class="section-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-        </svg>
-        DAILY CHALLENGES
-      </h3>
-      <div class="countdown font-display" id="daily-countdown">--:--:--</div>
+  <!-- Collectible Missions Section -->
+  <section style="padding: 80px 24px; max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+    <h2 style="font-family: 'Press Start 2P', monospace; font-size: 18px; margin-bottom: 40px; display: flex; align-items: center; gap: 16px;">
+      <span style="color: var(--cyan);">//</span> ACTIVE MISSIONS
+    </h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;" id="missions-grid">
+      <!-- Injected via JS -->
+    </div>
+  </section>
+
+  <!-- Hot Games Momentum Carousel -->
+  <section style="padding: 40px 0 100px 0; position: relative; z-index: 10; overflow: hidden;">
+    <div style="padding: 0 24px; max-width: 1200px; margin: 0 auto;">
+      <h2 style="font-family: 'Press Start 2P', monospace; font-size: 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+        <span style="color: var(--danger);">🔥</span> TRENDING UPLINKS
+      </h2>
     </div>
     
-    <div class="challenges-grid" id="challenges-grid">
-      <!-- Generated via JS -->
+    <div class="carousel-container" id="hot-carousel">
+      <!-- Injected via JS -->
     </div>
   </section>
 
-  <!-- Player Stats Strip -->
-  <section class="player-stats-section section-padding fade-in" style="animation-delay: 300ms;">
-    <div class="container">
-      <div class="stats-strip" id="stats-strip">
-        <!-- Cards generated via JS based on localStorage -->
-      </div>
+  <!-- Global Game Modal (Includes Phase 1 Refactor) -->
+  <div id="game-modal" class="hidden" style="position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column;">
+    <div style="padding: 16px 24px; background: rgba(9,9,11,0.9); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+      <button id="close-game" style="background: transparent; border: 1px solid var(--muted); color: #fff; padding: 8px 16px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; cursor: pointer;">← ABORT</button>
+      <span id="game-modal-title" style="font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--cyan);"></span>
+      <span id="game-modal-score" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: bold; color: var(--neon);">SCORE: 0</span>
     </div>
-  </section>
-
-  <!-- Hot Right Now Section -->
-  <section class="hot-section container section-padding fade-in" style="animation-delay: 400ms;">
-    <div class="section-header">
-      <h3 class="section-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"></path>
-        </svg>
-        HOT RIGHT NOW
-      </h3>
-      <div class="tab-switcher">
-        <button class="tab-pill active">TRENDING</button>
-        <button class="tab-pill">NEW</button>
-        <button class="tab-pill">CHILL</button>
-      </div>
-    </div>
-
-    <div class="horizontal-scroll-container" id="hot-games-container">
-      <!-- Game Cards injected via JS -->
-    </div>
-  </section>
-
-  <footer>
-    <p>© 2026 CHEAT LABZ — No rules. Just scores.</p>
-  </footer>
-
-  <script type="module" src="js/ui/home.js"></script>
-  <script>window.addEventListener('load', () => { const l = document.getElementById('global-loader'); if(l) { l.style.opacity=0; setTimeout(()=>l.remove(), 300); } });</script>
-  <script type="module" src="js/ui/navbar.js"></script>
-
-  <!-- Global Game Modal -->
-  <div id="game-modal" class="game-modal hidden">
-    <div class="game-modal-header">
-      <button id="close-game" class="btn-icon">← BACK</button>
-      <span id="game-modal-title" class="font-display" style="font-size: 14px;"></span>
-      <span id="game-modal-score" class="font-display text-accent-1" style="font-size: 14px;">SCORE: 0</span>
-    </div>
-    <div class="game-canvas-container" id="game-canvas-container">
+    <div id="game-canvas-container" style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;">
       <canvas id="game-canvas"></canvas>
     </div>
   </div>
 
-  <script type="module" src="js/ui/modal.js"></script>
+  <script type="module" src="js/ui/navbar.js"></script>
+<script type="module">
+  import router from './js/core/router.js';
+  router.startRouter();
+</script>
+<script type="module" src="js/ui/home.js"></script>
+<script type="module" src="js/ui/modal.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+      loader.style.opacity = 0;
+      setTimeout(() => loader.remove(), 300);
+    }
+  });
+</script>
 </body>
 </html>

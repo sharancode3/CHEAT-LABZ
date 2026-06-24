@@ -1,334 +1,331 @@
 import { GameShell } from './game-shell.js';
-import { Sound } from '../core/sound.js';
-import { GameState } from '../core/events.js';
-import { Storage } from '../core/storage.js';
 
 export default class TurboDrift extends GameShell {
   constructor(canvas, config = {}) {
-    super(canvas || 'game-canvas', { ...config, 
-      name: 'turbo-drift',
-      description: '3 laps. Drift for bonus points. Hit boost pads. Best time wins.',
-      width: 700,
-      height: 700
-    });
-
-    this.timeEl = document.getElementById('game-time');
-    this.lapsEl = document.getElementById('game-laps');
-    this.driftEl = document.getElementById('drift-score');
-    this.collisionEl = document.getElementById('game-collision');
-
-    // Minimap
-    const mmCanvas = document.getElementById('minimap-canvas');
-    this.mmCtx = mmCanvas.getContext('2d');
-
-    this.keys = { up: false, down: false, left: false, right: false, space: false };
-    
-    // Track bounds (Outer and Inner rounded rectangles)
-    this.track = {
-      cx: 350, cy: 350,
-      outerR: 280, innerR: 160
-    };
-    
-    // Boost pads [angle in radians]
-    this.boosts = [0, Math.PI, Math.PI/2];
-
-    this.init();
+    super(canvas, config);
+    this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, a: false, s: false, d: false };
   }
 
   onStart() {
-    this.car = {
-      x: 350, y: 550, // Start at bottom middle of track
-      angle: 0, // pointing right
-      speed: 0,
-      maxSpeed: 300,
-      driftAngle: 0
+    this.mods = {
+      speedMult: this.config.modifiers?.includes('2x_speed') ? 1.5 : 1,
+      reverse: this.config.modifiers?.includes('reverse'),
+      noUI: this.config.modifiers?.includes('no_ui'),
+      suddenDeath: this.config.modifiers?.includes('sudden_death'),
+      limitedVision: this.config.modifiers?.includes('limited_vision')
     };
+
+    this.car = {
+      x: this.canvas.width / 2,
+      y: this.canvas.height - 150,
+      width: 20,
+      height: 40,
+      angle: -Math.PI / 2,
+      velocity: 0,
+      maxSpeed: 400 * this.mods.speedMult,
+      acceleration: 800,
+      friction: 200,
+      turnSpeed: 4.5
+    };
+
+    this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, w: false, a: false, s: false, d: false };
     
-    this.laps = 0;
-    this.maxLaps = 3;
-    this.startTime = performance.now();
-    this.elapsedTime = 0;
-    
-    this.checkpoints = [false, false, false, false]; // quadrants
+    this.trackScrollY = 0;
+    this.curveTime = 0;
+    this.roadSegments = [];
+    this.roadWidth = 200;
+    this.generateInitialRoad();
+
+    this.skidMarks = [];
+    this.boostPads = [];
+    this.particles = [];
     
     this.driftScore = 0;
-    this.driftTime = 0;
+    this.driftMultiplier = 1;
     this.isDrifting = false;
-    this.tireMarks = [];
     
-    this.boostTimer = 0;
-    
-    this.updateUI();
-    
-    let runs = Storage.get('turbo-drift_runs', 0);
-    Storage.set('turbo-drift_runs', runs + 1);
+    this.score = 0;
+    this.updateScore(0);
   }
 
-  onInput(key, event) {
-    if (key === 'arrowup' || key === 'w') this.keys.up = true;
-    if (key === 'arrowdown' || key === 's') this.keys.down = true;
-    if (key === 'arrowleft' || key === 'a') this.keys.left = true;
-    if (key === 'arrowright' || key === 'd') this.keys.right = true;
-    if (key === ' ') this.keys.space = true;
+  onInput(key, e, isDown) {
+    if(this.keys.hasOwnProperty(e.key)) this.keys[e.key] = isDown;
   }
 
-  onKeyUp(key, event) {
-    if (key === 'arrowup' || key === 'w') this.keys.up = false;
-    if (key === 'arrowdown' || key === 's') this.keys.down = false;
-    if (key === 'arrowleft' || key === 'a') this.keys.left = false;
-    if (key === 'arrowright' || key === 'd') this.keys.right = false;
-    if (key === ' ') this.keys.space = false;
+  generateInitialRoad() {
+    for(let i=0; i < this.canvas.height / 20 + 20; i++) {
+      this.addRoadSegment(this.canvas.height - (i * 20));
+    }
   }
 
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-    this.elapsedTime = performance.now() - this.startTime;
+  addRoadSegment(y) {
+    this.curveTime += 0.05;
+    const offset = Math.sin(this.curveTime) * 200 + Math.sin(this.curveTime * 0.3) * 100;
+    this.roadSegments.push({
+      y: y,
+      x: this.canvas.width / 2 + offset
+    });
 
-    // Physics
-    let acceleration = 0;
-    if (this.keys.up) acceleration = 200;
-    if (this.keys.down) acceleration = -150;
+    if (Math.random() < 0.02) {
+      this.boostPads.push({
+        x: this.canvas.width / 2 + offset + (Math.random() - 0.5) * (this.roadWidth - 40),
+        y: y,
+        active: true
+      });
+    }
+  }
+
+  createExplosion(x, y, color, count=20) {
+    for(let i=0; i<count; i++) {
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 15,
+        life: 1.0,
+        color: color
+      });
+    }
+  }
+
+  update(dtMs) {
+    const dtSec = Math.min(dtMs / 1000, 0.05);
     
-    // Boost logic
-    let currentMaxSpeed = this.car.maxSpeed;
-    if (this.boostTimer > 0) {
-      this.boostTimer -= deltaTime;
-      currentMaxSpeed = 500;
-      acceleration = 400; // force accel
+    let up = this.keys.ArrowUp || this.keys.w;
+    let down = this.keys.ArrowDown || this.keys.s;
+    let left = this.keys.ArrowLeft || this.keys.a;
+    let right = this.keys.ArrowRight || this.keys.d;
+
+    if (this.mods.reverse) {
+      let tempU = up; up = down; down = tempU;
+      let tempL = left; left = right; right = tempL;
     }
 
-    // Apply accel/friction
-    if (acceleration !== 0) {
-      this.car.speed += acceleration * dt;
+    if (up) {
+      this.car.velocity += this.car.acceleration * dtSec;
+    } else if (down) {
+      this.car.velocity -= this.car.acceleration * dtSec;
     } else {
-      // friction
-      if (this.car.speed > 0) this.car.speed = Math.max(0, this.car.speed - 100 * dt);
-      if (this.car.speed < 0) this.car.speed = Math.min(0, this.car.speed + 100 * dt);
+      if (this.car.velocity > 0) this.car.velocity -= this.car.friction * dtSec;
+      if (this.car.velocity < 0) this.car.velocity += this.car.friction * dtSec;
     }
     
-    // Limit speed
-    if (this.car.speed > currentMaxSpeed) this.car.speed = currentMaxSpeed;
-    if (this.car.speed < -100) this.car.speed = -100;
-
-    // Steering
-    let turnSpeed = 2.5;
-    if (this.keys.space) turnSpeed = 4.0; // handbrake turns faster
+    if (Math.abs(this.car.velocity) < 10) this.car.velocity = 0;
     
-    // Only turn if moving
-    if (Math.abs(this.car.speed) > 10) {
-      let turnDir = 0;
-      if (this.keys.left) turnDir = -1;
-      if (this.keys.right) turnDir = 1;
-      
-      // Reverse turn direction if going backwards
-      if (this.car.speed < 0) turnDir *= -1;
-      
-      this.car.angle += turnDir * turnSpeed * dt * (this.car.speed / currentMaxSpeed);
+    if (this.car.velocity > this.car.maxSpeed) this.car.velocity = this.car.maxSpeed;
+    if (this.car.velocity < -this.car.maxSpeed/2) this.car.velocity = -this.car.maxSpeed/2;
+
+    const speedRatio = Math.abs(this.car.velocity) / this.car.maxSpeed;
+    if (this.car.velocity !== 0) {
+      const turnDir = this.car.velocity > 0 ? 1 : -1;
+      if (left) this.car.angle -= this.car.turnSpeed * dtSec * speedRatio * turnDir;
+      if (right) this.car.angle += this.car.turnSpeed * dtSec * speedRatio * turnDir;
     }
 
-    // Drift Logic
-    let driftFactor = 0;
-    if (this.keys.space && Math.abs(this.car.speed) > 100 && (this.keys.left || this.keys.right)) {
-      this.isDrifting = true;
-      this.driftTime += deltaTime;
+    this.isDrifting = (left || right) && Math.abs(this.car.velocity) > 200;
+
+    if (this.isDrifting) {
+      this.driftScore += 100 * dtSec * this.driftMultiplier;
+      this.driftMultiplier = Math.min(this.driftMultiplier + dtSec * 2, 5);
       
-      // Drift score multiplier
-      if (this.driftTime > 500) { // 0.5s+
-        this.driftScore += Math.floor(deltaTime * 0.1);
-        this.driftEl.innerText = `DRIFT: ${this.driftScore}`;
-      }
-      
-      driftFactor = 0.5; // Slide sideways
-      
-      // Add tire marks
-      if (Math.random() > 0.3) {
-        this.tireMarks.push({
+      this.skidMarks.push({
+        x: this.car.x,
+        y: this.car.y,
+        life: 1.0
+      });
+
+      if(Math.random() < 0.3) {
+        this.particles.push({
           x: this.car.x, y: this.car.y,
-          life: 1.0
+          vx: Math.cos(this.car.angle + Math.PI/2) * (left ? 5 : -5),
+          vy: Math.sin(this.car.angle + Math.PI/2) * (left ? 5 : -5),
+          life: 0.5, color: '#FBBF24'
         });
       }
     } else {
-      this.isDrifting = false;
-      this.driftTime = 0;
+      this.driftMultiplier = Math.max(1, this.driftMultiplier - dtSec);
+      if (this.driftScore > 0) {
+        this.score += Math.floor(this.driftScore);
+        this.updateScore(this.score);
+        this.driftScore = 0;
+      }
     }
 
-    // Update position
-    const moveAngle = this.car.angle + (this.isDrifting && this.keys.right ? driftFactor : (this.isDrifting && this.keys.left ? -driftFactor : 0));
-    
-    this.car.x += Math.cos(moveAngle) * this.car.speed * dt;
-    this.car.y += Math.sin(moveAngle) * this.car.speed * dt;
+    const dx = Math.cos(this.car.angle) * this.car.velocity * dtSec;
+    const dy = Math.sin(this.car.angle) * this.car.velocity * dtSec;
 
-    // Track Collision (Simple distance from center since it's a circular track for MVP)
-    const dx = this.car.x - this.track.cx;
-    const dy = this.car.y - this.track.cy;
-    const dist = Math.sqrt(dx*dx + dy*dy);
+    this.car.x += dx;
     
-    if (dist > this.track.outerR - 10 || dist < this.track.innerR + 10) {
-      // Off track penalty
-      this.car.speed *= 0.8; 
-      this.collisionEl.classList.add('active');
-      if (Math.random() > 0.8) Sound.playDamage(); // Rumble sound approx
-    } else {
-      this.collisionEl.classList.remove('active');
+    const scrollDelta = -dy;
+    
+    if (scrollDelta > 0) {
+      this.score += Math.floor(scrollDelta * 0.1);
+      this.updateScore(this.score);
     }
 
-    // Boost Pads
-    const carAngleFromCenter = Math.atan2(dy, dx); // -PI to PI
-    for (let b of this.boosts) {
-      // If car is close to the angle of a boost pad
-      if (Math.abs(this.angleDiff(carAngleFromCenter, b)) < 0.1 && dist > this.track.innerR && dist < this.track.outerR) {
-        if (this.boostTimer <= 0) {
-          this.boostTimer = 2000;
-          Sound.playCoin(); // Boost sound
+    this.trackScrollY += scrollDelta;
+    if (this.trackScrollY > 20) {
+      this.trackScrollY -= 20;
+      this.roadSegments.unshift({
+        y: this.roadSegments[0].y - 20,
+        x: this.canvas.width / 2 + Math.sin(this.curveTime) * 200 + Math.sin(this.curveTime * 0.3) * 100
+      });
+      this.curveTime += 0.05;
+      
+      if (Math.random() < 0.02) {
+        this.boostPads.push({
+          x: this.roadSegments[0].x + (Math.random() - 0.5) * (this.roadWidth - 40),
+          y: this.roadSegments[0].y,
+          active: true
+        });
+      }
+
+      this.roadSegments.pop();
+    }
+
+    this.roadSegments.forEach(seg => seg.y += scrollDelta);
+    this.skidMarks.forEach(s => s.y += scrollDelta);
+    this.boostPads.forEach(b => b.y += scrollDelta);
+    this.particles.forEach(p => p.y += scrollDelta);
+
+    let closestSeg = this.roadSegments.reduce((prev, curr) => 
+      Math.abs(curr.y - this.car.y) < Math.abs(prev.y - this.car.y) ? curr : prev
+    );
+
+    const distFromCenter = Math.abs(this.car.x - closestSeg.x);
+    if (distFromCenter > this.roadWidth / 2) {
+      if (this.mods.suddenDeath) {
+        this.createExplosion(this.car.x, this.car.y, '#EF4444', 100);
+        this.draw();
+        this.gameOver();
+        return;
+      } else {
+        this.car.velocity *= 0.95;
+        if(Math.random() < 0.2 && this.car.velocity > 50) {
+          this.particles.push({
+            x: this.car.x, y: this.car.y,
+            vx: (Math.random() - 0.5) * 5, vy: -scrollDelta + (Math.random()-0.5)*5,
+            life: 0.5, color: '#5C4033'
+          });
         }
       }
     }
 
-    // Checkpoints & Laps
-    if (carAngleFromCenter > -0.5 && carAngleFromCenter < 0.5) this.checkpoints[0] = true;
-    if (carAngleFromCenter > 1.0 && carAngleFromCenter < 2.0) this.checkpoints[1] = true;
-    if (carAngleFromCenter > 2.5 || carAngleFromCenter < -2.5) this.checkpoints[2] = true;
-    
-    // Cross finish line (bottom, angle ~ -PI/2)
-    if (carAngleFromCenter > -2.0 && carAngleFromCenter < -1.0) {
-      if (this.checkpoints[0] && this.checkpoints[1] && this.checkpoints[2]) {
-        this.laps++;
-        Sound.playBlip();
-        this.checkpoints = [false, false, false, false];
-        if (this.laps >= this.maxLaps) {
-          this.finishRace();
-        }
+    this.boostPads.forEach(b => {
+      if (b.active && Math.hypot(b.x - this.car.x, b.y - this.car.y) < 30) {
+        b.active = false;
+        this.car.velocity = this.car.maxSpeed * 1.5;
+        this.createExplosion(b.x, b.y, '#06B6D4', 10);
       }
-    }
+    });
 
-    // Update tire marks
-    for (let i = this.tireMarks.length - 1; i >= 0; i--) {
-      this.tireMarks[i].life -= dt * 0.5;
-      if (this.tireMarks[i].life <= 0) this.tireMarks.splice(i, 1);
-    }
-
-    this.updateUI();
-  }
-
-  angleDiff(a, b) {
-    let diff = a - b;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    return diff;
-  }
-
-  finishRace() {
-    // Score = 1000 - elapsed time + drift score
-    const timeScore = Math.max(0, 10000 - Math.floor(this.elapsedTime / 10)); // Arbitrary scale
-    this.score = timeScore + this.driftScore;
-    Sound.playGameOver();
-    this.gameOver();
-  }
-
-  updateUI() {
-    if (this.timeEl) this.timeEl.innerText = (this.elapsedTime / 1000).toFixed(2);
-    if (this.lapsEl && this.laps < this.maxLaps) this.lapsEl.innerText = `LAP ${this.laps + 1}/${this.maxLaps}`;
+    this.skidMarks = this.skidMarks.filter(s => { s.life -= 0.5 * dtSec; return s.life > 0; });
+    this.boostPads = this.boostPads.filter(b => b.y < this.canvas.height + 100);
+    this.particles = this.particles.filter(p => { p.x += p.vx; p.y += p.vy; p.life -= dtSec * 2; return p.life > 0; });
   }
 
   draw() {
-    // Canvas is #3b7c3b via CSS
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = '#09090B';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw Track (Dark Gray Circle)
+    this.ctx.fillStyle = '#1A1A1A';
     this.ctx.beginPath();
-    this.ctx.arc(this.track.cx, this.track.cy, this.track.outerR, 0, Math.PI*2);
-    this.ctx.arc(this.track.cx, this.track.cy, this.track.innerR, 0, Math.PI*2, true);
-    this.ctx.fillStyle = '#2a2a3a';
+    this.ctx.moveTo(this.roadSegments[0].x - this.roadWidth/2, this.roadSegments[0].y);
+    for(let i=1; i<this.roadSegments.length; i++) {
+      this.ctx.lineTo(this.roadSegments[i].x - this.roadWidth/2, this.roadSegments[i].y);
+    }
+    for(let i=this.roadSegments.length-1; i>=0; i--) {
+      this.ctx.lineTo(this.roadSegments[i].x + this.roadWidth/2, this.roadSegments[i].y);
+    }
+    this.ctx.closePath();
     this.ctx.fill();
     
-    // Track lines
-    this.ctx.beginPath();
-    this.ctx.arc(this.track.cx, this.track.cy, (this.track.outerR + this.track.innerR)/2, 0, Math.PI*2);
-    this.ctx.strokeStyle = '#555570';
-    this.ctx.setLineDash([20, 20]);
+    this.ctx.strokeStyle = '#8B5CF6';
     this.ctx.lineWidth = 4;
-    this.ctx.stroke();
-    this.ctx.setLineDash([]);
-
-    // Draw Boost Pads
-    this.ctx.lineWidth = 20;
-    this.ctx.strokeStyle = '#ffd93d';
-    for (let b of this.boosts) {
-      this.ctx.beginPath();
-      this.ctx.arc(this.track.cx, this.track.cy, (this.track.outerR + this.track.innerR)/2, b - 0.1, b + 0.1);
-      this.ctx.stroke();
-    }
-
-    // Finish Line
-    this.ctx.strokeStyle = '#fff';
-    this.ctx.lineWidth = 10;
+    this.ctx.shadowBlur = 10;
+    this.ctx.shadowColor = '#8B5CF6';
     this.ctx.beginPath();
-    this.ctx.arc(this.track.cx, this.track.cy, (this.track.outerR + this.track.innerR)/2, -Math.PI/2 - 0.02, -Math.PI/2 + 0.02);
+    for(let i=0; i<this.roadSegments.length; i++) this.ctx.lineTo(this.roadSegments[i].x - this.roadWidth/2, this.roadSegments[i].y);
     this.ctx.stroke();
+    this.ctx.beginPath();
+    for(let i=0; i<this.roadSegments.length; i++) this.ctx.lineTo(this.roadSegments[i].x + this.roadWidth/2, this.roadSegments[i].y);
+    this.ctx.stroke();
+    this.ctx.shadowBlur = 0;
 
-    // Tire marks
-    for (let m of this.tireMarks) {
-      this.ctx.beginPath();
-      this.ctx.arc(m.x, m.y, 4, 0, Math.PI*2);
-      this.ctx.fillStyle = `rgba(20, 20, 20, ${m.life * 0.5})`;
-      this.ctx.fill();
-    }
+    this.boostPads.forEach(b => {
+      if(b.active) {
+        this.ctx.fillStyle = '#06B6D4';
+        this.ctx.fillRect(b.x - 15, b.y - 5, 30, 10);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x - 5, b.y + 5);
+        this.ctx.lineTo(b.x + 5, b.y + 5);
+        this.ctx.lineTo(b.x, b.y - 5);
+        this.ctx.fill();
+      }
+    });
 
-    // Car
+    this.skidMarks.forEach(s => {
+      this.ctx.fillStyle = `rgba(0,0,0,${s.life * 0.5})`;
+      this.ctx.fillRect(s.x - 5, s.y - 5, 10, 10);
+    });
+
     this.ctx.save();
     this.ctx.translate(this.car.x, this.car.y);
     this.ctx.rotate(this.car.angle);
     
-    // Shadow
-    this.ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    this.ctx.fillRect(-10 + 4, -6 + 4, 20, 12);
-    
-    // Body
-    this.ctx.fillStyle = '#6c63ff'; // Accent 1
-    this.ctx.fillRect(-10, -6, 20, 12);
-    // Windshield
-    this.ctx.fillStyle = '#00d4aa';
-    this.ctx.fillRect(0, -4, 4, 8);
-    // Headlights
-    this.ctx.fillStyle = '#fff';
-    this.ctx.fillRect(8, -5, 2, 3);
-    this.ctx.fillRect(8, 2, 2, 3);
-    
-    // Boost effect
-    if (this.boostTimer > 0) {
-      this.ctx.fillStyle = '#ff6b6b';
+    if (this.car.velocity > this.car.maxSpeed * 0.8) {
+      this.ctx.fillStyle = '#FBBF24';
       this.ctx.beginPath();
-      this.ctx.arc(-15, 0, 6 + Math.random()*4, 0, Math.PI*2);
+      this.ctx.moveTo(-this.car.width/2 + 5, this.car.height/2);
+      this.ctx.lineTo(-this.car.width/2 + 10, this.car.height/2 + Math.random()*20 + 10);
+      this.ctx.lineTo(0, this.car.height/2 + Math.random()*10);
+      this.ctx.lineTo(this.car.width/2 - 10, this.car.height/2 + Math.random()*20 + 10);
+      this.ctx.lineTo(this.car.width/2 - 5, this.car.height/2);
       this.ctx.fill();
     }
 
+    this.ctx.fillStyle = '#EF4444';
+    this.ctx.shadowColor = '#EF4444';
+    this.ctx.shadowBlur = 10;
+    this.ctx.fillRect(-this.car.width/2, -this.car.height/2, this.car.width, this.car.height);
+    this.ctx.fillStyle = '#000';
+    this.ctx.shadowBlur = 0;
+    this.ctx.fillRect(-this.car.width/2 + 2, -this.car.height/4, this.car.width - 4, this.car.height/2);
+    this.ctx.fillStyle = '#fff';
+    this.ctx.fillRect(-this.car.width/2 + 2, -this.car.height/2 - 2, 4, 4);
+    this.ctx.fillRect(this.car.width/2 - 6, -this.car.height/2 - 2, 4, 4);
+    
     this.ctx.restore();
 
-    this.drawMinimap();
-  }
+    this.particles.forEach(p => {
+      this.ctx.fillStyle = p.color;
+      this.ctx.globalAlpha = Math.max(0, p.life);
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+      this.ctx.fill();
+    });
+    this.ctx.globalAlpha = 1.0;
 
-  drawMinimap() {
-    const ctx = this.mmCtx;
-    ctx.clearRect(0, 0, 120, 120);
-    
-    const scale = 120 / 700;
-    
-    // Track
-    ctx.beginPath();
-    ctx.arc(120/2, 120/2, this.track.outerR * scale, 0, Math.PI*2);
-    ctx.arc(120/2, 120/2, this.track.innerR * scale, 0, Math.PI*2, true);
-    ctx.fillStyle = '#2a2a3a';
-    ctx.fill();
+    if (this.mods.limitedVision) {
+      this.ctx.globalCompositeOperation = 'destination-in';
+      const gradient = this.ctx.createRadialGradient(this.car.x, this.car.y, 100, this.car.x, this.car.y, 300);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.globalCompositeOperation = 'source-over';
+    }
 
-    // Car dot
-    ctx.beginPath();
-    ctx.arc(this.car.x * scale, this.car.y * scale, 3, 0, Math.PI*2);
-    ctx.fillStyle = '#00d4aa';
-    ctx.fill();
+    if (!this.mods.noUI) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = "14px 'JetBrains Mono', monospace";
+      this.ctx.fillText(`SPEED: ${Math.floor(this.car.velocity)} KM/H`, 20, 30);
+      
+      if (this.isDrifting) {
+        this.ctx.fillStyle = '#FBBF24';
+        this.ctx.fillText(`DRIFT x${this.driftMultiplier.toFixed(1)} : +${Math.floor(this.driftScore)}`, 20, 50);
+      }
+    }
   }
 }
-
-window.GameState = GameState;
-
-document.addEventListener('DOMContentLoaded', () => {
-});
