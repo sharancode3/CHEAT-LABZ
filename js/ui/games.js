@@ -318,6 +318,9 @@ class GamesGrid {
           const gameId = playBtn.getAttribute('data-id');
           if (window.launchGameModal) {
             window.launchGameModal(gameId);
+          } else {
+            // Fallback: Use the application hash routing infrastructure
+            window.location.hash = `/${gameId}`;
           }
         });
       }
