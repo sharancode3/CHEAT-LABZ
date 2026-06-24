@@ -89,7 +89,7 @@ async function launchGame(gameData, canvas, config = {}) {
     // Resolve path relative to the current HTML page instead of this module
     const path = gameData.file
       ? new URL(gameData.file, window.location.href).href
-      : window.location.origin + `/js/games/${gameData.id}.js`;
+      : new URL(`./js/games/${gameData.id}.js`, window.location.href).href;
     const module = await import(path);
     
     // Support default or named export based on className
