@@ -131,7 +131,11 @@ class GamesGrid {
     if (this.currentSort === 'pop') {
       list.sort((a, b) => b.id.length - a.id.length);
     } else if (this.currentSort === 'new') {
-      list.sort((a, b) => a.name.localeCompare(b.name));
+      list.sort((a, b) => {
+        const aNew = a.tags?.includes('new') || a.tags?.includes('NEW') ? 1 : 0;
+        const bNew = b.tags?.includes('new') || b.tags?.includes('NEW') ? 1 : 0;
+        return bNew - aNew; // Pushes matching new additions to top of card list
+      });
     } else if (this.currentSort === 'az') {
       list.sort((a, b) => a.name.localeCompare(b.name));
     } else if (this.currentSort === 'easy') {
