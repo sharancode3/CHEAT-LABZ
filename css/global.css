@@ -63,6 +63,12 @@ html, body {
   --shadow-glow-purple: 0 0 20px rgba(0,255,0,0.3);
 }
 
+/* CHALLENGE tab live dot animation */
+@keyframes navChallengePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(0,212,170,0); }
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);

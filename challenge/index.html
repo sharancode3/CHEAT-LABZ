@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHALLENGE MODE | CHEAT LABZ — Real Multiplayer</title>
+  <meta name="description" content="Challenge real players in CHEAT LABZ multiplayer mode. Create a private room or jump into random matchmaking.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/challenge.css">
+
+  <!-- Socket.IO Client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- ── Hex Grid Background ──────────────────────────────────── -->
+<div class="hex-bg" aria-hidden="true">
+  <div class="hex-grid"></div>
+  <!-- Animated individual cells (CSS-only, no canvas) -->
+  <div class="hex-cell" style="top:10%;left:5%;--dur:6s;--delay:0s"></div>
+  <div class="hex-cell" style="top:20%;left:20%;--dur:5s;--delay:1.5s"></div>
+  <div class="hex-cell" style="top:5%;left:40%;--dur:7s;--delay:0.8s"></div>
+  <div class="hex-cell" style="top:15%;left:60%;--dur:4.5s;--delay:2s"></div>
+  <div class="hex-cell" style="top:25%;left:80%;--dur:6.5s;--delay:0.3s"></div>
+  <div class="hex-cell" style="top:50%;left:10%;--dur:5.5s;--delay:1s"></div>
+  <div class="hex-cell" style="top:60%;left:30%;--dur:6s;--delay:2.5s"></div>
+  <div class="hex-cell" style="top:45%;left:55%;--dur:4s;--delay:0.5s"></div>
+  <div class="hex-cell" style="top:70%;left:75%;--dur:7s;--delay:1.8s"></div>
+  <div class="hex-cell" style="top:80%;left:15%;--dur:5s;--delay:0.2s"></div>
+  <div class="hex-cell" style="top:85%;left:50%;--dur:6.5s;--delay:3s"></div>
+  <div class="hex-cell" style="top:90%;left:88%;--dur:4.5s;--delay:1.2s"></div>
+</div>
+
+<!-- ── Navbar ────────────────────────────────────────────────── -->
+<nav class="challenge-nav" role="navigation" aria-label="Main navigation">
+  <a href="../index.html" class="nav-logo" aria-label="CHEAT LABZ home">CHEAT LABZ</a>
+
+  <div class="nav-links">
+    <a href="../games.html"       class="nav-link">GAMES</a>
+    <a href="../arena.html"       class="nav-link">ARENA</a>
+    <a href="index.html"          class="nav-link challenge-tab active" aria-current="page">
+      <span class="nav-live-dot" aria-hidden="true"></span>
+      CHALLENGE
+    </a>
+    <a href="../leaderboard.html" class="nav-link">LEADERBOARD</a>
+  </div>
+</nav>
+
+<!-- ── Presence Bar ──────────────────────────────────────────── -->
+<div class="presence-bar" role="status" aria-live="polite" aria-label="Online player count">
+  <div class="presence-dot" aria-hidden="true"></div>
+  <strong id="online-count">—</strong>&nbsp;players online
+  <span class="presence-sep" aria-hidden="true">·</span>
+  <span id="in-game-count">—</span>&nbsp;in game
+  <span class="presence-sep" aria-hidden="true">·</span>
+  <span id="in-lobby-count">—</span>&nbsp;in lobby
+</div>
+
+<!-- ── Hero Section ──────────────────────────────────────────── -->
+<section class="challenge-hero" aria-labelledby="hero-heading">
+
+  <div class="challenge-hero-label">⚡ LIVE MULTIPLAYER</div>
+
+  <h1 class="challenge-title" id="hero-heading">
+    CHALLENGE<br><span>MODE</span>
+  </h1>
+
+  <p class="challenge-subtitle">
+    Play against real people.<br>No bots. No mercy. Pure skill.
+  </p>
+
+  <!-- Identity Bar -->
+  <div class="identity-bar" id="identity-bar" style="margin-bottom: 32px;">
+    <div class="identity-color-dot" id="identity-color" style="background: #6c63ff;"></div>
+    <span style="color: var(--muted); font-size: 11px; letter-spacing: 0.1em;">PLAYING AS</span>
+    <span class="identity-name" id="identity-name">Player7823</span>
+    <input class="identity-edit-input" id="identity-edit-input" type="text" maxlength="16"
+           placeholder="New name..." autocomplete="off" spellcheck="false">
+    <button class="identity-edit-btn" id="identity-edit-btn" aria-label="Edit display name" title="Edit name">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="hero-actions">
+    <div class="hero-btn-row">
+      <button class="btn-challenge btn-challenge--create" id="create-room-btn" aria-label="Create a new multiplayer room">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        CREATE ROOM
+      </button>
+
+      <button class="btn-challenge btn-challenge--join" id="join-room-btn" aria-label="Join a room with a team code">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        JOIN ROOM
+      </button>
+    </div>
+
+    <!-- TEAMCODE Input (hidden until JOIN ROOM clicked) -->
+    <div class="teamcode-input-wrapper hidden" id="teamcode-wrapper">
+      <input type="text"
+             id="teamcode-input"
+             placeholder="ENTER CODE"
+             maxlength="6"
+             autocomplete="off"
+             spellcheck="false"
+             aria-label="Enter 6-character team code">
+      <button id="join-btn" aria-label="Join room">JOIN →</button>
+    </div>
+    <div id="join-error" role="alert" aria-live="assertive"></div>
+
+    <button class="btn-challenge btn-challenge--quick" id="quickmatch-btn" aria-label="Find random match">
+      🎲 QUICK MATCH — find a random opponent
+    </button>
+  </div>
+</section>
+
+<!-- ── Game Browser ───────────────────────────────────────────── -->
+<section class="section" aria-labelledby="games-heading">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" id="games-heading">PICK YOUR BATTLE</h2>
+      <div class="filter-tabs" role="tablist" aria-label="Filter by player count">
+        <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true">ALL</button>
+        <button class="filter-tab" data-filter="2p" role="tab" aria-selected="false">2 PLAYERS</button>
+        <button class="filter-tab" data-filter="4p" role="tab" aria-selected="false">4 PLAYERS</button>
+      </div>
+    </div>
+
+    <div class="mp-game-grid" id="game-grid" role="list">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ── Recently Played Against ───────────────────────────────── -->
+<section class="section" aria-labelledby="opponents-heading" id="opponents-section" style="display:none;">
+  <div class="container">
+    <div class="opponents-section">
+      <h2 class="opponents-title" id="opponents-heading">RECENTLY PLAYED AGAINST</h2>
+      <div class="opponents-list" id="opponents-list">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Game Select Modal (for CREATE ROOM flow) ──────────────── -->
+<div class="game-select-modal" id="game-select-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="game-select-inner">
+    <h2 class="game-select-title" id="modal-title">SELECT A GAME</h2>
+    <p class="game-select-sub">Choose the multiplayer game you want to host.</p>
+    <button class="modal-close" id="modal-close-btn" aria-label="Close modal">✕</button>
+
+    <div class="mp-game-grid" id="modal-game-grid">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Match Overlay ───────────────────────────────────── -->
+<div class="matchmaking-overlay" id="matchmaking-overlay" role="dialog" aria-modal="true" aria-live="polite">
+  <div class="matchmaking-spinner" aria-hidden="true"></div>
+  <div class="matchmaking-text">SEARCHING...</div>
+  <div class="matchmaking-sub" id="matchmaking-sub">Looking for an opponent</div>
+  <button class="btn-challenge btn-challenge--quick" id="cancel-matchmaking-btn" style="margin-top: 16px;">
+    CANCEL
+  </button>
+</div>
+
+<!-- ── Challenge Invite Popup ────────────────────────────────── -->
+<div class="challenge-invite" id="challenge-invite" role="alertdialog" aria-modal="true">
+  <div style="font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px;">CHALLENGE RECEIVED</div>
+  <div style="font-size: 14px; font-family: 'JetBrains Mono', monospace;">
+    <span class="challenge-invite-name" id="invite-from-name">PlayerXXXX</span>
+    wants to play <strong id="invite-game-name">a game</strong>
+  </div>
+  <div class="challenge-invite-btns">
+    <button class="btn-accept" id="invite-accept">ACCEPT</button>
+    <button class="btn-decline" id="invite-decline">DECLINE</button>
+  </div>
+</div>
+
+<!-- ── Toast Container ───────────────────────────────────────── -->
+<div class="challenge-toast-container" id="toast-container" aria-live="polite"></div>
+
+<!-- ── Scripts ───────────────────────────────────────────────── -->
+<script type="module">
+import SocketClient   from './js/socket-client.js';
+import { initPresence } from './js/presence.js';
+import { initTeamcodeInput, createRoom, joinMatchmaking, cancelMatchmaking } from './js/room-manager.js';
+
+// ── Multiplayer Game Catalogue (placeholder — Phase 2 fills these) ────────
+const MP_GAMES = [
+  {
+    id:          'multiplayer-snake',
+    name:        'NEON SERPENT\nMULTIPLAYER',
+    desc:        'Classic snake battle — grow the longest, outlast everyone. Last serpent standing wins.',
+    icon:        '🐍',
+    iconBg:      'rgba(0,212,170,0.15)',
+    maxPlayers:  2,
+    category:    'SURVIVAL',
+    comingSoon:  false,
+  },
+  {
+    id:          'hex-wars',
+    name:        'HEX WARS',
+    desc:        'Capture hexagonal territory with pixel-perfect strategy. Outflank your rival.',
+    icon:        '⬡',
+    iconBg:      'rgba(139,92,246,0.15)',
+    maxPlayers:  2,
+    category:    'STRATEGY',
+    comingSoon:  false,
+  },
+  {
+    id:          'turbo-race-mp',
+    name:        'TURBO RACE\nMULTIPLAYER',
+    desc:        'Side-scrolling neon racer. Dodge obstacles faster than your opponent.',
+    icon:        '🏎️',
+    iconBg:      'rgba(239,68,68,0.15)',
+    maxPlayers:  2,
+    category:    'RACING',
+    comingSoon:  false,
+  },
+  {
+    id:          'color-bomb',
+    name:        'COLOR BOMB',
+    desc:        'A 4-player color-capture frenzy. Paint the arena in your hue before time runs out.',
+    icon:        '💥',
+    iconBg:      'rgba(253,121,168,0.15)',
+    maxPlayers:  4,
+    category:    'PARTY',
+    comingSoon:  false,
+  },
+  {
+    id:          'battle-tetris',
+    name:        'BATTLE TETRIS',
+    desc:        'Stack blocks, clear lines, send garbage to your opponent. Classic chaos.',
+    icon:        '🧱',
+    iconBg:      'rgba(245,158,11,0.15)',
+    maxPlayers:  2,
+    category:    'PUZZLE',
+    comingSoon:  true,
+  },
+  {
+    id:          'type-race',
+    name:        'TYPE RACE',
+    desc:        'Real-time typing duel. Finish the sentence before your opponent does.',
+    icon:        '⌨️',
+    iconBg:      'rgba(6,182,212,0.15)',
+    maxPlayers:  2,
+    category:    'SKILL',
+    comingSoon:  true,
+  },
+];
+
+// ── Render Game Cards ─────────────────────────────────────────────────────
+function renderGameCard(game, forModal = false) {
+  const playerBadge = game.maxPlayers === 4 ? '4P' : '2P';
+  const playerClass = game.maxPlayers === 4 ? 'mp-badge--4p' : 'mp-badge--2p';
+
+  // CSS-only preview shapes per game
+  const previewShapes = {
+    'multiplayer-snake': `
+      <div class="preview-shape" style="width:20px;height:20px;background:var(--green);opacity:0.3;top:40%;left:30%;animation-duration:1.8s;"></div>
+      <div class="preview-shape" style="width:14px;height:14px;background:var(--green);opacity:0.2;top:55%;left:50%;animation-duration:2.2s;animation-delay:0.5s;"></div>`,
+    'hex-wars': `
+      <div class="preview-shape" style="width:30px;height:30px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--neon);opacity:0.2;top:35%;left:35%;animation-duration:2s;"></div>`,
+    'turbo-race-mp': `
+      <div class="preview-shape" style="width:12px;height:6px;background:var(--danger);opacity:0.3;border-radius:2px;top:50%;left:20%;animation-duration:1.5s;"></div>
+      <div class="preview-shape" style="width:12px;height:6px;background:var(--cyan);opacity:0.3;border-radius:2px;top:60%;left:60%;animation-duration:1.8s;animation-delay:0.3s;"></div>`,
+    default: `<div class="preview-shape" style="width:24px;height:24px;background:var(--neon);opacity:0.15;top:40%;left:40%;animation-duration:2s;"></div>`,
+  };
+
+  const shape = previewShapes[game.id] || previewShapes.default;
+
+  return `
+    <article class="mp-card${game.comingSoon ? ' coming-soon' : ''}"
+             role="listitem"
+             data-game-id="${game.id}"
+             data-max-players="${game.maxPlayers}"
+             data-filter="${game.maxPlayers === 4 ? '4p' : '2p'}">
+
+      <!-- CSS preview on hover -->
+      <div class="mp-card-preview" aria-hidden="true">${shape}</div>
+
+      <div class="mp-card-icon" style="background: ${game.iconBg};" aria-hidden="true">${game.icon}</div>
+
+      <div class="mp-card-badges">
+        <span class="mp-badge ${playerClass}">${playerBadge}</span>
+        <span class="mp-badge mp-badge--category">${game.category}</span>
+        ${game.comingSoon ? '<span class="mp-badge mp-badge--coming">SOON</span>' : ''}
+      </div>
+
+      <h3 class="mp-card-title">${game.name.replace(/\n/, '<br>')}</h3>
+      <p class="mp-card-desc">${game.desc}</p>
+
+      <div class="mp-card-footer">
+        <div class="mp-card-live" aria-label="Players in lobby">
+          <div class="mp-card-live-dot" aria-hidden="true"></div>
+          <span class="mp-live-count" data-game="${game.id}">0 waiting</span>
+        </div>
+        <button class="btn-mp-play"
+                data-game-id="${game.id}"
+                data-max-players="${game.maxPlayers}"
+                ${game.comingSoon ? 'disabled aria-disabled="true"' : ''}
+                aria-label="${game.comingSoon ? 'Coming soon' : `Create room for ${game.name}`}">
+          ${game.comingSoon ? 'SOON' : 'CREATE ROOM →'}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function buildGameGrids() {
+  const grid = document.getElementById('game-grid');
+  const modalGrid = document.getElementById('modal-game-grid');
+
+  if (grid)      grid.innerHTML      = MP_GAMES.map(g => renderGameCard(g, false)).join('');
+  if (modalGrid) modalGrid.innerHTML = MP_GAMES.map(g => renderGameCard(g, true)).join('');
+
+  // Attach play button listeners (main grid)
+  grid?.querySelectorAll('.btn-mp-play:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const gameId = btn.dataset.gameId;
+      const maxPlayers = parseInt(btn.dataset.maxPlayers) || 2;
+      createRoom(gameId, maxPlayers, {});
+    });
+  });
+
+  // Attach modal card listeners
+  modalGrid?.querySelectorAll('[data-game-id]:not(.coming-soon)').forEach(card => {
+    card.addEventListener('click', () => {
+      const gameId = card.dataset.gameId;
+      const maxPlayers = parseInt(card.dataset.maxPlayers) || 2;
+      hideGameSelectModal();
+      createRoom(gameId, maxPlayers, {});
+    });
+  });
+}
+
+// ── Filter Tabs ───────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.filter-tab').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+
+    const filter = tab.dataset.filter;
+    document.querySelectorAll('#game-grid .mp-card').forEach(card => {
+      if (filter === 'all' || card.dataset.filter === filter) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+});
+
+// ── Game Select Modal ─────────────────────────────────────────────────────
+function showGameSelectModal() {
+  document.getElementById('game-select-modal').style.display = 'flex';
+}
+
+function hideGameSelectModal() {
+  document.getElementById('game-select-modal').style.display = 'none';
+}
+
+document.getElementById('create-room-btn').addEventListener('click', showGameSelectModal);
+document.getElementById('modal-close-btn').addEventListener('click', hideGameSelectModal);
+document.getElementById('game-select-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) hideGameSelectModal();
+});
+
+// ── JOIN ROOM Toggle ──────────────────────────────────────────────────────
+const joinBtn      = document.getElementById('join-room-btn');
+const teamcodeWrap = document.getElementById('teamcode-wrapper');
+
+joinBtn.addEventListener('click', () => {
+  const isHidden = teamcodeWrap.classList.contains('hidden');
+  teamcodeWrap.classList.toggle('hidden', !isHidden);
+  if (isHidden) {
+    document.getElementById('teamcode-input').focus();
+  }
+});
+
+// ── QUICK MATCH ───────────────────────────────────────────────────────────
+const matchmakingOverlay = document.getElementById('matchmaking-overlay');
+const matchSub = document.getElementById('matchmaking-sub');
+
+document.getElementById('quickmatch-btn').addEventListener('click', () => {
+  // Default to snake for now; later show game selection
+  matchmakingOverlay.classList.add('active');
+  matchSub.textContent = 'Looking for an opponent in Neon Serpent...';
+  joinMatchmaking('multiplayer-snake');
+});
+
+document.getElementById('cancel-matchmaking-btn').addEventListener('click', () => {
+  matchmakingOverlay.classList.remove('active');
+  cancelMatchmaking();
+});
+
+SocketClient.onMatchFound(() => {
+  matchmakingOverlay.classList.remove('active');
+});
+
+// ── Identity System ───────────────────────────────────────────────────────
+function loadIdentity() {
+  const identity = SocketClient.getSavedIdentity();
+  if (identity) {
+    document.getElementById('identity-name').textContent = identity.displayName;
+    document.getElementById('identity-color').style.background = identity.color;
+  }
+}
+
+document.getElementById('identity-edit-btn').addEventListener('click', () => {
+  const nameEl   = document.getElementById('identity-name');
+  const inputEl  = document.getElementById('identity-edit-input');
+  const editBtn  = document.getElementById('identity-edit-btn');
+
+  if (inputEl.style.display === 'none' || !inputEl.style.display) {
+    // Switch to edit mode
+    inputEl.value = nameEl.textContent;
+    nameEl.style.display = 'none';
+    inputEl.style.display = 'block';
+    inputEl.focus();
+    inputEl.select();
+    editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+  } else {
+    saveName();
+  }
+});
+
+document.getElementById('identity-edit-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveName();
+  if (e.key === 'Escape') cancelEdit();
+});
+
+function saveName() {
+  const nameEl  = document.getElementById('identity-name');
+  const inputEl = document.getElementById('identity-edit-input');
+  const editBtn = document.getElementById('identity-edit-btn');
+
+  const cleaned = inputEl.value.slice(0, 16).replace(/[^a-zA-Z0-9_]/g, '');
+  if (cleaned) {
+    nameEl.textContent = cleaned;
+    SocketClient.rename(cleaned);
+    showToast(`Name updated to "${cleaned}"`, 'success');
+  }
+
+  cancelEdit();
+}
+
+function cancelEdit() {
+  const nameEl  = document.getElementById('identity-name');
+  const inputEl = document.getElementById('identity-edit-input');
+  const editBtn = document.getElementById('identity-edit-btn');
+
+  nameEl.style.display = '';
+  inputEl.style.display = 'none';
+  editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+}
+
+// ── Challenge Invite Popup ────────────────────────────────────────────────
+let pendingInvite = null;
+
+SocketClient.onChallengeReceived(({ fromName, fromSocketId, gameId }) => {
+  pendingInvite = { fromSocketId, gameId };
+
+  document.getElementById('invite-from-name').textContent = fromName;
+  document.getElementById('invite-game-name').textContent = gameId.replace(/-/g, ' ');
+  document.getElementById('challenge-invite').classList.add('active');
+});
+
+document.getElementById('invite-accept').addEventListener('click', () => {
+  if (pendingInvite) {
+    SocketClient.acceptChallenge(pendingInvite.fromSocketId, pendingInvite.gameId);
+  }
+  document.getElementById('challenge-invite').classList.remove('active');
+  pendingInvite = null;
+});
+
+document.getElementById('invite-decline').addEventListener('click', () => {
+  if (pendingInvite) {
+    SocketClient.declineChallenge(pendingInvite.fromSocketId);
+  }
+  document.getElementById('challenge-invite').classList.remove('active');
+  pendingInvite = null;
+});
+
+// ── Recent Opponents ──────────────────────────────────────────────────────
+function renderOpponents() {
+  const identity = SocketClient.getSavedIdentity();
+  const opponents = identity?.previousOpponents?.slice(0, 5) || [];
+  if (!opponents.length) return;
+
+  document.getElementById('opponents-section').style.display = '';
+  const list = document.getElementById('opponents-list');
+  list.innerHTML = opponents.map(opp => `
+    <div class="opponent-chip">
+      <div class="opponent-dot" style="background: ${opp.color || '#6c63ff'};"></div>
+      <span>${opp.name}</span>
+      <button class="btn-challenge-opp" data-socket-id="${opp.socketId || ''}" data-game="${opp.gameId || 'multiplayer-snake'}">
+        CHALLENGE
+      </button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.btn-challenge-opp').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const socketId = btn.dataset.socketId;
+      const gameId   = btn.dataset.game;
+      if (!socketId) {
+        showToast('This player is not currently online.', 'info');
+        return;
+      }
+      SocketClient.sendChallenge(socketId, gameId);
+      showToast('Challenge sent!', 'success');
+    });
+  });
+}
+
+// ── Toast Helper ──────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `challenge-toast challenge-toast--${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+window.showToast = showToast;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+initPresence();
+initTeamcodeInput();
+buildGameGrids();
+loadIdentity();
+renderOpponents();
+
+// Update game recap to save opponents
+SocketClient.on('gameRecap', ({ opponents }) => {
+  try {
+    const identity = SocketClient.getSavedIdentity() || {};
+    const prev = identity.previousOpponents || [];
+    const merged = [
+      ...opponents.map(o => ({ ...o, lastPlayed: Date.now() })),
+      ...prev,
+    ].slice(0, 10);
+    SocketClient.updateSavedIdentity({ previousOpponents: merged });
+  } catch (e) {}
+});
+
+// Sync server-assigned identity on first connect
+SocketClient.on('identity', ({ displayName, color }) => {
+  const stored = SocketClient.getSavedIdentity();
+  if (!stored) {
+    document.getElementById('identity-name').textContent = displayName;
+    document.getElementById('identity-color').style.background = color;
+  }
+});
+</script>
+
+</body>
+</html>

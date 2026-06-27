@@ -5,6 +5,7 @@ export function initNavbar() {
   if (!mount) return;
 
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  const inChallenge = window.location.pathname.includes('/challenge');
   
   // Try to load sound preference, default to true
   let soundEnabled = true;
@@ -20,6 +21,10 @@ export function initNavbar() {
         <div class="nav-links">
           <a href="games.html" class="${currentPath === 'games.html' ? 'active' : ''}">GAMES</a>
           <a href="arena.html" class="${currentPath === 'arena.html' ? 'active' : ''}">ARENA</a>
+          <a href="challenge/index.html" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;gap:6px;color:${inChallenge ? 'var(--neon)' : '#00d4aa'};">
+            <span class="nav-challenge-dot" style="width:7px;height:7px;border-radius:50%;background:#00d4aa;animation:navChallengePulse 2s ease-in-out infinite;flex-shrink:0;"></span>
+            CHALLENGE
+          </a>
           <a href="leaderboard.html" class="${currentPath === 'leaderboard.html' ? 'active' : ''}">LEADERBOARD</a>
         </div>
         
@@ -59,6 +64,7 @@ export function initNavbar() {
         <a href="index.html">HOME</a>
         <a href="games.html">GAMES</a>
         <a href="arena.html">ARENA</a>
+        <a href="challenge/index.html" style="color:#00d4aa;">⚡ CHALLENGE</a>
         <a href="leaderboard.html">LEADERBOARD</a>
       </div>
     </div>
