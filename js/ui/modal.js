@@ -552,7 +552,7 @@ async function startActiveGame() {
   const gameId = currentActiveGameId;
   const config = currentActiveConfig;
 
-  const gameData = findGame(gameId) || { id: gameId, name: gameId, className: gameId, file: `./js/games/${gameId}.js` };
+  const gameData = findGame(gameId) || { id: gameId, name: gameId, className: gameId, file: `../games/${gameId}.js` };
 
   const iconSvg = getGameIcon(gameData.id);
   const displayText = gameData.name ? gameData.name.toUpperCase() : gameId.toUpperCase();
@@ -681,9 +681,10 @@ async function startActiveGame() {
 
   // Load Game Module
   try {
+    // Determine module path: use explicit file if provided, otherwise default to standard games folder
     const path = gameData.file
       ? new URL(gameData.file, window.location.href).href
-      : new URL(`./js/games/${gameData.id}.js`, window.location.href).href;
+      : `../games/${gameData.id}.js`;
     const module = await import(path);
     
     // Always use default export per step 6
