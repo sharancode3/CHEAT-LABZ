@@ -11,9 +11,19 @@
  */
 
 // ── Backend URL ──────────────────────────────────────────────────────────────
-// Change this to your Railway/Render URL before deploying to production.
-// For local dev: 'http://localhost:4000'
-const SERVER_URL = window.CHALLENGE_SERVER_URL || 'http://localhost:4000';
+// Set this to your Railway / Render URL after deploying server/
+// Local dev auto-falls back to localhost:4000
+const PRODUCTION_SERVER_URL = 'https://cheat-labz-server.up.railway.app'; // ← UPDATE THIS after Railway deploy
+
+const isLocalDev = (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === ''
+);
+
+const SERVER_URL =
+  window.CHALLENGE_SERVER_URL ||        // manual override (optional)
+  (isLocalDev ? 'http://localhost:4000' : PRODUCTION_SERVER_URL);
 
 // ── Connection State ─────────────────────────────────────────────────────────
 const STATE = {
