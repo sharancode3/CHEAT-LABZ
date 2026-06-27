@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="games-data.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHEAT LABZ | Submit Idea</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/ideas.css">
+  <link rel="stylesheet" href="css/game-shell.css">
+</head>
+<body>
+
+  <div id="navbar-mount"></div>
+  <canvas id="pixel-dust-canvas" style="position: fixed; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen;"></canvas>
+
+  <main class="container" style="position: relative; z-index: 10; padding: 100px 24px 60px;">
+    
+    <div class="ideas-header">
+      <svg class="lightbulb-icon" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ffd93d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+      </svg>
+      <h1 class="ideas-title">GOT AN IDEA?</h1>
+      <p class="ideas-subtitle">Think you can design a better game? Or got an idea we haven't built? Tell us. We actually read these.</p>
+    </div>
+
+    <div class="idea-form-card">
+      
+      <!-- Step 1 -->
+      <div class="step-title">Step 1: Pick a Type</div>
+      <div class="type-buttons-row">
+        <div class="type-btn" data-type="NEW GAME">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01M15 12h.01M18 12h.01M6 12h4M8 10v4"/></svg>
+          <span>🎮 NEW GAME IDEA</span>
+        </div>
+        <div class="type-btn" data-type="BUG REPORT">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4M12 18v2M8 15h8"/></svg>
+          <span>🐛 REPORT A BUG</span>
+        </div>
+        <div class="type-btn" data-type="FEATURE REQUEST">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+          <span>💡 FEATURE REQUEST</span>
+        </div>
+      </div>
+      <div class="error-text" id="type-error" style="margin-top: -24px; margin-bottom: 24px;">Please select a category type.</div>
+
+      <!-- Step 2 -->
+      <div class="step-title">Step 2: Your Idea</div>
+      <div class="input-group">
+        <textarea id="idea-text" class="idea-textarea" placeholder="Select a category above first..." max-length="500"></textarea>
+        <span class="char-counter" id="char-counter">0 / 500</span>
+        <div class="error-text" id="text-error">Describe your idea before sending.</div>
+      </div>
+
+      <!-- Step 3 -->
+      <button class="send-btn" id="btn-send-idea">SEND YOUR IDEA</button>
+
+    </div>
+
+    <!-- Wall of Fame -->
+    <div class="wall-of-fame-section">
+      <h2 class="wall-title">IDEAS WE BUILT</h2>
+      <div class="wall-grid">
+        <div class="wall-card">
+          <h3 class="wall-card-title">NEON SERPENT</h3>
+          <div class="wall-card-sub">Suggested by: Community</div>
+        </div>
+        <div class="wall-card">
+          <h3 class="wall-card-title">ASTRO STRIDER</h3>
+          <div class="wall-card-sub">Suggested by: Community</div>
+        </div>
+        <div class="wall-card">
+          <h3 class="wall-card-title">BEAT DROP</h3>
+          <div class="wall-card-sub">Suggested by: Community</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent submissions -->
+    <div class="recent-submissions hidden" id="recent-container">
+      <h2 class="recent-title">YOUR RECENT SUBMISSIONS</h2>
+      <div class="recent-list" id="recent-submissions-list">
+        <!-- Dynamically injected -->
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="js/ui/navbar.js"></script>
+  <script type="module">
+    import router from './js/core/router.js';
+    router.startRouter();
+  </script>
+  <script type="module">
+    import { getStreak } from './js/core/storage.js';
+
+    // Particle background animation
+    function initBackgroundParticles() {
+      const canvas = document.getElementById('pixel-dust-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const particles = [];
+      for (let i = 0; i < 80; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: Math.random() * 2 + 0.5,
+          speedX: (Math.random() - 0.5) * 0.4,
+          speedY: (Math.random() - 0.5) * 0.4 + 0.15,
+          alpha: Math.random() * 0.4 + 0.1
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+        particles.forEach(p => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+          if (p.y < 0) p.y = height;
+          if (p.y > height) p.y = 0;
+
+          ctx.fillStyle = `rgba(108, 99, 255, ${p.alpha})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    // Form logic
+    document.addEventListener('DOMContentLoaded', () => {
+      initBackgroundParticles();
+      
+      let selectedType = '';
+      const typeButtons = document.querySelectorAll('.type-btn');
+      const textarea = document.getElementById('idea-text');
+      const charCounter = document.getElementById('char-counter');
+      const sendBtn = document.getElementById('btn-send-idea');
+      
+      const typeError = document.getElementById('type-error');
+      const textError = document.getElementById('text-error');
+
+      const placeholders = {
+        'NEW GAME': "What's the game? How does it play? What makes it fun?",
+        'BUG REPORT': "What broke? What did you expect to happen? What page/game?",
+        'FEATURE REQUEST': "What would make CHEAT LABZ better? Be specific."
+      };
+
+      typeButtons.forEach(btn => {
+        btn.onclick = () => {
+          typeButtons.forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedType = btn.getAttribute('data-type');
+          textarea.placeholder = placeholders[selectedType];
+          typeError.style.display = 'none';
+        };
+      });
+
+      textarea.oninput = () => {
+        const len = textarea.value.slice(0, 500).length;
+        charCounter.textContent = `${len} / 500`;
+        textError.style.display = 'none';
+      };
+
+      sendBtn.onclick = () => {
+        const text = textarea.value.trim();
+        let valid = true;
+
+        if (!selectedType) {
+          typeError.style.display = 'block';
+          // Shake buttons
+          document.querySelector('.type-buttons-row').style.animation = 'shake 0.5s ease-in-out';
+          setTimeout(() => document.querySelector('.type-buttons-row').style.animation = '', 500);
+          valid = false;
+        }
+
+        if (!text) {
+          textError.style.display = 'block';
+          textarea.style.animation = 'shake 0.5s ease-in-out';
+          setTimeout(() => textarea.style.animation = '', 500);
+          valid = false;
+        }
+
+        if (!valid) return;
+
+        // Calculate runs & streak
+        let runs = 0;
+        for(let i=0; i<localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key.startsWith('cheatLabz_')) {
+            const rawId = key.replace('cheatLabz_', '');
+            if (['soundEnabled', 'theme', 'animEnabled', 'coins', 'streak'].includes(rawId) || rawId.startsWith('daily_') || rawId.startsWith('bounty_')) continue;
+            try {
+              const val = JSON.parse(localStorage.getItem(key));
+              if (val && typeof val.runs === 'number') {
+                runs += val.runs;
+              }
+            } catch(e) {}
+          }
+        }
+        const streak = getStreak().current;
+
+        // Build mailto
+        const subject = encodeURIComponent(`[CHEAT LABZ] ${selectedType}: ${text.slice(0, 50)}`);
+        const body = encodeURIComponent(
+          `Type: ${selectedType}\n\n` +
+          `Idea:\n${text}\n\n` +
+          `---\nSent from CHEAT LABZ\n` +
+          `Player stats: ${runs} runs, ${streak} day streak`
+        );
+
+        window.location.href = `mailto:cheatlabzidea@gmail.com?subject=${subject}&body=${body}`;
+
+        // Save submission
+        try {
+          const submitted = JSON.parse(localStorage.getItem('cheatLabz_submitted_ideas') || '[]');
+          submitted.unshift({
+            type: selectedType,
+            preview: text.slice(0, 80),
+            date: new Date().toISOString().slice(0, 10)
+          });
+          localStorage.setItem('cheatLabz_submitted_ideas', JSON.stringify(submitted));
+        } catch(e) {}
+
+        // Success transition
+        sendBtn.classList.add('success');
+        sendBtn.textContent = '✓ Opening your email...';
+        sendBtn.disabled = true;
+
+        setTimeout(() => {
+          sendBtn.classList.remove('success');
+          sendBtn.textContent = 'SEND YOUR IDEA';
+          sendBtn.disabled = false;
+          textarea.value = '';
+          charCounter.textContent = '0 / 500';
+          renderRecentSubmissions();
+        }, 3000);
+      };
+
+      // Shake animation definition
+      const style = document.createElement('style');
+      style.innerHTML = `
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-6px); }
+          75% { transform: translateX(6px); }
+        }
+      `;
+      document.head.appendChild(style);
+
+      function renderRecentSubmissions() {
+        const recentContainer = document.getElementById('recent-container');
+        const recentList = document.getElementById('recent-submissions-list');
+        if (!recentContainer || !recentList) return;
+
+        try {
+          const submitted = JSON.parse(localStorage.getItem('cheatLabz_submitted_ideas') || '[]');
+          if (submitted.length === 0) {
+            recentContainer.classList.add('hidden');
+            return;
+          }
+
+          recentContainer.classList.remove('hidden');
+          
+          // Badge formatter
+          const badgeClassMap = {
+            'NEW GAME': 'badge-new-game',
+            'BUG REPORT': 'badge-bug',
+            'FEATURE REQUEST': 'badge-feature'
+          };
+
+          recentList.innerHTML = submitted.slice(0, 3).map(item => `
+            <div class="recent-item">
+              <span class="recent-type-badge ${badgeClassMap[item.type] || 'badge-feature'}">${item.type}</span>
+              <span class="recent-preview">"${item.preview}..."</span>
+              <span class="recent-date">${item.date}</span>
+            </div>
+          `).join('');
+        } catch(e) {}
+      }
+
+      renderRecentSubmissions();
+    });
+  </script>
+</body>
+</html>

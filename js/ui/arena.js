@@ -1,5 +1,6 @@
 import { showToast } from '../core/notifications.js';
 import { GAME_ICONS } from '../../assets/icons/game-icons.js';
+import { isGameLocked, awardCoins } from '../core/storage.js';
 
 function getGameIcon(gameId) {
   return GAME_ICONS[gameId] || GAME_ICONS['default'] || '🎮';
@@ -64,24 +65,36 @@ class ArenaProtocol {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
+    // Size canvas to cover full screen fixed
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.zIndex = '0';
+    canvas.style.pointerEvents = 'none';
+
     let width, height;
     const particles = [];
     
     const resize = () => {
-      width = canvas.width = canvas.offsetWidth;
-      height = canvas.height = canvas.offsetHeight;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
     };
     window.addEventListener('resize', resize);
     resize();
 
-    for (let i = 0; i < 50; i++) {
+    // 80 aggressive red/orange pulsing particles
+    for (let i = 0; i < 80; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5 - 0.5, // Float upwards
-        size: Math.random() * 2 + 1,
-        alpha: Math.random() * 0.5 + 0.1
+        vx: (Math.random() - 0.5) * 1.0, // Velocity x2
+        vy: ((Math.random() - 0.5) * 1.0) - 1.0, // Floating upwards twice as fast
+        size: Math.random() > 0.8 ? Math.random() * 2 + 2 : Math.random() * 1.5 + 1, // 3-4px vs 1-2.5px
+        theta: Math.random() * Math.PI * 2, // angle for opacity pulsing
+        speedTheta: Math.random() * 0.05 + 0.02,
+        color: Math.random() > 0.5 ? '#ff4757' : '#ffa502' // Red vs Orange tint
       });
     }
 
@@ -91,6 +104,7 @@ class ArenaProtocol {
       particles.forEach(p => {
         p.x += p.vx;
         p.y += p.vy;
+        p.theta += p.speedTheta;
         
         if (p.y < 0) {
           p.y = height;
@@ -99,10 +113,16 @@ class ArenaProtocol {
         if (p.x < 0) p.x = width;
         if (p.x > width) p.x = 0;
 
-        ctx.fillStyle = `rgba(239, 68, 68, ${p.alpha})`;
+        // Oscillate opacity between 0.3 and 0.8 using sine wave
+        const alpha = 0.55 + Math.sin(p.theta) * 0.25;
+        
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       });
       
       requestAnimationFrame(animate);
@@ -134,13 +154,27 @@ class ArenaProtocol {
     const playBtn = document.getElementById('btn-daily-play');
     if (!container || !playBtn) return;
 
-    const seed = getSeedFromString(new Date().toDateString());
-    const rng = mulberry32(seed);
+    // Daily seed formula (deterministic per day)
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + 
+                 (today.getMonth()+1) * 100 + 
+                 today.getDate();
     
-    // Pick 3 random games
-    const pool = [...this.games];
-    pool.sort(() => rng() - 0.5);
-    this.dailyGames = pool.slice(0, 3);
+    // Pick 3 games from DIFFERENT categories
+    const categories = ['arcade','skill','puzzle','racing'];
+    const selectedGames = [];
+    
+    categories.forEach((cat, i) => {
+      const catGames = this.games.filter(g => 
+        g.category.toLowerCase() === cat
+      );
+      if (catGames.length > 0) {
+        const idx = (seed * (i+1) * 31337) % catGames.length;
+        selectedGames.push(catGames[Math.floor(idx)]);
+      }
+    });
+    
+    this.dailyGames = selectedGames.slice(0, 3);
 
     container.innerHTML = this.dailyGames.map((g, i) => {
       const icon = getGameIcon(g.id);
@@ -151,7 +185,40 @@ class ArenaProtocol {
       `;
     }).join('');
 
+    // Check if today's gauntlet was already shown / completed
+    const todayKey = 'cheatLabz_gauntlet_' + 
+      new Date().toISOString().slice(0,10);
+    
+    let gauntletState = null;
+    try {
+      const raw = localStorage.getItem(todayKey);
+      if (raw) gauntletState = JSON.parse(raw);
+    } catch(e) {}
+
+    if (!gauntletState) {
+      gauntletState = {
+        games: this.dailyGames.map(g => g.id),
+        completed: false,
+        score: 0
+      };
+      localStorage.setItem(todayKey, JSON.stringify(gauntletState));
+    }
+
+    if (gauntletState.completed) {
+      playBtn.innerText = 'COMPLETED';
+      playBtn.disabled = true;
+      playBtn.setAttribute('disabled', 'true');
+      playBtn.style.opacity = '0.5';
+    } else {
+      playBtn.innerText = 'PLAY CHALLENGE';
+      playBtn.disabled = false;
+      playBtn.removeAttribute('disabled');
+      playBtn.style.opacity = '1';
+    }
+
     playBtn.addEventListener('click', () => {
+      if (gauntletState.completed) return;
+      this.isDailyGauntlet = true;
       this.startGauntlet(this.dailyGames.map(g => g.id));
     });
   }
@@ -166,8 +233,7 @@ class ArenaProtocol {
         this.renderTiles(this.currentCategory);
         
         // Hide launch panel if changing category
-        const panel = document.getElementById('arena-launch');
-        if (panel) panel.classList.remove('visible');
+        this.hideLaunchPanel();
       });
     });
   }
@@ -181,45 +247,96 @@ class ArenaProtocol {
       filtered = this.games.filter(g => (g.category || 'arcade').toLowerCase() === category);
     }
 
+    const tiles = container.querySelectorAll('.arena-tile');
+    if (tiles.length > 0 && window.gsap) {
+      // Filter out animation
+      gsap.to(tiles, {
+        opacity: 0,
+        scale: 0.9,
+        duration: 0.15,
+        stagger: 0.01,
+        onComplete: () => {
+          this._renderTilesHTML(container, filtered);
+        }
+      });
+    } else {
+      this._renderTilesHTML(container, filtered);
+    }
+  }
+
+  _renderTilesHTML(container, filtered) {
     container.innerHTML = filtered.map(g => {
+      const isLocked = isGameLocked(g.id);
+      const isSelected = this.selectedGameId === g.id;
+      const iconColor = isSelected ? '#6c63ff' : '#8888a8';
+      
       return `
-        <div class="arena-tile" data-id="${g.id}">
-          <div class="tile-icon">${getGameIcon(g.id)}</div>
+        <div class="arena-tile ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}" data-id="${g.id}" style="${isLocked ? 'opacity: 0.5;' : ''}">
+          <div class="tile-icon" style="color: ${iconColor};">${getGameIcon(g.id)}</div>
           <div class="tile-name">${g.name.toUpperCase()}</div>
           <div class="tile-diff">${g.difficulty || 'NORMAL'}</div>
+          ${isLocked ? '<div style="font-size: 10px; color: var(--text-muted); font-family: \'JetBrains Mono\', monospace; margin-top: 4px;">[ LOCKED ]</div>' : ''}
         </div>
       `;
     }).join('');
 
-    // Bind tile clicks
-    const tiles = container.querySelectorAll('.arena-tile');
-    tiles.forEach(tile => {
+    const newTiles = container.querySelectorAll('.arena-tile');
+    
+    // Bind clicks
+    newTiles.forEach(tile => {
       tile.addEventListener('click', () => {
-        tiles.forEach(t => t.classList.remove('selected'));
-        tile.classList.add('selected');
-        
         const gameId = tile.dataset.id;
-        const game = this.games.find(g => g.id === gameId);
-        if (game) this.showLaunchPanel(game);
+        
+        if (isGameLocked(gameId)) {
+          showToast('This module is locked! Unlock it in the library first.', 'warning');
+          return;
+        }
+
+        if (this.selectedGameId === gameId) {
+          this.hideLaunchPanel();
+        } else {
+          this.selectedGameId = gameId;
+          const game = this.games.find(g => g.id === gameId);
+          if (game) this.showLaunchPanel(game);
+        }
+        
+        this.renderTiles(this.currentCategory);
       });
     });
+
+    if (window.gsap) {
+      gsap.fromTo(newTiles, {
+        opacity: 0,
+        scale: 0.9
+      }, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.2,
+        stagger: 0.05,
+        ease: "power2.out"
+      });
+    }
   }
 
   initLaunchPanel() {
     const startBtn = document.getElementById('start-arena-btn');
     if (startBtn) {
+      // Initially disabled
+      startBtn.disabled = true;
+      startBtn.setAttribute('disabled', 'true');
+      
       startBtn.addEventListener('click', () => {
+        if (!this.selectedLaunchGame) return;
         const panel = document.getElementById('arena-launch');
         if (panel) panel.classList.remove('visible');
         
-        if (this.selectedLaunchGame) {
-          // Normal Arena plays the SAME game 3 times with escalating speed
-          this.startGauntlet([
-            this.selectedLaunchGame.id, 
-            this.selectedLaunchGame.id, 
-            this.selectedLaunchGame.id
-          ]);
-        }
+        this.isDailyGauntlet = false;
+        // Normal Arena plays the SAME game 3 times with escalating speed
+        this.startGauntlet([
+          this.selectedLaunchGame.id, 
+          this.selectedLaunchGame.id, 
+          this.selectedLaunchGame.id
+        ]);
       });
     }
   }
@@ -230,12 +347,30 @@ class ArenaProtocol {
     const iconEl = document.getElementById('launch-icon');
     const nameEl = document.getElementById('launch-name');
     const descEl = document.getElementById('launch-desc');
+    const startBtn = document.getElementById('start-arena-btn');
 
     if (iconEl) iconEl.innerHTML = getGameIcon(game.id);
     if (nameEl) nameEl.innerText = game.name;
     if (descEl) descEl.innerText = game.description;
 
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.removeAttribute('disabled');
+    }
+
     if (panel) panel.classList.add('visible');
+  }
+
+  hideLaunchPanel() {
+    this.selectedLaunchGame = null;
+    this.selectedGameId = null;
+    const panel = document.getElementById('arena-launch');
+    const startBtn = document.getElementById('start-arena-btn');
+    if (startBtn) {
+      startBtn.disabled = true;
+      startBtn.setAttribute('disabled', 'true');
+    }
+    if (panel) panel.classList.remove('visible');
   }
 
   /* --- GAUNTLET EXECUTION ENGINE --- */
@@ -270,6 +405,9 @@ class ArenaProtocol {
 
   handleRoundComplete(score) {
     this.roundScores[this.currentRound - 1] = score;
+
+    // Award 30 coins for round completion
+    awardCoins(30, `Arena Round ${this.currentRound} complete`);
 
     if (this.currentRound === 3) {
       this.showResultsScreen();
@@ -378,6 +516,33 @@ class ArenaProtocol {
     if (r3) r3.innerText = this.roundScores[2].toLocaleString();
     
     const totalScore = this.roundScores.reduce((a,b) => a+b, 0);
+
+    // Award series completion coins
+    if (this.isDailyGauntlet) {
+      awardCoins(100, 'Daily Gauntlet completed');
+      
+      const todayKey = 'cheatLabz_gauntlet_' + new Date().toISOString().slice(0, 10);
+      try {
+        const raw = localStorage.getItem(todayKey);
+        if (raw) {
+          const state = JSON.parse(raw);
+          state.completed = true;
+          state.score = totalScore;
+          localStorage.setItem(todayKey, JSON.stringify(state));
+        }
+      } catch(e) {}
+
+      // Refresh play button in UI
+      const playBtn = document.getElementById('btn-daily-play');
+      if (playBtn) {
+        playBtn.innerText = 'COMPLETED';
+        playBtn.disabled = true;
+        playBtn.setAttribute('disabled', 'true');
+        playBtn.style.opacity = '0.5';
+      }
+    } else {
+      awardCoins(200, 'Arena 3-round finish');
+    }
     
     results.classList.add('active');
     

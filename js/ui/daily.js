@@ -63,9 +63,9 @@ class DailyGauntlet {
       return;
     }
 
-    // All good, redirect to actual game shell
+    // Redirect to games.html hash with query param
     const targetGame = this.dailyGames[idx].id;
-    window.location.href = `${targetGame}.html?daily=${idx}`;
+    window.location.href = `games.html#${targetGame}?daily=${idx}`;
   }
 
   renderHub() {
@@ -109,10 +109,13 @@ class DailyGauntlet {
         btnHtml = `<button class="btn btn-outline" disabled>LOCKED</button>`;
       }
 
+      const icon = (window.GAME_ICONS && window.GAME_ICONS[g.id]) || '';
+
       return `
         <div class="gauntlet-card ${statusClass}">
           <div class="card-num">${idx + 1}</div>
-          <div class="game-name font-display">${g.name}</div>
+          <div class="card-icon" style="margin: 24px auto 16px auto; color: var(--accent-1); display: flex; align-items: center; justify-content: center;">${icon}</div>
+          <div class="game-name font-display" style="margin-bottom: 12px;">${g.name}</div>
           ${scoreHtml}
           ${btnHtml}
         </div>

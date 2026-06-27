@@ -1,6 +1,5 @@
 import { Storage } from '../core/storage.js';
 import { GameState } from '../core/events.js';
-import { GAME_ICONS } from '../../assets/icons/game-icons.js';
 
 /**
  * Base class that all games extend.
@@ -15,8 +14,8 @@ export class GameShell {
     this.canvas = typeof canvasOrId === 'string' ? document.getElementById(canvasOrId) : canvasOrId;
     if (this.canvas) {
       this.ctx = this.canvas.getContext('2d');
-      if (config.width) this.canvas.width = config.width;
-      if (config.height) this.canvas.height = config.height;
+      this.canvas.width = config.width || 800;
+      this.canvas.height = config.height || 600;
       
       // Accessibility
       this.canvas.setAttribute('role', 'application');
@@ -37,7 +36,17 @@ export class GameShell {
 
     this.state = 'INSTRUCTIONS'; // INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER
     this.score = 0;
-    this.highScore = Storage.get(config.name, 0);
+
+    const gameId = config.id || (config.name ? config.name.toLowerCase().replace(/\s+/g, '-') : 'unknown');
+    this.gameId = gameId;
+
+    const saved = Storage.get(gameId, null);
+    if (saved && typeof saved === 'object' && 'score' in saved) {
+      this.highScore = saved.score;
+    } else {
+      const oldScore = Storage.get(config.name, 0);
+      this.highScore = typeof oldScore === 'number' ? oldScore : (oldScore && oldScore.score || 0);
+    }
     
     this._animationFrameId = null;
     this._lastTime = 0;
@@ -54,19 +63,24 @@ export class GameShell {
       this.resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
           const rect = entry.contentRect;
-          // Scale canvas to fit container while maintaining aspect ratio
-          const targetRatio = config.width / config.height;
-          const containerRatio = rect.width / rect.height;
+          // Scale canvas to fit container while maintaining aspect ratio, with 85% scale for breathing space
+          const w = config.width || 800;
+          const h = config.height || 600;
+          const targetRatio = w / h;
+          
+          const maxW = rect.width * 0.85;
+          const maxH = rect.height * 0.85;
+          const containerRatio = maxW / maxH;
           
           let finalWidth, finalHeight;
           if (containerRatio > targetRatio) {
             // Container is wider than needed, bound by height
-            finalHeight = rect.height;
-            finalWidth = rect.height * targetRatio;
+            finalHeight = maxH;
+            finalWidth = maxH * targetRatio;
           } else {
             // Container is taller than needed, bound by width
-            finalWidth = rect.width;
-            finalHeight = rect.width / targetRatio;
+            finalWidth = maxW;
+            finalHeight = maxW / targetRatio;
           }
           
           this.canvas.style.width = `${finalWidth}px`;
@@ -77,30 +91,44 @@ export class GameShell {
     }
   }
 
-  /**
-   * Initializes the game and shows the instruction overlay
-   */
   init() {
     this._ensureOverlays();
     this.state = 'INSTRUCTIONS';
     this.score = 0;
     GameState.registerGame(this);
     this.showInstructions();
-    this.draw(); // Initial draw of the background/board
+    try {
+      this.draw(); // Initial draw of the background/board
+    } catch (e) {
+      console.warn("Early draw bypassed:", e.message);
+      this.drawFallbackBackground();
+    }
   }
 
   /**
    * Show the instructions overlay
    */
   showInstructions() {
-    this._showOverlay('instruction-screen');
+    this._showOverlay('instructions-overlay');
     const titleEl = document.getElementById('gs-instruction-title');
     const descEl = document.getElementById('gs-instruction-desc');
     if (titleEl) titleEl.innerText = this.config.name.toUpperCase();
     if (descEl) descEl.innerText = this.config.description || '';
     
     // Draw the state so the user sees the first frame of the game behind the overlay
-    this.draw();
+    try {
+      this.draw();
+    } catch (e) {
+      console.warn("Early draw bypassed:", e.message);
+      this.drawFallbackBackground();
+    }
+  }
+
+  drawFallbackBackground() {
+    if (this.ctx && this.canvas) {
+      this.ctx.fillStyle = '#0a0a0f';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
   }
 
   /**
@@ -127,7 +155,18 @@ export class GameShell {
     if (this.state !== 'PLAYING') return;
     this.state = 'PAUSED';
     cancelAnimationFrame(this._animationFrameId);
-    this._showOverlay('pause-screen');
+    this._showOverlay('pause-overlay');
+
+    // Update pause button icon if present in top bar
+    const pauseBtn = document.getElementById('pause-game-btn');
+    if (pauseBtn) {
+      pauseBtn.innerHTML = `
+        <svg id="pause-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+      `;
+      pauseBtn.title = "Resume Game";
+    }
   }
 
   /**
@@ -139,6 +178,18 @@ export class GameShell {
     this.state = 'PLAYING';
     this._lastTime = performance.now();
     this._animationFrameId = requestAnimationFrame(this.loop);
+
+    // Update pause button icon if present in top bar
+    const pauseBtn = document.getElementById('pause-game-btn');
+    if (pauseBtn) {
+      pauseBtn.innerHTML = `
+        <svg id="pause-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+          <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+        </svg>
+      `;
+      pauseBtn.title = "Pause Game";
+    }
   }
 
   handleVisibilityChange() {
@@ -147,31 +198,89 @@ export class GameShell {
     }
   }
 
+  /**
+   * Ends the game, saves score, and shows game over screen
+   */
   gameOver() {
     this.state = 'GAMEOVER';
     cancelAnimationFrame(this._animationFrameId);
     
     const isArena = !!this.config.difficultyMultiplier && this.config.difficultyMultiplier !== 1.0;
 
+    let isNewRecord = false;
+
     // Normal mode
-    let isNewRecord = this.score > this.highScore;
-    if (isNewRecord) {
-      this.highScore = this.score;
-      Storage.set(this.config.name, this.highScore);
+    if (!isArena) {
+      const gameId = this.gameId;
+      const saved = Storage.get(gameId, null);
+      
+      let record = { score: 0, runs: 0, history: [], trend: 'flat' };
+      if (saved && typeof saved === 'object') {
+        record = { ...record, ...saved };
+      } else if (typeof saved === 'number') {
+        record.score = saved;
+      }
+      
+      record.runs = (record.runs || 0) + 1;
+      if (!record.history) record.history = [];
+      record.history.push(this.score);
+      
+      let trend = 'flat';
+      if (record.history.length > 1) {
+        const prev = record.history[record.history.length - 2];
+        if (this.score > prev) trend = 'up';
+        else if (this.score < prev) trend = 'down';
+      }
+      record.trend = trend;
+      
+      isNewRecord = this.score > record.score;
+      if (this.score > record.score) {
+        record.score = this.score;
+      }
+      record.lastPlayed = Date.now();
+      
+      Storage.set(gameId, record);
+      this.highScore = record.score;
+
+      // Award coins and check bounties for regular game completes
+      if (!isArena) {
+        if (window.awardCoins) {
+          window.awardCoins(20, `Completed ${gameId}`);
+          if (isNewRecord) {
+            window.awardCoins(50, `New best in ${gameId}!`);
+          }
+        }
+        
+        const bountyKey = `cheatLabz_bounty_${gameId}`;
+        try {
+          const raw = localStorage.getItem(bountyKey);
+          if (raw) {
+            const bounty = JSON.parse(raw);
+            if (bounty.accepted && !bounty.completed && this.score >= bounty.target && Date.now() <= bounty.expiresAt) {
+              bounty.completed = true;
+              localStorage.setItem(bountyKey, JSON.stringify(bounty));
+              
+              if (window.awardCoins) {
+                window.awardCoins(500, `Completed bounty for ${gameId}`);
+              }
+              if (window.showToast) {
+                window.showToast(`Bounty Completed! +500 AP`, 'success');
+              }
+            }
+          }
+        } catch(e) {}
+      }
     }
     
     // Do not show local gameover overlay if Arena mode handles it
     if (isArena) {
-      if (window.onArenaGameComplete) window.onArenaGameComplete(this.score);
+      // Arena overrides game over handling
     } else {
-      this._showOverlay('gameover-screen', { isNewRecord });
-      const scoreEl = document.getElementById('final-score');
-      const bestEl = document.getElementById('best-score-display');
-      
-      if (bestEl) bestEl.innerText = this.highScore.toLocaleString();
-      if (scoreEl) {
-        this._animateScore(scoreEl, this.score);
-      }
+      this._showOverlay('gameover-overlay', { isNewRecord });
+      const scoreEl = document.getElementById('gs-gameover-score');
+      const bestEl = document.getElementById('gs-gameover-best');
+      if (scoreEl) scoreEl.innerText = this.score;
+      if (bestEl) bestEl.innerText = this.highScore;
     }
     
     // Call subclass teardown if defined
@@ -185,7 +294,6 @@ export class GameShell {
    * @param {number} timestamp 
    */
   loop(timestamp) {
-    // Render Loop Pruning: Cease calculations and drawing when not playing
     if (this.state !== 'PLAYING') return;
 
     const deltaTime = timestamp - this._lastTime;
@@ -267,20 +375,21 @@ export class GameShell {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
-    // Clear any bound document keydown handlers to prevent input stuttering
-    // (Note: Global listeners in events.js respect GameState.isPlaying)
   }
 
+  /**
+   * Quits the current game entirely, unregisters, and returns to the game list
+   */
   quit() {
     this.destroy();
-    const closeBtn = document.getElementById('close-game');
-    if (closeBtn) closeBtn.click();
-  }
-
-  updateScore(newScore) {
-    this.score = newScore;
-    const el = document.getElementById('live-score');
-    if (el) el.innerText = this.score.toLocaleString();
+    
+    // When using the modal system, quitting just calls returnToDetailScreen.
+    if (typeof window.returnToDetailScreen === 'function') {
+      window.returnToDetailScreen();
+    } else {
+      const closeBtn = document.getElementById('close-game');
+      if (closeBtn) closeBtn.click();
+    }
   }
 
   // --- UI Helpers ---
@@ -289,104 +398,54 @@ export class GameShell {
     if (!this.canvas || !this.canvas.parentElement) return;
     const parent = this.canvas.parentElement;
     
-    if (document.querySelector('.game-ui-overlay')) return;
-
-    const iconSvg = GAME_ICONS[this.config.id] || GAME_ICONS['default'] || '';
-    const name = this.config.name.toUpperCase();
-    const desc = this.config.description || '';
-
-    let controlsHTML = '';
-    if (this.config.controls) {
-      controlsHTML = Object.entries(this.config.controls).map(([key, action]) => `
-        <div class="control-row" style="display:flex; align-items:center; gap:12px; margin-bottom:8px; color:#fff;">
-          <div class="key-cap" style="background:#222; border:1px solid #444; border-radius:4px; padding:4px 12px; font-family:monospace;">${key.toUpperCase()}</div>
-          <span>${action}</span>
-        </div>
-      `).join('');
-    }
+    if (document.getElementById('instructions-overlay')) return;
 
     const overlayHTML = `
-<div class="game-ui-overlay" style="position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; z-index: 10;">
-  
-  <!-- TOP BAR -->
-  <div class="game-topbar" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); pointer-events: auto;">
-    <div class="game-topbar-left" style="display: flex; align-items: center; gap: 12px;">
-      <div class="game-icon-small" style="width: 24px; height: 24px; color: var(--accent-1);">${iconSvg}</div>
-      <span class="game-name-label font-display" style="color: #fff; font-size: 14px;">${name}</span>
-    </div>
-    <div class="game-topbar-center">
-      <div class="score-display" style="text-align: center;">
-        <span class="score-label" style="display: block; font-size: 10px; color: var(--text-muted); letter-spacing: 2px;">SCORE</span>
-        <span class="score-value font-display" id="live-score" style="font-size: 24px; color: #fff;">0</span>
-      </div>
-    </div>
-    <div class="game-topbar-right" style="display: flex; align-items: center; gap: 24px;">
-      <div class="best-display" style="text-align: right;">
-        <span class="best-label" style="display: block; font-size: 10px; color: var(--text-muted); letter-spacing: 2px;">BEST</span>
-        <span class="best-value font-display" id="live-best" style="font-size: 16px; color: var(--accent-2);">${this.highScore.toLocaleString()}</span>
-      </div>
-      <button class="pause-btn" id="ui-pause-btn" title="Pause (P)" style="background: none; border: none; color: #fff; cursor: pointer; padding: 4px; transition: transform 0.2s;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-      </button>
-    </div>
-  </div>
-
-  <div style="flex: 1; position: relative;">
-    <!-- INSTRUCTION SCREEN -->
-    <div class="instruction-overlay hidden" id="instruction-screen" style="position: absolute; inset: 0; background: rgba(10,10,15,0.85); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; pointer-events: auto;">
-      <div class="instruction-card" style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 40px; text-align: center; max-width: 500px;">
-        <div class="inst-icon" style="width: 64px; height: 64px; margin: 0 auto 24px; color: var(--accent-1);">${iconSvg}</div>
-        <h2 class="inst-title font-display" style="font-size: 32px; color: #fff; margin-bottom: 12px;">${name}</h2>
-        <p class="inst-desc" style="color: var(--text-secondary); margin-bottom: 32px; line-height: 1.5;">${desc}</p>
-        <div class="inst-controls" style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 40px;">
-          ${controlsHTML}
-        </div>
-        <button class="inst-start-btn font-display" id="ui-start-btn" style="background: var(--accent-1); color: #000; border: none; padding: 16px 32px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);">
-          PRESS SPACE TO START
+      <div id="instructions-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 10; border-radius: 8px; font-family: 'DM Sans', sans-serif;">
+        <h2 id="gs-instruction-title" style="font-family: 'Press Start 2P', monospace; font-size: 24px; color: var(--accent-1); margin-bottom: 20px; text-transform: uppercase; text-shadow: 0 0 10px rgba(108,99,255,0.5);"></h2>
+        <p id="gs-instruction-desc" style="max-width: 440px; text-align: center; line-height: 1.6; color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; padding: 0 20px;"></p>
+        <button id="btn-instruction-start" style="background: var(--accent-1); color: #fff; border: none; padding: 12px 36px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: var(--shadow-glow-purple); transition: all 0.2s;">
+          START [SPACE]
         </button>
       </div>
-    </div>
 
-    <!-- PAUSE OVERLAY -->
-    <div class="pause-overlay hidden" id="pause-screen" style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; pointer-events: auto;">
-      <div class="pause-card" style="text-align: center;">
-        <h2 class="font-display" style="font-size: 48px; color: #fff; margin-bottom: 16px; letter-spacing: 4px;">PAUSED</h2>
-        <div class="pause-actions" style="display: flex; flex-direction: column; gap: 16px; width: 240px; margin: 0 auto;">
-          <button id="resume-btn" style="background: #222; color: #fff; border: 1px solid #444; padding: 16px; font-family: inherit; cursor: pointer; transition: background 0.2s;">RESUME (P)</button>
-          <button id="restart-btn" style="background: #222; color: #fff; border: 1px solid #444; padding: 16px; font-family: inherit; cursor: pointer; transition: background 0.2s;">RESTART (R)</button>
-          <button id="quit-btn" style="background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 16px; font-family: inherit; cursor: pointer; transition: background 0.2s;">QUIT (ESC)</button>
-        </div>
+      <div id="pause-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 10; border-radius: 8px; font-family: 'DM Sans', sans-serif; gap: 16px;">
+        <h2 style="font-family: 'Press Start 2P', monospace; font-size: 28px; color: #fff; margin-bottom: 24px; text-shadow: 0 0 10px rgba(255,255,255,0.2);">PAUSED</h2>
+        <button id="btn-pause-resume" style="width: 180px; background: var(--accent-1); color: #fff; border: none; padding: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: bold; cursor: pointer;">
+          RESUME [P]
+        </button>
+        <button id="btn-pause-restart" style="width: 180px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: bold; cursor: pointer;">
+          RESTART [R]
+        </button>
+        <button id="btn-pause-quit" style="width: 180px; background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); padding: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: bold; cursor: pointer;">
+          QUIT [ESC]
+        </button>
       </div>
-    </div>
 
-    <!-- GAME OVER OVERLAY -->
-    <div class="gameover-overlay hidden" id="gameover-screen" style="position: absolute; inset: 0; background: rgba(10,10,15,0.95); display: flex; align-items: center; justify-content: center; pointer-events: auto;">
-      <div class="gameover-card" style="text-align: center; width: 100%; max-width: 600px;">
-        <h2 class="go-title font-display" style="font-size: 64px; color: #fff; margin-bottom: 48px; text-shadow: 0 0 40px rgba(255,255,255,0.2);">GAME OVER</h2>
+      <div id="gameover-overlay" class="game-overlay" style="display: none; position: absolute; inset: 0; background: rgba(10,10,15,0.98); flex-direction: column; align-items: center; justify-content: center; z-index: 10; border-radius: 8px; font-family: 'DM Sans', sans-serif;">
+        <h2 style="font-family: 'Press Start 2P', monospace; font-size: 32px; color: #fff; margin-bottom: 12px; text-shadow: 0 0 15px rgba(255,255,255,0.3);">GAME OVER</h2>
+        <div id="new-record-banner" style="display: none; margin-bottom: 24px; background: var(--accent-1); color: #fff; padding: 6px 16px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: bold; letter-spacing: 1px; animation: pulse 1.5s infinite;">★ NEW RECORD ★</div>
         
-        <div class="go-score-section" style="display: flex; justify-content: center; gap: 64px; margin-bottom: 48px;">
-          <div class="go-score">
-            <span style="display: block; font-size: 14px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">YOUR SCORE</span>
-            <strong id="final-score" class="font-display" style="font-size: 56px; color: var(--accent-1); text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);">0</strong>
+        <div style="display: flex; gap: 48px; margin-bottom: 40px; text-align: center;">
+          <div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">SCORE</div>
+            <div id="gs-gameover-score" style="font-family: 'Press Start 2P', monospace; font-size: 28px; color: var(--accent-1); font-weight: bold;">0</div>
           </div>
-          <div class="go-best">
-            <span style="display: block; font-size: 14px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">BEST</span>
-            <strong id="best-score-display" class="font-display" style="font-size: 56px; color: #fff;">0</strong>
+          <div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">BEST</div>
+            <div id="gs-gameover-best" style="font-family: 'Press Start 2P', monospace; font-size: 28px; color: #fff; font-weight: bold;">0</div>
           </div>
         </div>
-
-        <div class="new-record-banner hidden" id="new-record" style="color: #ffd93d; font-family: 'Press Start 2P', monospace; font-size: 16px; margin-bottom: 48px; animation: pulse 1s infinite;">
-          ★ NEW RECORD! ★
-        </div>
-
-        <div class="go-actions" style="display: flex; justify-content: center; gap: 24px;">
-          <button id="retry-btn" class="font-display" style="background: #fff; color: #000; border: none; padding: 16px 40px; border-radius: 4px; font-size: 18px; cursor: pointer; transition: transform 0.2s;">RETRY (R)</button>
-          <button id="back-btn" class="font-display" style="background: transparent; color: var(--text-secondary); border: 1px solid #444; padding: 16px 40px; border-radius: 4px; font-size: 18px; cursor: pointer; transition: color 0.2s, border-color 0.2s;">BACK (ESC)</button>
+        
+        <div style="display: flex; gap: 16px;">
+          <button id="btn-gameover-retry" style="background: var(--accent-1); color: #fff; border: none; padding: 12px 28px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: var(--shadow-glow-purple);">
+            RETRY [R]
+          </button>
+          <button id="btn-gameover-back" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 12px 28px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: bold; cursor: pointer;">
+            BACK [ESC]
+          </button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
     `;
 
     const wrapper = document.createElement('div');
@@ -395,83 +454,91 @@ export class GameShell {
       parent.appendChild(wrapper.firstChild);
     }
 
-    // Bind UI buttons
-    document.getElementById('ui-pause-btn')?.addEventListener('click', () => {
-      this.state === 'PLAYING' ? this.pause() : this.resume();
-    });
-    document.getElementById('ui-start-btn')?.addEventListener('click', () => this.start());
-    document.getElementById('resume-btn')?.addEventListener('click', () => this.resume());
-    document.getElementById('restart-btn')?.addEventListener('click', () => this.start());
-    document.getElementById('quit-btn')?.addEventListener('click', () => this.quit());
-    document.getElementById('retry-btn')?.addEventListener('click', () => this.start());
-    document.getElementById('back-btn')?.addEventListener('click', () => this.quit());
+    // Bind overlay button clicks
+    const startBtn = document.getElementById('btn-instruction-start');
+    if (startBtn) startBtn.onclick = () => this.start();
+
+    const resumeBtn = document.getElementById('btn-pause-resume');
+    if (resumeBtn) resumeBtn.onclick = () => this.resume();
+
+    const restartBtn = document.getElementById('btn-pause-restart');
+    if (restartBtn) restartBtn.onclick = () => this.start();
+
+    const quitBtn = document.getElementById('btn-pause-quit');
+    if (quitBtn) quitBtn.onclick = () => this.quit();
+
+    const retryBtn = document.getElementById('btn-gameover-retry');
+    if (retryBtn) retryBtn.onclick = () => this.start();
+
+    const backBtn = document.getElementById('btn-gameover-back');
+    if (backBtn) backBtn.onclick = () => this.quit();
   }
 
   _showOverlay(id, data = {}) {
     this._hideAllOverlays();
     const overlay = document.getElementById(id);
     if (overlay) {
-      overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
+      overlay.classList.add('fade-in');
       
-      if (data.isNewRecord && id === 'gameover-screen') {
-        this._showNewRecord(overlay);
+      if (data.isNewRecord && id === 'gameover-overlay') {
+        const recordBanner = document.getElementById('new-record-banner');
+        if (recordBanner) {
+          recordBanner.style.display = 'block';
+          this._spawnConfetti();
+        }
       }
+    }
+  }
+
+  _spawnConfetti() {
+    for (let i = 0; i < 50; i++) {
+      const conf = document.createElement('div');
+      conf.style.position = 'fixed';
+      conf.style.width = '8px';
+      conf.style.height = '8px';
+      conf.style.backgroundColor = ['#ff6b6b', '#00d4aa', '#6c63ff', '#ffd93d'][Math.floor(Math.random() * 4)];
+      conf.style.left = '50%';
+      conf.style.top = '50%';
+      conf.style.zIndex = '2000';
+      conf.style.pointerEvents = 'none';
+      conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      document.body.appendChild(conf);
+
+      const angle = Math.random() * Math.PI * 2;
+      const velocity = 5 + Math.random() * 15;
+      const vx = Math.cos(angle) * velocity;
+      let vy = Math.sin(angle) * velocity - 5;
+      
+      let x = window.innerWidth / 2;
+      let y = window.innerHeight / 2;
+      let rot = 0;
+      let rotV = (Math.random() - 0.5) * 20;
+
+      let frame;
+      const anim = () => {
+        x += vx;
+        vy += 0.5; // gravity
+        y += vy;
+        rot += rotV;
+        
+        conf.style.transform = `translate(${x - window.innerWidth/2}px, ${y - window.innerHeight/2}px) rotate(${rot}deg)`;
+        
+        if (y > window.innerHeight) {
+          conf.remove();
+        } else {
+          frame = requestAnimationFrame(anim);
+        }
+      };
+      frame = requestAnimationFrame(anim);
     }
   }
 
   _hideAllOverlays() {
-    const overlays = ['instruction-screen', 'pause-screen', 'gameover-screen'];
+    const overlays = ['instructions-overlay', 'pause-overlay', 'gameover-overlay'];
     overlays.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.classList.add('hidden');
+      if (el) el.style.display = 'none';
     });
-  }
-
-  _animateScore(element, targetScore) {
-    const start = performance.now();
-    const duration = 800;
-    const startVal = 0;
-    
-    function update(now) {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.floor(startVal + (targetScore - startVal) * eased);
-      element.textContent = current.toLocaleString();
-      
-      if (progress < 1) requestAnimationFrame(update);
-    }
-    requestAnimationFrame(update);
-  }
-
-  _showNewRecord(containerEl) {
-    const banner = document.getElementById('new-record');
-    if (banner) banner.classList.remove('hidden');
-    
-    // 20 particles burst outward
-    for (let i = 0; i < 20; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'record-particle';
-      const angle = (i / 20) * Math.PI * 2;
-      const distance = 60 + Math.random() * 40;
-      particle.style.cssText = `
-        position: absolute;
-        width: 6px; height: 6px;
-        border-radius: 50%;
-        background: #ffd93d;
-        left: 50%; top: 50%;
-        --tx: ${Math.cos(angle) * distance}px;
-        --ty: ${Math.sin(angle) * distance}px;
-        animation: particle-burst 600ms ease-out forwards;
-        z-index: -1;
-      `;
-      // Append right behind the banner
-      if (banner) {
-        banner.appendChild(particle);
-      } else {
-        containerEl.appendChild(particle);
-      }
-      setTimeout(() => particle.remove(), 700);
-    }
   }
 }

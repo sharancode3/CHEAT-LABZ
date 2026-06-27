@@ -1,0 +1,277 @@
+/* ideas.css */
+body {
+  background: var(--bg-primary);
+  color: #fff;
+  overflow-x: hidden;
+}
+
+.ideas-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.lightbulb-icon {
+  animation: bulbPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 15px rgba(255, 217, 61, 0.4));
+}
+
+@keyframes bulbPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.98); }
+  50% { opacity: 1.0; transform: scale(1.02); }
+}
+
+.ideas-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: #ffd93d;
+  margin-top: 16px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.ideas-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Card Form styles */
+.idea-form-card {
+  background: rgba(22, 22, 31, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 40px;
+  margin-bottom: 48px;
+  backdrop-filter: blur(10px);
+}
+
+.step-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--accent-1);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.type-buttons-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.type-btn {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.type-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.type-btn.selected {
+  background: rgba(108, 99, 255, 0.1);
+  border-color: var(--accent-1);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(108, 99, 255, 0.2);
+}
+
+.type-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.type-btn span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.input-group {
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.idea-textarea {
+  width: 100%;
+  min-height: 140px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.idea-textarea:focus {
+  outline: none;
+  border-color: var(--accent-1);
+}
+
+.char-counter {
+  position: absolute;
+  bottom: -20px;
+  right: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.send-btn {
+  width: 100%;
+  background: var(--accent-1);
+  color: #fff;
+  border: none;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.send-btn:hover {
+  background: #7d75ff;
+}
+
+.send-btn.success {
+  background: #00d4aa !important;
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.4) !important;
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 8px;
+  display: none;
+}
+
+/* Wall of Fame styles */
+.wall-of-fame-section {
+  margin-bottom: 48px;
+}
+
+.wall-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  text-align: center;
+  color: var(--cyan);
+  margin-bottom: 24px;
+}
+
+.wall-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.wall-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+}
+
+.wall-card-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.wall-card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Recent submissions */
+.recent-submissions {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+}
+
+.recent-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.recent-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.recent-type-badge {
+  font-size: 10px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.badge-new-game { background: rgba(0, 212, 170, 0.2); color: #00d4aa; }
+.badge-bug { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+.badge-feature { background: rgba(108, 99, 255, 0.2); color: var(--accent-2); }
+
+.recent-preview {
+  font-size: 12px;
+  color: #fff;
+  flex-grow: 1;
+  margin-left: 16px;
+  margin-right: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@media (max-width: 768px) {
+  .type-buttons-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .wall-grid {
+    grid-template-columns: 1fr;
+  }
+}

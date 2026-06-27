@@ -322,7 +322,7 @@ body {
   background: var(--accent-1);
 }
 
-/* Reset Button */
+/* Reset Container and Buttons */
 .reset-container {
   display: flex;
   justify-content: center;
@@ -330,28 +330,280 @@ body {
   padding-bottom: 48px;
 }
 
-.reset-btn {
+/* Animated Grid Page Background */
+body.leaderboard-page {
+  background-image: 
+    linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridScroll 20s linear infinite;
+}
+@keyframes gridScroll {
+  from { background-position: 0 0; }
+  to { background-position: 40px 40px; }
+}
+
+/* Profile Card Styling */
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: rgba(22, 22, 31, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+.profile-info {
+  flex-grow: 1;
+}
+.profile-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.profile-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--accent-1);
+  font-weight: bold;
+}
+.profile-stats-row {
+  display: flex;
+  gap: 24px;
+}
+.pstat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+.pstat strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 2px;
+}
+.pstat span {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Achievement Badges Row */
+.badges-container-row {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 40px;
+}
+.badges-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+.badges-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.badge-item:hover {
+  transform: translateY(-2px);
+}
+.badge-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffd93d;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+.badge-item.locked .badge-circle {
+  filter: grayscale(100%);
+  opacity: 0.25;
+  color: var(--text-muted);
+}
+.badge-item.locked .badge-label {
+  opacity: 0.4;
+}
+.badge-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.badge-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Tooltip Custom styling */
+.badge-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: #09090e;
+  border: 1px solid var(--border-bright);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.badge-item:hover .badge-tooltip {
+  opacity: 1;
+}
+
+/* Game Scores Table Styling Updates */
+.lb-row.rank-1-row { background: rgba(255,215,0,0.08); border-left: 3px solid #ffd93d; }
+.lb-row.rank-2-row { background: rgba(192,192,192,0.06); border-left: 3px solid #c0c0c0; }
+.lb-row.rank-3-row { background: rgba(205,127,50,0.06); border-left: 3px solid #cd7f32; }
+
+/* Game Stats Tab Layout */
+.lb-stats-header {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  margin-bottom: 24px;
+}
+.lgc-stat-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.lgc-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+.lgc-stat-item span {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.lgc-stat-item strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: #fff;
+}
+
+/* Coin History Tab styling */
+.history-summary {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.history-summary-val {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: #ffd93d;
+}
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.history-table th, .history-table td {
+  padding: 12px 20px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.history-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.history-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+}
+.history-amount.earn { color: #00d4aa; }
+.history-amount.spend { color: #ff6b6b; }
+
+/* Danger Zone Reset Section */
+.danger-zone-section {
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  background: rgba(255, 107, 107, 0.02);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-top: 64px;
+  margin-bottom: 48px;
+}
+.danger-zone-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #ff6b6b;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.danger-zone-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.danger-zone-actions {
+  display: flex;
+  gap: 16px;
+}
+.btn-danger {
   background: transparent;
-  border: 1px solid rgba(255,107,107,0.3);
+  border: 1px solid #ff6b6b;
   color: #ff6b6b;
   padding: 12px 24px;
   border-radius: var(--radius-sm);
-  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  letter-spacing: 1px;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
 }
-
-.reset-btn:hover {
-  background: rgba(255,107,107,0.1);
-  border-color: #ff6b6b;
+.btn-danger:hover {
+  background: rgba(255, 107, 107, 0.1);
 }
-
-.reset-confirm {
-  background: #ff6b6b !important;
-  color: #fff !important;
-  border-color: #ff6b6b !important;
+.btn-danger.confirming {
+  background: #ff6b6b;
+  color: #fff;
 }
 
 /* Responsive header */
@@ -365,5 +617,9 @@ body {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
+  }
+  .danger-zone-actions {
+    flex-direction: column;
+    gap: 12px;
   }
 }
