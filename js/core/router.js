@@ -103,12 +103,26 @@ export default {
 
 // Global Hash Bridge for Game Modals
 function checkCurrentHashForGame() {
-  const currentHash = window.location.hash.replace(/^#/, '').trim();
+  let currentHash = window.location.hash.replace(/^#/, '').trim();
+  if (currentHash.startsWith('/')) {
+    currentHash = currentHash.substring(1);
+  }
+  
+  let config = {};
+  if (currentHash.includes('?')) {
+    const parts = currentHash.split('?');
+    currentHash = parts[0];
+    const params = new URLSearchParams(parts[1]);
+    const dailyIdx = params.get('daily');
+    if (dailyIdx !== null) {
+      config.dailyIndex = parseInt(dailyIdx, 10);
+    }
+  }
   
   if (currentHash && currentHash !== '' && !currentHash.includes('/')) {
     // If a valid game modal launcher is available on the global window context
     if (typeof window.launchGameModal === 'function') {
-      window.launchGameModal(currentHash);
+      window.launchGameModal(currentHash, config);
     }
   }
 }

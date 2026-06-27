@@ -1,4 +1,5 @@
 import { GAME_ICONS } from '../../assets/icons/game-icons.js';
+import { checkStreak, getStreak, getCoins, formatCoins, isGameLocked } from '../core/storage.js';
 
 function getGameIcon(gameId) {
   return GAME_ICONS[gameId] || GAME_ICONS['default'];
@@ -6,6 +7,7 @@ function getGameIcon(gameId) {
 
 class HomeUI {
   constructor() {
+    window.homeInstance = this;
     this.initHeroCanvas();
     this.initParallax();
     this.renderMissions();
@@ -118,19 +120,83 @@ class HomeUI {
     const grid = document.getElementById('missions-grid');
     if (!grid) return;
 
-    // Grab 3 random games for daily missions
-    const missionGames = window.GAMES ? [...window.GAMES].sort(() => 0.5 - Math.random()).slice(0, 3) : [];
+    if (!window.GAMES) return;
+
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
     
-    grid.innerHTML = missionGames.map((g, i) => `
-      <div class="mission-card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-          <h3 style="font-size: 14px; margin: 0; color: var(--cyan); font-family: 'Press Start 2P', monospace; line-height: 1.4;">${g.name}</h3>
-          <span style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">+500 AP</span>
+    // Pick 3 games deterministically from DIFFERENT categories if possible
+    const categories = ['arcade', 'skill', 'puzzle', 'racing'];
+    const selectedGames = [];
+    categories.forEach((cat, i) => {
+      const catGames = window.GAMES.filter(g => g.category.toLowerCase() === cat);
+      if (catGames.length > 0) {
+        const idx = (seed * (i + 5) * 31337) % catGames.length;
+        selectedGames.push(catGames[Math.floor(idx)]);
+      }
+    });
+    
+    // Fallback to unique games if categories are empty or similar
+    while (selectedGames.length < 3 && window.GAMES.length > selectedGames.length) {
+      const fallbackIdx = (seed * (selectedGames.length + 1) * 7) % window.GAMES.length;
+      const g = window.GAMES[Math.floor(fallbackIdx)];
+      if (!selectedGames.includes(g)) {
+        selectedGames.push(g);
+      }
+    }
+    
+    const missionGames = selectedGames.slice(0, 3);
+    
+    const getTargetScore = (difficulty) => {
+      const diff = (difficulty || 'medium').toLowerCase();
+      if (diff === 'easy') return 200;
+      if (diff === 'hard') return 1000;
+      return 500;
+    };
+
+    grid.innerHTML = missionGames.map((g, i) => {
+      const target = getTargetScore(g.difficulty);
+      const bountyKey = `cheatLabz_bounty_${g.id}`;
+      let bounty = null;
+      try {
+        const raw = localStorage.getItem(bountyKey);
+        if (raw) {
+          bounty = JSON.parse(raw);
+          // Check expiration
+          if (Date.now() > bounty.expiresAt) {
+            localStorage.removeItem(bountyKey);
+            bounty = null;
+          }
+        }
+      } catch(e) {}
+
+      let badgeHtml = '<span style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">+500 AP</span>';
+      let btnHtml = `<button class="btn-play-hidden" onclick="window.acceptBounty('${g.id}', ${target})" style="width: 100%; font-size: 12px; cursor: pointer; border-radius: 4px;">ACCEPT BOUNTY</button>`;
+      let statusText = `Achieve a score of ${target} or higher in ${g.name} to complete this bounty.`;
+
+      if (bounty) {
+        if (bounty.completed) {
+          badgeHtml = '<span style="background: rgba(0, 212, 170, 0.2); color: var(--accent-4); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">COMPLETED</span>';
+          btnHtml = `<button class="btn-play-hidden" disabled style="width: 100%; font-size: 12px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); cursor: default; border-radius: 4px;">COMPLETED</button>`;
+          statusText = `You successfully completed this bounty and earned 500 AP!`;
+        } else if (bounty.accepted) {
+          badgeHtml = '<span style="background: rgba(108, 99, 255, 0.2); color: var(--accent-2); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">ACTIVE</span>';
+          btnHtml = `<button class="btn-play-hidden" onclick="window.launchGameModal('${g.id}')" style="width: 100%; font-size: 12px; cursor: pointer; background: transparent; border: 1px solid var(--accent-1); color: #fff; border-radius: 4px;">PLAY NOW</button>`;
+          statusText = `Active bounty! Target score: ${target} or higher.`;
+        }
+      }
+
+      return `
+        <div class="mission-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <h3 style="font-size: 14px; margin: 0; color: var(--cyan); font-family: 'Press Start 2P', monospace; line-height: 1.4;">${g.name}</h3>
+            ${badgeHtml}
+          </div>
+          <p style="font-size: 12px; color: var(--muted); margin-bottom: 24px; line-height: 1.5;">${statusText}</p>
+          ${btnHtml}
         </div>
-        <p style="font-size: 12px; color: var(--muted); margin-bottom: 24px; line-height: 1.5;">Achieve a score of 500 or higher in ${g.name} to complete this bounty.</p>
-        <button class="btn-play-hidden" onclick="window.launchGameModal('${g.id}')" style="width: 100%; font-size: 12px;">ACCEPT BOUNTY</button>
-      </div>
-`).join('');
+      `;
+    }).join('');
   }
 
   renderCarousel() {
@@ -211,3 +277,29 @@ class HomeUI {
 document.addEventListener('DOMContentLoaded', () => {
   new HomeUI();
 });
+
+window.acceptBounty = (gameId, target) => {
+  const now = new Date();
+  const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+  const expiresAt = midnight.getTime();
+  
+  const bounty = {
+    gameId,
+    target,
+    accepted: true,
+    acceptedAt: Date.now(),
+    completed: false,
+    expiresAt
+  };
+  localStorage.setItem(`cheatLabz_bounty_${gameId}`, JSON.stringify(bounty));
+  
+  // Re-render
+  if (window.homeInstance) {
+    window.homeInstance.renderMissions();
+  }
+  
+  // Launch the game modal
+  if (window.launchGameModal) {
+    window.launchGameModal(gameId);
+  }
+};

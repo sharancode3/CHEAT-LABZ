@@ -1,4 +1,6 @@
 import { GAME_ICONS } from '../../assets/icons/game-icons.js';
+import { isGameLocked, getCoins, formatCoins, Storage } from '../core/storage.js';
+import { showToast } from '../core/notifications.js';
 
 function getGameIcon(gameId) {
   return GAME_ICONS[gameId] || GAME_ICONS['default'] || '🎮';
@@ -6,12 +8,40 @@ function getGameIcon(gameId) {
 
 function getScores(gameId) {
   try {
-    const raw = localStorage.getItem(`cheatlabz_scores_${gameId}`);
+    const raw = localStorage.getItem(`cheatLabz_${gameId}`);
     if (!raw) return [];
-    const scores = JSON.parse(raw);
-    return scores.map(s => (typeof s === 'object' ? s.score : s)).sort((a,b) => b-a);
+    const record = JSON.parse(raw);
+    if (record && typeof record === 'object') {
+      if (Array.isArray(record.history)) {
+        return [...record.history].sort((a, b) => b - a);
+      }
+      if (typeof record.score === 'number') {
+        return [record.score];
+      }
+    }
+    if (typeof record === 'number') {
+      return [record];
+    }
+    return [];
   } catch(e) {
     return [];
+  }
+}
+
+function getRuns(gameId) {
+  try {
+    const raw = localStorage.getItem(`cheatLabz_${gameId}`);
+    if (!raw) return 0;
+    const record = JSON.parse(raw);
+    if (record && typeof record === 'object') {
+      return record.runs || (record.history ? record.history.length : 0);
+    }
+    if (typeof record === 'number') {
+      return 1;
+    }
+    return 0;
+  } catch(e) {
+    return 0;
   }
 }
 
@@ -76,7 +106,7 @@ class GamesGrid {
     let bestScore = 0;
     this.games.forEach(g => {
       const scores = getScores(g.id);
-      totalRuns += scores.length;
+      totalRuns += getRuns(g.id);
       if (scores.length > 0) {
         if (scores[0] > bestScore) bestScore = scores[0];
       }
@@ -192,7 +222,7 @@ class GamesGrid {
       const icon = getGameIcon(g.id);
       const scores = getScores(g.id);
       const best = scores.length > 0 ? scores[0].toLocaleString() : '--';
-      const runs = scores.length;
+      const runs = getRuns(g.id);
       
       let tooltipRows = '';
       if (scores.length === 0) {
@@ -210,6 +240,39 @@ class GamesGrid {
             </div>
           `;
         });
+      }
+
+      const isLocked = isGameLocked(g.id);
+      const LOCKED_GAMES = {
+        'beat-drop': 200,
+        'pixel-dodge': 150,
+        'astro-strider': 300
+      };
+
+      if (isLocked) {
+        return `
+          <div class="game-card locked" data-id="${g.id}" style="position: relative; min-height: 280px;">
+            <div style="opacity: 0.15; pointer-events: none; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+              <div class="card-header-row">
+                <div class="card-icon">${icon}</div>
+                <div class="card-badges-col">
+                  <span class="badge-tag badge-cat">${g.category || 'ARCADE'}</span>
+                  <span class="badge-tag badge-diff">${g.difficulty || 'MEDIUM'}</span>
+                </div>
+              </div>
+              <h3 class="card-title-text">${g.name}</h3>
+              <p class="card-desc-text">${g.description || 'Survive the grid and set a new high score in this challenging module.'}</p>
+            </div>
+            
+            <!-- Lock Overlay -->
+            <div class="lock-overlay" style="position: absolute; inset: 0; background: rgba(10,10,15,0.95); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px; box-sizing: border-box; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <div style="font-family: 'Press Start 2P', monospace; font-size: 10px; color: #fff; margin-bottom: 8px; text-transform: uppercase;">LOCKED MODULE</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Cost: ${LOCKED_GAMES[g.id]} AP</div>
+              <button class="btn btn-primary unlock-btn-trigger" onclick="window.tryUnlockGame('${g.id}', ${LOCKED_GAMES[g.id]})" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; background: var(--accent-1); color: #fff; width: 100%;">UNLOCK</button>
+            </div>
+          </div>
+        `;
       }
 
       return `
@@ -243,7 +306,7 @@ class GamesGrid {
           <div class="card-overlay" id="overlay-${g.id}">
             <button class="overlay-close" data-id="${g.id}">×</button>
             <div class="overlay-header">
-              <div style="width:24px; height:24px; color: var(--accent-1);">${icon}</div>
+              <div class="icon-24" style="color: var(--accent-1);">${icon}</div>
               <div class="overlay-title">${g.name}</div>
             </div>
             <div class="overlay-desc">${g.description || 'No detailed intelligence report available.'}</div>
@@ -352,5 +415,63 @@ class GamesGrid {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  new GamesGrid();
+  window.gamesInstance = new GamesGrid();
 });
+
+window.tryUnlockGame = (gameId, cost) => {
+  const coinsData = getCoins();
+  if (coinsData.total < cost) {
+    showToast(`Insufficient AP! Need ${cost} AP.`, 'error');
+    return;
+  }
+  
+  // Deduct coins
+  coinsData.total -= cost;
+  coinsData.history.unshift({
+    reason: `Unlocked ${gameId}`,
+    amount: -cost,
+    date: new Date().toISOString().slice(0,10)
+  });
+  Storage.set('coins', coinsData);
+  
+  // Save unlocked state
+  Storage.set(`unlocked_${gameId}`, true);
+  
+  showToast("Module Unlocked!", "success");
+  
+  // Update navbar coin display
+  const coinEl = document.getElementById('coin-count');
+  if (coinEl) {
+    coinEl.textContent = formatCoins(coinsData.total);
+  }
+
+  // Play shake animation
+  const card = document.querySelector(`.game-card[data-id="${gameId}"]`);
+  if (card) {
+    card.style.animation = 'shake 0.5s ease-in-out';
+    
+    // Add simple inline shake animation
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+      style.remove();
+      if (window.gamesInstance) {
+        window.gamesInstance.buildDOM();
+        window.gamesInstance.bindEvents();
+      }
+    }, 600);
+  } else {
+    if (window.gamesInstance) {
+      window.gamesInstance.buildDOM();
+      window.gamesInstance.bindEvents();
+    }
+  }
+};
