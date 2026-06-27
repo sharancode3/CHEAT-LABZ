@@ -204,122 +204,224 @@ import SocketClient   from './js/socket-client.js';
 import { initPresence } from './js/presence.js';
 import { initTeamcodeInput, createRoom, joinMatchmaking, cancelMatchmaking } from './js/room-manager.js';
 
-// ── Multiplayer Game Catalogue (placeholder — Phase 2 fills these) ────────
+import { getChallengeIcon } from '../assets/icons/challenge-icons.js';
+
+// ── Multiplayer Game Catalogue (Phase 2 Full Roster) ────────
 const MP_GAMES = [
   {
-    id:          'multiplayer-snake',
-    name:        'NEON SERPENT\nMULTIPLAYER',
-    desc:        'Classic snake battle — grow the longest, outlast everyone. Last serpent standing wins.',
-    icon:        '🐍',
-    iconBg:      'rgba(0,212,170,0.15)',
+    id:          'rock-paper-scissors',
+    name:        'ROCK PAPER SCISSORS',
+    desc:        'Best of 5 rounds. Simple, fast, psychological warfare.',
+    color:       '#ff6b6b',
     maxPlayers:  2,
-    category:    'SURVIVAL',
+    category:    'CASUAL',
     comingSoon:  false,
   },
   {
-    id:          'hex-wars',
-    name:        'HEX WARS',
-    desc:        'Capture hexagonal territory with pixel-perfect strategy. Outflank your rival.',
-    icon:        '⬡',
-    iconBg:      'rgba(139,92,246,0.15)',
+    id:          'tic-tac-toe',
+    name:        'TIC TAC TOE',
+    desc:        '30-second turn limit. Best of 3 games. The classic, evolved.',
+    color:       '#6c63ff',
     maxPlayers:  2,
     category:    'STRATEGY',
     comingSoon:  false,
   },
   {
-    id:          'turbo-race-mp',
-    name:        'TURBO RACE\nMULTIPLAYER',
-    desc:        'Side-scrolling neon racer. Dodge obstacles faster than your opponent.',
-    icon:        '🏎️',
-    iconBg:      'rgba(239,68,68,0.15)',
+    id:          'reflex-duel',
+    name:        'REFLEX DUEL',
+    desc:        'React to the stimulus faster than your opponent. No false starts!',
+    color:       '#00b894',
     maxPlayers:  2,
-    category:    'RACING',
+    category:    'SKILL',
     comingSoon:  false,
   },
   {
-    id:          'color-bomb',
-    name:        'COLOR BOMB',
-    desc:        'A 4-player color-capture frenzy. Paint the arena in your hue before time runs out.',
-    icon:        '💥',
-    iconBg:      'rgba(253,121,168,0.15)',
-    maxPlayers:  4,
-    category:    'PARTY',
+    id:          'word-duel',
+    name:        'WORD DUEL',
+    desc:        'Real-time typing race. Type the words before they do. 5 rounds.',
+    color:       '#fd79a8',
+    maxPlayers:  2,
+    category:    'SKILL',
     comingSoon:  false,
   },
   {
-    id:          'battle-tetris',
-    name:        'BATTLE TETRIS',
-    desc:        'Stack blocks, clear lines, send garbage to your opponent. Classic chaos.',
-    icon:        '🧱',
-    iconBg:      'rgba(245,158,11,0.15)',
+    id:          'multiplayer-snake',
+    name:        'SNAKE ARENA',
+    desc:        'Head-to-head snake. Cut them off, grab power-ups, outlast them.',
+    color:       '#00d4aa',
+    maxPlayers:  2,
+    category:    'ACTION',
+    comingSoon:  false,
+  },
+  {
+    id:          'battleship',
+    name:        'BATTLESHIP',
+    desc:        'Sink their fleet before they sink yours. Turn-based strategy.',
+    color:       '#4ecdc4',
+    maxPlayers:  2,
+    category:    'STRATEGY',
+    comingSoon:  true,
+  },
+  {
+    id:          'physics-soccer',
+    name:        'PHYSICS SOCCER',
+    desc:        'Chaotic 1v1 soccer with floaty physics and big goals.',
+    color:       '#ffd93d',
+    maxPlayers:  2,
+    category:    'SPORTS',
+    comingSoon:  true,
+  },
+  {
+    id:          'mini-clash',
+    name:        'MINI CLASH',
+    desc:        'Deploy units to destroy the enemy tower. Real-time tactics.',
+    color:       '#e17055',
+    maxPlayers:  2,
+    category:    'STRATEGY',
+    comingSoon:  true,
+  },
+  {
+    id:          'pixel-gunfight',
+    name:        'PIXEL GUNFIGHT',
+    desc:        'Dodge and shoot in a tiny arena. One hit and you are out.',
+    color:       '#ff7675',
+    maxPlayers:  2,
+    category:    'ACTION',
+    comingSoon:  true,
+  },
+  {
+    id:          'color-flood-duel',
+    name:        'COLOR FLOOD',
+    desc:        'Flood the board with your color from your corner. Claim 50%+ to win.',
+    color:       '#a29bfe',
     maxPlayers:  2,
     category:    'PUZZLE',
     comingSoon:  true,
   },
+  // 4-PLAYER GAMES
   {
-    id:          'type-race',
-    name:        'TYPE RACE',
-    desc:        'Real-time typing duel. Finish the sentence before your opponent does.',
-    icon:        '⌨️',
-    iconBg:      'rgba(6,182,212,0.15)',
-    maxPlayers:  2,
-    category:    'SKILL',
+    id:          'ludo',
+    name:        'LUDO',
+    desc:        'Classic board game. Get all 4 tokens home while bumping others.',
+    color:       '#fdcb6e',
+    maxPlayers:  4,
+    category:    'BOARD',
     comingSoon:  true,
   },
+  {
+    id:          'bomberman-arena',
+    name:        'BOMB ARENA',
+    desc:        'Drop bombs, clear blocks, trap your friends in explosions.',
+    color:       '#e84393',
+    maxPlayers:  4,
+    category:    'ACTION',
+    comingSoon:  true,
+  },
+  {
+    id:          'tank-battle',
+    name:        'TANK BATTLE',
+    desc:        'Top-down tank combat. Bullets bounce off walls.',
+    color:       '#55efc4',
+    maxPlayers:  4,
+    category:    'ACTION',
+    comingSoon:  true,
+  },
+  {
+    id:          'top-down-racer',
+    name:        'TURBO RACER',
+    desc:        'Micro machines style racing. Drift through the corners.',
+    color:       '#6c5ce7',
+    maxPlayers:  4,
+    category:    'RACING',
+    comingSoon:  true,
+  },
+  {
+    id:          'king-of-the-hill',
+    name:        'KING OF THE HILL',
+    desc:        'Hold the center zone to gain points. Push others out.',
+    color:       '#00cec9',
+    maxPlayers:  4,
+    category:    'ACTION',
+    comingSoon:  true,
+  },
+  {
+    id:          'zombie-survival',
+    name:        'ZOMBIE SURVIVAL',
+    desc:        'Co-op or versus mode against endless hordes of zombies.',
+    color:       '#b2bec3',
+    maxPlayers:  4,
+    category:    'ACTION',
+    comingSoon:  true,
+  },
+  {
+    id:          'mini-party-pack',
+    name:        'MINI PARTY PACK',
+    desc:        'A rapid-fire series of micro-games. Most wins takes the crown.',
+    color:       '#ff6b6b',
+    maxPlayers:  4,
+    category:    'PARTY',
+    comingSoon:  true,
+  },
+  {
+    id:          'capture-the-flag',
+    name:        'CAPTURE THE FLAG',
+    desc:        '2v2 team battle. Steal the enemy flag and return it to your base.',
+    color:       '#0984e3',
+    maxPlayers:  4,
+    category:    'TEAM',
+    comingSoon:  true,
+  },
+  {
+    id:          'drawing-guess',
+    name:        'DRAW & GUESS',
+    desc:        'One player draws, others guess. Fast-paced party classic.',
+    color:       '#fab1a0',
+    maxPlayers:  4,
+    category:    'PARTY',
+    comingSoon:  true,
+  }
 ];
 
 // ── Render Game Cards ─────────────────────────────────────────────────────
 function renderGameCard(game, forModal = false) {
   const playerBadge = game.maxPlayers === 4 ? '4P' : '2P';
   const playerClass = game.maxPlayers === 4 ? 'mp-badge--4p' : 'mp-badge--2p';
-
-  // CSS-only preview shapes per game
-  const previewShapes = {
-    'multiplayer-snake': `
-      <div class="preview-shape" style="width:20px;height:20px;background:var(--green);opacity:0.3;top:40%;left:30%;animation-duration:1.8s;"></div>
-      <div class="preview-shape" style="width:14px;height:14px;background:var(--green);opacity:0.2;top:55%;left:50%;animation-duration:2.2s;animation-delay:0.5s;"></div>`,
-    'hex-wars': `
-      <div class="preview-shape" style="width:30px;height:30px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--neon);opacity:0.2;top:35%;left:35%;animation-duration:2s;"></div>`,
-    'turbo-race-mp': `
-      <div class="preview-shape" style="width:12px;height:6px;background:var(--danger);opacity:0.3;border-radius:2px;top:50%;left:20%;animation-duration:1.5s;"></div>
-      <div class="preview-shape" style="width:12px;height:6px;background:var(--cyan);opacity:0.3;border-radius:2px;top:60%;left:60%;animation-duration:1.8s;animation-delay:0.3s;"></div>`,
-    default: `<div class="preview-shape" style="width:24px;height:24px;background:var(--neon);opacity:0.15;top:40%;left:40%;animation-duration:2s;"></div>`,
-  };
-
-  const shape = previewShapes[game.id] || previewShapes.default;
+  const iconSvg = getChallengeIcon(game.id);
 
   return `
     <article class="mp-card${game.comingSoon ? ' coming-soon' : ''}"
+             style="--game-color: ${game.color};"
              role="listitem"
              data-game-id="${game.id}"
              data-max-players="${game.maxPlayers}"
              data-filter="${game.maxPlayers === 4 ? '4p' : '2p'}">
 
-      <!-- CSS preview on hover -->
-      <div class="mp-card-preview" aria-hidden="true">${shape}</div>
+      <div class="mp-card-icon" aria-hidden="true">${iconSvg}</div>
 
-      <div class="mp-card-icon" style="background: ${game.iconBg};" aria-hidden="true">${game.icon}</div>
-
-      <div class="mp-card-badges">
-        <span class="mp-badge ${playerClass}">${playerBadge}</span>
-        <span class="mp-badge mp-badge--category">${game.category}</span>
-        ${game.comingSoon ? '<span class="mp-badge mp-badge--coming">SOON</span>' : ''}
+      <div class="mp-card-meta">
+        <div class="mp-card-badges">
+          <span class="mp-badge ${playerClass}">${playerBadge}</span>
+          <span class="mp-badge mp-badge--category">${game.category}</span>
+          ${game.comingSoon ? '<span class="mp-badge mp-badge--coming">SOON</span>' : ''}
+        </div>
+        ${!game.comingSoon ? `
+          <div class="mp-card-live" aria-label="Players in lobby">
+            <div class="mp-card-live-dot" aria-hidden="true"></div>
+            <span class="mp-live-count" data-game="${game.id}">0 waiting</span>
+          </div>
+        ` : ''}
       </div>
 
       <h3 class="mp-card-title">${game.name.replace(/\n/, '<br>')}</h3>
       <p class="mp-card-desc">${game.desc}</p>
 
       <div class="mp-card-footer">
-        <div class="mp-card-live" aria-label="Players in lobby">
-          <div class="mp-card-live-dot" aria-hidden="true"></div>
-          <span class="mp-live-count" data-game="${game.id}">0 waiting</span>
-        </div>
         <button class="btn-mp-play"
                 data-game-id="${game.id}"
                 data-max-players="${game.maxPlayers}"
                 ${game.comingSoon ? 'disabled aria-disabled="true"' : ''}
                 aria-label="${game.comingSoon ? 'Coming soon' : `Create room for ${game.name}`}">
-          ${game.comingSoon ? 'SOON' : 'CREATE ROOM →'}
+          ${game.comingSoon ? 'SOON' : 'PLAY NOW →'}
         </button>
       </div>
     </article>

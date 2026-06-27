@@ -15,8 +15,13 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { registerRoomEvents, leaveRoom, getRoomsStats } from './rooms.js';
+import { registerRoomEvents, leaveRoom, getRoomsStats, rooms } from './rooms.js';
 import { registerMatchmakingEvents, removeFromQueue } from './matchmaking.js';
+import { registerRPSEvents }       from './games/rps.js';
+import { registerTTTEvents }       from './games/tictactoe.js';
+import { registerReflexEvents }    from './games/reflex-duel.js';
+import { registerWordDuelEvents }  from './games/word-duel.js';
+import { registerSnakeEvents }     from './games/snake-arena.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Config
@@ -142,6 +147,12 @@ io.on('connection', (socket) => {
   // Register domain-specific events
   registerRoomEvents(io, socket);
   registerMatchmakingEvents(io, socket);
+  // Game-specific handlers (each registers its own socket events)
+  registerRPSEvents(io, socket, rooms);
+  registerTTTEvents(io, socket, rooms);
+  registerReflexEvents(io, socket, rooms);
+  registerWordDuelEvents(io, socket, rooms);
+  registerSnakeEvents(io, socket, rooms);
 
   // ── Disconnect ────────────────────────────────────────────────────────────
   socket.on('disconnect', (reason) => {
