@@ -1,5 +1,6 @@
 import { Storage } from '../core/storage.js';
 import { GameState } from '../core/events.js';
+import { renderScoreBreakdown } from '../ui/ScoreBreakdown.js';
 
 /**
  * Base class that all games extend.
@@ -277,10 +278,30 @@ export class GameShell {
       // Arena overrides game over handling
     } else {
       this._showOverlay('gameover-overlay', { isNewRecord });
-      const scoreEl = document.getElementById('gs-gameover-score');
-      const bestEl = document.getElementById('gs-gameover-best');
-      if (scoreEl) scoreEl.innerText = this.score;
-      if (bestEl) bestEl.innerText = this.highScore;
+      
+      // If the game has a generateScoreBreakdown method (or passes this.scoreBreakdown data), render it
+      let breakdownData = null;
+      if (typeof this.generateScoreBreakdown === 'function') {
+        breakdownData = this.generateScoreBreakdown();
+      } else if (this.scoreBreakdown) {
+        breakdownData = this.scoreBreakdown;
+      }
+      
+      const scoreBreakdownContainer = document.getElementById('score-breakdown');
+      const standardScoreBlock = document.getElementById('gs-standard-score-block');
+      
+      if (breakdownData && scoreBreakdownContainer) {
+        if (standardScoreBlock) standardScoreBlock.style.display = 'none';
+        scoreBreakdownContainer.style.display = 'block';
+        renderScoreBreakdown(breakdownData);
+      } else {
+        if (scoreBreakdownContainer) scoreBreakdownContainer.style.display = 'none';
+        if (standardScoreBlock) standardScoreBlock.style.display = 'flex';
+        const scoreEl = document.getElementById('gs-gameover-score');
+        const bestEl = document.getElementById('gs-gameover-best');
+        if (scoreEl) scoreEl.innerText = this.score;
+        if (bestEl) bestEl.innerText = this.highScore;
+      }
     }
     
     // Call subclass teardown if defined
@@ -288,6 +309,17 @@ export class GameShell {
       this.onGameOver();
     }
   }
+
+  /**
+   * Returns the score breakdown data for the game
+   */
+  getScoreBreakdown() {
+    if (typeof this.generateScoreBreakdown === 'function') {
+      return this.generateScoreBreakdown();
+    }
+    return this.scoreBreakdown || null;
+  }
+
 
   /**
    * The main game loop powered by requestAnimationFrame
@@ -426,7 +458,7 @@ export class GameShell {
         <h2 style="font-family: 'Press Start 2P', monospace; font-size: 32px; color: #fff; margin-bottom: 12px; text-shadow: 0 0 15px rgba(255,255,255,0.3);">GAME OVER</h2>
         <div id="new-record-banner" style="display: none; margin-bottom: 24px; background: var(--accent-1); color: #fff; padding: 6px 16px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: bold; letter-spacing: 1px; animation: pulse 1.5s infinite;">★ NEW RECORD ★</div>
         
-        <div style="display: flex; gap: 48px; margin-bottom: 40px; text-align: center;">
+        <div id="gs-standard-score-block" style="display: flex; gap: 48px; margin-bottom: 40px; text-align: center;">
           <div>
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">SCORE</div>
             <div id="gs-gameover-score" style="font-family: 'Press Start 2P', monospace; font-size: 28px; color: var(--accent-1); font-weight: bold;">0</div>
@@ -436,6 +468,8 @@ export class GameShell {
             <div id="gs-gameover-best" style="font-family: 'Press Start 2P', monospace; font-size: 28px; color: #fff; font-weight: bold;">0</div>
           </div>
         </div>
+
+        <div id="score-breakdown" style="display: none; width: 100%; max-width: 320px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; margin-bottom: 32px;"></div>
         
         <div style="display: flex; gap: 16px;">
           <button id="btn-gameover-retry" style="background: var(--accent-1); color: #fff; border: none; padding: 12px 28px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: var(--shadow-glow-purple);">

@@ -59,6 +59,7 @@ export default class LoopRally extends GameShell {
     this.ball.baseVy = 300;
     this.isSpike = false;
     this.spikeTimer = 0;
+    this.timePlayed = 0;
     
     this.updateUI();
     
@@ -91,6 +92,7 @@ export default class LoopRally extends GameShell {
 
   update(deltaTime) {
     const dt = deltaTime / 1000;
+    this.timePlayed = (this.timePlayed || 0) + deltaTime;
 
     // Move player
     if (this.keys.left) this.player.x -= this.player.speed * dt;
@@ -232,6 +234,36 @@ export default class LoopRally extends GameShell {
       this.resetBall();
       this.ball.vy = -this.ball.baseVy; // towards AI
     }
+  }
+
+  gameOver() {
+    const timePlayed = this.timePlayed || 0;
+    const baseScore = this.score * 500;
+    const timeBonus = Math.floor(timePlayed / 1000) * 10;
+    const maxSpeedBonus = Math.floor(Math.abs(this.ball.baseVy)) * 2;
+    
+    const totalScore = baseScore + timeBonus + maxSpeedBonus;
+    
+    const coinsEarned = Math.floor(totalScore / 100);
+
+    this.scoreBreakdown = {
+      rows: [
+        { label: 'Rallies Won', value: this.score, points: baseScore },
+        { label: 'Time Survived', value: Math.floor(timePlayed/1000)+'s', points: timeBonus },
+        { label: 'Max Speed', value: Math.floor(Math.abs(this.ball.baseVy)), points: maxSpeedBonus }
+      ],
+      total: totalScore,
+      coinsEarned: coinsEarned
+    };
+
+    // Override score for local storage saving
+    this.score = totalScore;
+    
+    if (window.awardCoins && coinsEarned > 0) {
+      window.awardCoins(coinsEarned, 'Loop Rally Match');
+    }
+
+    super.gameOver();
   }
 
   updateUI() {
