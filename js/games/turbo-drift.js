@@ -218,9 +218,24 @@ export default class TurboDrift extends GameShell {
   }
 
   finishRace() {
-    // Score = 1000 - elapsed time + drift score
-    const timeScore = Math.max(0, 10000 - Math.floor(this.elapsedTime / 10)); // Arbitrary scale
-    this.score = timeScore + this.driftScore;
+    const timeScore = Math.max(0, 10000 - Math.floor(this.elapsedTime / 10));
+    const totalScore = timeScore + this.driftScore;
+    const coinsEarned = Math.floor(totalScore / 50);
+
+    this.scoreBreakdown = {
+      rows: [
+        { label: 'Time Score', value: (this.elapsedTime / 1000).toFixed(2) + 's', points: timeScore },
+        { label: 'Drift Score', value: this.driftScore, points: this.driftScore }
+      ],
+      total: totalScore,
+      coinsEarned: coinsEarned
+    };
+
+    this.score = totalScore;
+    if (window.awardCoins && coinsEarned > 0) {
+      window.awardCoins(coinsEarned, 'Turbo Drift Race');
+    }
+
     Sound.playGameOver();
     this.gameOver();
   }

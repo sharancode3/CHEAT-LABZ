@@ -180,15 +180,27 @@ export default class NeonSerpent extends GameShell {
     this.spawnFood();
   }
 
-  getScoreBreakdown() {
-    // Build breakdown rows as per spec for Neon Serpent
+  gameOver() {
     const rows = [];
     rows.push({ label: 'Foods eaten', value: this.foodsEaten, points: this.foodsEaten * 10 });
-    const speedBonus = Math.max(0, this.fps - this.baseFps);
+    const speedBonus = Math.max(0, this.fps - this.baseFps) * 5;
     rows.push({ label: 'Speed bonus', value: speedBonus, points: speedBonus });
-    const comboBonus = this.fastEatsCount >= 3 ? this.fastEatsCount * 2 : 0;
+    const comboBonus = this.fastEatsCount >= 3 ? this.fastEatsCount * 20 : 0;
     rows.push({ label: 'Combo bonus', value: this.fastEatsCount, points: comboBonus });
-    return { rows, total: this.score, coinsEarned: Math.floor(this.score / 10) };
+    
+    const coinsEarned = Math.floor(this.score / 10);
+
+    this.scoreBreakdown = {
+      rows: rows,
+      total: this.score,
+      coinsEarned: coinsEarned
+    };
+
+    if (window.awardCoins && coinsEarned > 0) {
+      window.awardCoins(coinsEarned, 'Neon Serpent Score');
+    }
+
+    super.gameOver();
   }
 
   showCombo() {

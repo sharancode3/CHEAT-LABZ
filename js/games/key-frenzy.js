@@ -117,6 +117,35 @@ export default class KeyFrenzy extends GameShell {
     }
   }
 
+  gameOver() {
+    const totalHits = this.correctCount;
+    const misses = 3 - this.lives; // total lives is 3, misses are lost lives
+    const accuracyVal = Math.floor((totalHits / (totalHits + Math.max(misses, 3))) * 100) || 0;
+    
+    const baseScore = this.score;
+    const accuracyBonus = totalHits * 20;
+    const totalScore = baseScore + accuracyBonus;
+    
+    const coinsEarned = Math.floor(totalScore / 20);
+
+    this.scoreBreakdown = {
+      rows: [
+        { label: 'Keys Hit', value: totalHits, points: baseScore },
+        { label: 'Accuracy', value: accuracyVal + '%', points: accuracyBonus }
+      ],
+      total: totalScore,
+      coinsEarned: coinsEarned
+    };
+
+    this.score = totalScore;
+    
+    if (window.awardCoins && coinsEarned > 0) {
+      window.awardCoins(coinsEarned, 'Key Frenzy Round');
+    }
+
+    super.gameOver();
+  }
+
   updateUI() {
     if (this.scoreEl) this.scoreEl.innerText = this.score;
     if (this.livesEl) this.livesEl.innerText = '♥'.repeat(this.lives);

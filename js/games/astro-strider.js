@@ -56,6 +56,8 @@ export default class AstroStrider extends GameShell {
     this.showWaveText();
     this.updateUI();
     
+    this.timePlayed = 0;
+    
     let runs = Storage.get('astro-strider_runs', 0);
     Storage.set('astro-strider_runs', runs + 1);
   }
@@ -80,6 +82,7 @@ export default class AstroStrider extends GameShell {
 
   update(deltaTime) {
     const dt = deltaTime / 1000;
+    this.timePlayed += deltaTime;
     
     // Powerup timers
     if (this.rapidTimer > 0) this.rapidTimer -= deltaTime;
@@ -258,6 +261,33 @@ export default class AstroStrider extends GameShell {
       Sound.playGameOver();
       this.gameOver();
     }
+  }
+
+  gameOver() {
+    const baseScore = this.score; // points from kills
+    const waveBonus = this.wave * 100;
+    const timeBonus = Math.floor(this.timePlayed / 1000) * 5;
+    
+    const totalScore = baseScore + waveBonus + timeBonus;
+    const coinsEarned = Math.floor(totalScore / 50);
+
+    this.scoreBreakdown = {
+      rows: [
+        { label: 'Combat Score', value: baseScore, points: baseScore },
+        { label: 'Wave Reached', value: this.wave, points: waveBonus },
+        { label: 'Time Survived', value: Math.floor(this.timePlayed / 1000) + 's', points: timeBonus }
+      ],
+      total: totalScore,
+      coinsEarned: coinsEarned
+    };
+
+    this.score = totalScore;
+    
+    if (window.awardCoins && coinsEarned > 0) {
+      window.awardCoins(coinsEarned, 'Astro Strider Run');
+    }
+
+    super.gameOver();
   }
 
   collectPowerup(type) {
