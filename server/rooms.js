@@ -1,3 +1,4 @@
+import { logActivity } from './server.js';
 /**
  * rooms.js — Room Management Logic for CHEAT LABZ Multiplayer
  *
@@ -383,6 +384,8 @@ function startCountdown(io, room) {
       room: cleanRoom(currentRoom),
       initialState: {},
     });
+
+    logActivity(`A new match of ${currentRoom.gameId.toUpperCase()} is starting!`);
 
     console.log(`[ROOM] Game started in ${room.code}`);
   }, 3200); // small buffer after 3s countdown

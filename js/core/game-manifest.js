@@ -1,11 +1,10 @@
 /**
- * games-data.js
+ * js/core/game-manifest.js
  *
- * Classic script version of the game manifest, loaded by HTML pages.
- * Must be in sync with js/core/game-manifest.js.
+ * Single authoritative source of truth for all games (solo & multiplayer).
  */
 
-const GAMES = [
+export const GAMES = [
   // ==================== SOLO GAMES ====================
   {
     id: 'neon-serpent',
@@ -421,7 +420,7 @@ const GAMES = [
   },
   {
     id: 'tic-tac-toe',
-    name: 'Tic Tac Toe',
+    name: 'Tic Toe',
     type: 'multi',
     category: 'PUZZLE',
     difficulty: 'EASY',
@@ -822,5 +821,3 @@ const GAMES = [
     status: 'coming-soon'
   }
 ];
-
-window.GAMES = GAMES;

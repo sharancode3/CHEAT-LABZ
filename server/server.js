@@ -22,6 +22,46 @@ import { registerTTTEvents }       from './games/tictactoe.js';
 import { registerReflexEvents }    from './games/reflex-duel.js';
 import { registerWordDuelEvents }  from './games/word-duel.js';
 import { registerSnakeEvents }     from './games/snake-arena.js';
+import { registerBattleshipEvents } from './games/battleship.js';
+import { registerSoccerEvents }     from './games/physics-soccer.js';
+import { registerLudoEvents }       from './games/ludo.js';
+import { registerBombermanEvents }  from './games/bomberman-arena.js';
+import { registerTankBattleEvents } from './games/tank-battle.js';
+import { registerKingOfTheHillEvents } from './games/king-of-the-hill.js';
+import { registerColorFloodDuelEvents } from './games/color-flood-duel.js';
+import { registerRacerEvents } from './games/top-down-racer.js';
+import { registerZombieEvents } from './games/zombie-survival.js';
+import { registerPartyEvents } from './games/mini-party-pack.js';
+import { registerGunfightEvents } from './games/pixel-gunfight.js';
+import { registerCtfEvents } from './games/capture-the-flag.js';
+import { registerClashEvents } from './games/mini-clash.js';
+import { registerRpsTournamentEvents } from './games/rps-tournament.js';
+
+// Social features store
+const activityFeed = [];
+export function logActivity(text) {
+  activityFeed.unshift({ id: Math.random().toString(36).slice(2, 9), text, timestamp: Date.now() });
+  if (activityFeed.length > 20) activityFeed.pop();
+  global.ioInstance?.emit('social:activity', activityFeed);
+}
+
+function getActiveRooms() {
+  const list = [];
+  for (const room of rooms.values()) {
+    if (room.state === 'waiting' && room.players.length < room.maxPlayers) {
+      list.push({
+        code: room.code,
+        gameId: room.gameId,
+        playersCount: room.players.length,
+        maxPlayers: room.maxPlayers,
+        hostName: room.players.find(p => p.isHost)?.displayName || 'Host'
+      });
+    }
+  }
+  return list;
+}
+
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // Config
@@ -82,6 +122,9 @@ const io = new Server(httpServer, {
   pingInterval: 10000,
 });
 
+global.ioInstance = io;
+
+
 // ────────────────────────────────────────────────────────────────────────────
 // HTTP Routes
 // ────────────────────────────────────────────────────────────────────────────
@@ -110,12 +153,23 @@ app.get('/health', (req, res) => {
 // ────────────────────────────────────────────────────────────────────────────
 setInterval(() => {
   const { inLobby, inGame } = getRoomsStats();
+  // Count waiting rooms
+  let waitingRooms = 0;
+  for (const r of rooms.values()) {
+    if (r.state === 'waiting' || r.state === 'countdown') waitingRooms++;
+  }
+
   io.emit('presence:update', {
     total: io.engine.clientsCount,
     inLobby,
     inGame,
+    waitingRooms
   });
+
+  // Also broadcast active rooms list
+  io.emit('social:active-rooms', getActiveRooms());
 }, 5000);
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // Socket.IO Connection Handling
@@ -138,11 +192,22 @@ io.on('connection', (socket) => {
 
   // Immediately send current presence
   const { inLobby, inGame } = getRoomsStats();
+  let waitingRooms = 0;
+  for (const r of rooms.values()) {
+    if (r.state === 'waiting' || r.state === 'countdown') waitingRooms++;
+  }
+
   socket.emit('presence:update', {
     total: io.engine.clientsCount,
     inLobby,
     inGame,
+    waitingRooms
   });
+
+  // Immediately send activity and active rooms
+  socket.emit('social:activity', activityFeed);
+  socket.emit('social:active-rooms', getActiveRooms());
+
 
   // Register domain-specific events
   registerRoomEvents(io, socket);
@@ -153,6 +218,22 @@ io.on('connection', (socket) => {
   registerReflexEvents(io, socket, rooms);
   registerWordDuelEvents(io, socket, rooms);
   registerSnakeEvents(io, socket, rooms);
+  registerBattleshipEvents(io, socket, rooms);
+  registerSoccerEvents(io, socket, rooms);
+  registerLudoEvents(io, socket, rooms);
+  registerBombermanEvents(io, socket, rooms);
+  registerTankBattleEvents(io, socket, rooms);
+  registerKingOfTheHillEvents(io, socket, rooms);
+  registerColorFloodDuelEvents(io, socket, rooms);
+  registerRacerEvents(io, socket, rooms);
+  registerZombieEvents(io, socket, rooms);
+  registerPartyEvents(io, socket, rooms);
+  registerGunfightEvents(io, socket, rooms);
+  registerCtfEvents(io, socket, rooms);
+  registerClashEvents(io, socket, rooms);
+  registerRpsTournamentEvents(io, socket, rooms);
+
+
 
   // ── Disconnect ────────────────────────────────────────────────────────────
   socket.on('disconnect', (reason) => {

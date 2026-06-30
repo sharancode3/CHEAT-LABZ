@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engine Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+    #game-container {
+      width: 800px;
+      height: 600px;
+      border: 2px solid #333;
+      position: relative;
+    }
+    #controls {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>Engine Core Test</h1>
+  <div id="game-container"></div>
+  <div id="controls">
+    <button id="btn-start">Start Game</button>
+    <button id="btn-pause">Pause (P)</button>
+    <button id="btn-resume">Resume (P)</button>
+    <button id="btn-retry">Retry (R)</button>
+  </div>
+
+  <script type="module">
+    import { InputManager } from './js/engine/input-manager.js';
+    import { CanvasManager } from './js/engine/canvas-manager.js';
+    import { LevelSystem } from './js/engine/level-system.js';
+    import { GameRunner } from './js/engine/game-runner.js';
+    import { loadGame, SOLO_GAMES } from './js/engine/game-registry.js';
+
+    class Engine {
+      constructor(mountId) {
+        const mountPoint = document.getElementById(mountId);
+        
+        this.input = new InputManager();
+        this.canvasManager = new CanvasManager(mountPoint);
+        
+        // Link canvas coordinate transformer to input manager
+        this.input.getLogicalCoordinates = this.canvasManager.getLogicalCoordinates.bind(this.canvasManager);
+
+        this.levelSystem = new LevelSystem(this.canvasManager, null);
+        this.runner = new GameRunner(this.canvasManager, this.input, this.levelSystem);
+        this.levelSystem.runner = this.runner;
+        
+        // Global engine hooks
+        this.onGameOver = (isWin, scoreBreakdown) => {
+          console.log('GAME OVER. Win?', isWin, 'Score:', scoreBreakdown);
+          const goOverlay = document.createElement('div');
+          goOverlay.id = 'game-over-ui';
+          goOverlay.style.position = 'absolute';
+          goOverlay.style.inset = '0';
+          goOverlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+          goOverlay.style.display = 'flex';
+          goOverlay.style.alignItems = 'center';
+          goOverlay.style.justifyContent = 'center';
+          goOverlay.style.color = '#fff';
+          goOverlay.style.fontSize = '32px';
+          goOverlay.style.zIndex = '50';
+          goOverlay.innerText = isWin ? 'YOU WIN!' : 'GAME OVER';
+          this.canvasManager.overlayDiv.appendChild(goOverlay);
+        };
+        
+        // Global hotkeys (Pause/Resume/Retry) outside of game logic
+        window.addEventListener('keydown', (e) => {
+          if (e.key.toLowerCase() === 'p') {
+            if (this.runner.running) this.runner.pause();
+            else this.runner.resume();
+          }
+          if (e.key.toLowerCase() === 'r') {
+            this.retry();
+          }
+        });
+      }
+
+      async loadAndStart(gameId) {
+        try {
+          // Cleanup old game over UI
+          const oldGo = document.getElementById('game-over-ui');
+          if (oldGo) oldGo.remove();
+
+          const { GameClass, meta } = await loadGame(gameId, SOLO_GAMES);
+          this.canvasManager.setup(meta.logicalWidth, meta.logicalHeight);
+          
+          const gameInstance = new GameClass(this, meta);
+          this.runner.startGame(gameInstance);
+        } catch (err) {
+          console.error('Failed to load game:', err);
+          alert(err.message);
+        }
+      }
+      
+      retry() {
+        this.loadAndStart('test-game');
+      }
+    }
+
+    const engine = new Engine('game-container');
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+      engine.loadAndStart('test-game');
+    });
+    document.getElementById('btn-pause').addEventListener('click', () => engine.runner.pause());
+    document.getElementById('btn-resume').addEventListener('click', () => engine.runner.resume());
+    document.getElementById('btn-retry').addEventListener('click', () => engine.retry());
+
+    // Auto start
+    engine.loadAndStart('test-game');
+  </script>
+</body>
+</html>

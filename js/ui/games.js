@@ -275,6 +275,31 @@ class GamesGrid {
         `;
       }
 
+      if (g.status === 'coming-soon') {
+        return `
+          <div class="game-card coming-soon" data-id="${g.id}" style="pointer-events: none; opacity: 0.7;">
+            <div class="card-header-row">
+              <div class="card-icon">${icon}</div>
+              <div class="card-badges-col">
+                <span class="badge-tag badge-cat">${g.category || 'ARCADE'}</span>
+                <span class="badge-tag badge-diff" style="background: rgba(136,136,168,0.15); color: #8888a8; border: 1px solid rgba(136,136,168,0.3);">COMING SOON</span>
+              </div>
+            </div>
+            
+            <h3 class="card-title-text">${g.name}</h3>
+            <p class="card-desc-text">${g.description || 'Survive the grid and set a new high score in this challenging module.'}</p>
+            
+            <div class="card-divider"></div>
+            
+            <div class="card-stats-row" style="color: #8888a8;">
+              ⚙️ Under Development
+            </div>
+
+            <button class="play-btn launch-game-btn" disabled style="background: #14141c; border-color: #242432; color: #555577; cursor: not-allowed; box-shadow: none;">COMING SOON</button>
+          </div>
+        `;
+      }
+
       return `
         <div class="game-card" data-id="${g.id}">
           <div class="card-header-row">
