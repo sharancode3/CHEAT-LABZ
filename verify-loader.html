@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CHEAT LABZ | Container Verification Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0a0a0f;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      padding: 40px;
+      margin: 0;
+    }
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 20px;
+      color: #ffd700;
+      margin-bottom: 8px;
+      text-shadow: 0 0 10px rgba(255,215,0,0.2);
+    }
+    p {
+      color: #8888a8;
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      border: 1px solid #2a2a3a;
+    }
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #2a2a3a;
+    }
+    th {
+      background: #161622;
+      color: #8888a8;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    tr:hover {
+      background: rgba(255,255,255,0.02);
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .status-ok {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-fail {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .summary-box {
+      margin-top: 32px;
+      background: #161622;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      gap: 40px;
+    }
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .summary-label {
+      font-size: 11px;
+      color: #8888a8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .summary-val {
+      font-size: 24px;
+      font-weight: bold;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CONTAINER VERIFICATION CONSOLE</h1>
+  <p>Verifying game files dynamic loader and structural conformance contract checks.</p>
+
+  <div class="summary-box">
+    <div class="summary-item">
+      <span class="summary-label">Total Verified</span>
+      <span class="summary-val" id="total-val">0</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Succeeded</span>
+      <span class="summary-val" style="color: #10b981;" id="success-val">0</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Failed</span>
+      <span class="summary-val" style="color: #ef4444;" id="failed-val">0</span>
+    </div>
+  </div>
+
+  <table style="margin-top: 32px;">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Game Name</th>
+        <th style="width: 10%;">Type</th>
+        <th style="width: 35%;">File Endpoint</th>
+        <th style="width: 15%;">Loader Verdict</th>
+        <th style="width: 15%;">Details</th>
+      </tr>
+    </thead>
+    <tbody id="test-rows">
+      <tr>
+        <td colspan="5" style="text-align: center; color: #8888a8; padding: 40px;">Initiating loader audits...</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script type="module">
+    import { loadGame } from './js/core/game-loader.js';
+    import { GAMES } from './js/core/game-manifest.js';
+
+    async function runAudits() {
+      const tbody = document.getElementById('test-rows');
+      tbody.innerHTML = '';
+
+      let successCount = 0;
+      let failedCount = 0;
+
+      // Add a test case for invalid game
+      const testManifests = [
+        ...GAMES,
+        { id: 'invalid-game-id', name: 'Unknown Target Mock', type: 'solo', file: '/js/games/solo/non-existent.js', status: 'live' },
+        { id: 'not-live-game', name: 'Beta Target Mock', type: 'solo', file: '/js/games/solo/neon-serpent.js', status: 'coming-soon' }
+      ];
+
+      for (const game of testManifests) {
+        const row = document.createElement('tr');
+        
+        let verdict = 'LOADING';
+        let badgeClass = 'status-ok';
+        let detailText = 'Verifying...';
+
+        row.innerHTML = `
+          <td><strong>${game.name}</strong></td>
+          <td>${game.type.toUpperCase()}</td>
+          <td style="color: #8888a8;">${game.file}</td>
+          <td><span class="status-badge" id="badge-${game.id}">PENDING</span></td>
+          <td id="detail-${game.id}">Evaluating contract...</td>
+        `;
+        tbody.appendChild(row);
+
+        const result = await loadGame(game.id);
+
+        const badgeEl = document.getElementById(`badge-${game.id}`);
+        const detailEl = document.getElementById(`detail-${game.id}`);
+
+        if (result.success) {
+          successCount++;
+          badgeEl.className = 'status-badge status-ok';
+          badgeEl.textContent = 'PASSED';
+          detailEl.textContent = 'Valid interface. 5/5 prototype methods.';
+        } else {
+          failedCount++;
+          badgeEl.className = 'status-badge status-fail';
+          badgeEl.textContent = 'FAILED';
+          detailEl.textContent = `Error: ${result.error}`;
+          if (result.error === 'MISSING_METHODS') {
+            detailEl.textContent += ` (Missing: ${result.missing.join(', ')})`;
+          }
+        }
+
+        document.getElementById('total-val').textContent = (successCount + failedCount).toString();
+        document.getElementById('success-val').textContent = successCount.toString();
+        document.getElementById('failed-val').textContent = failedCount.toString();
+      }
+    }
+
+    window.addEventListener('load', runAudits);
+  </script>
+</body>
+</html>

@@ -19,22 +19,34 @@
 </head>
 <body>
 
+<div class="stats-ticker" role="marquee">
+  <div class="stats-ticker-content" id="stats-ticker-text">
+    Connecting to Cheat Labz network...
+  </div>
+</div>
+
+
 <!-- ── Hex Grid Background ──────────────────────────────────── -->
 <div class="hex-bg" aria-hidden="true">
   <div class="hex-grid"></div>
-  <!-- Animated individual cells (CSS-only, no canvas) -->
-  <div class="hex-cell" style="top:10%;left:5%;--dur:6s;--delay:0s"></div>
-  <div class="hex-cell" style="top:20%;left:20%;--dur:5s;--delay:1.5s"></div>
-  <div class="hex-cell" style="top:5%;left:40%;--dur:7s;--delay:0.8s"></div>
-  <div class="hex-cell" style="top:15%;left:60%;--dur:4.5s;--delay:2s"></div>
-  <div class="hex-cell" style="top:25%;left:80%;--dur:6.5s;--delay:0.3s"></div>
-  <div class="hex-cell" style="top:50%;left:10%;--dur:5.5s;--delay:1s"></div>
-  <div class="hex-cell" style="top:60%;left:30%;--dur:6s;--delay:2.5s"></div>
-  <div class="hex-cell" style="top:45%;left:55%;--dur:4s;--delay:0.5s"></div>
-  <div class="hex-cell" style="top:70%;left:75%;--dur:7s;--delay:1.8s"></div>
-  <div class="hex-cell" style="top:80%;left:15%;--dur:5s;--delay:0.2s"></div>
-  <div class="hex-cell" style="top:85%;left:50%;--dur:6.5s;--delay:3s"></div>
-  <div class="hex-cell" style="top:90%;left:88%;--dur:4.5s;--delay:1.2s"></div>
+  <script>
+    // Dynamically generate hex cells for background animation
+    const HEX_COUNT = 45;
+    const hexGrid = document.querySelector('.hex-bg .hex-grid');
+    for (let i = 0; i < HEX_COUNT; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'hex-cell';
+      const top = Math.random() * 100;
+      const left = Math.random() * 100;
+      const dur = (Math.random() * 5 + 3).toFixed(1); // 3-8s
+      const delay = (Math.random() * 5).toFixed(1);  // 0-5s
+      cell.style.top = `${top}%`;
+      cell.style.left = `${left}%`;
+      cell.style.setProperty('--dur', `${dur}s`);
+      cell.style.setProperty('--delay', `${delay}s`);
+      hexGrid.appendChild(cell);
+    }
+  </script>
 </div>
 
 <!-- ── Navbar ────────────────────────────────────────────────── -->
@@ -141,8 +153,33 @@
       </div>
     </div>
 
-    <div class="mp-game-grid" id="game-grid" role="list">
-      <!-- Injected by JS -->
+    <div class="lobby-layout-wrapper" style="display:flex; gap: 32px; margin-top:24px; flex-wrap: wrap;">
+      <div class="lobby-main" style="flex: 3; min-width: 320px;">
+        <div class="mp-game-grid" id="game-grid" role="list">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+      <aside class="lobby-sidebar" style="flex: 1; display:flex; flex-direction:column; gap:24px; min-width: 280px; z-index: 10;">
+        <!-- Active Rooms Browser -->
+        <div class="sidebar-panel" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm);">
+          <h3 style="font-family: 'Press Start 2P'; font-size: 9px; color: var(--green); margin-bottom: 12px; display:flex; align-items:center; gap:6px;">
+            <span class="nav-live-dot" style="width: 5px; height: 5px;"></span> ACTIVE LOBBIES
+          </h3>
+          <div id="active-rooms-list" style="display:flex; flex-direction:column; gap:8px;">
+            <div class="sidebar-empty" style="font-size:10px; color:var(--text-3); font-family: monospace;">No active lobbies...</div>
+          </div>
+        </div>
+
+        <!-- Live Activity Feed -->
+        <div class="sidebar-panel" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm);">
+          <h3 style="font-family: 'Press Start 2P'; font-size: 9px; color: var(--cyan); margin-bottom: 12px;">
+            ⚡ ACTIVITY FEED
+          </h3>
+          <div id="live-activity-feed" style="display:flex; flex-direction:column; gap:8px; max-height: 240px; overflow-y: auto;">
+            <div class="sidebar-empty" style="font-size:10px; color:var(--text-3); font-family: monospace;">Waiting for activity...</div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
@@ -174,10 +211,15 @@
 
 <!-- ── Quick Match Overlay ───────────────────────────────────── -->
 <div class="matchmaking-overlay" id="matchmaking-overlay" role="dialog" aria-modal="true" aria-live="polite">
-  <div class="matchmaking-spinner" aria-hidden="true"></div>
-  <div class="matchmaking-text">SEARCHING...</div>
-  <div class="matchmaking-sub" id="matchmaking-sub">Looking for an opponent</div>
-  <button class="btn-challenge btn-challenge--quick" id="cancel-matchmaking-btn" style="margin-top: 16px;">
+  <div class="sonar-container">
+    <div class="sonar-ring"></div>
+    <div class="sonar-ring"></div>
+    <div class="sonar-ring"></div>
+    <div class="sonar-core">🎯</div>
+  </div>
+  <div class="matchmaking-text" style="font-family: 'Press Start 2P'; font-size: 14px; margin-top: 24px; color: #fff;">SEARCHING...</div>
+  <div class="matchmaking-sub" id="matchmaking-sub" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 8px; color: var(--text-2);">Looking for opponents</div>
+  <button class="btn-challenge btn-challenge--quick" id="cancel-matchmaking-btn" style="margin-top: 24px;">
     CANCEL
   </button>
 </div>
@@ -283,7 +325,7 @@ const MP_GAMES = [
   {
     id:          'pixel-gunfight',
     name:        'PIXEL GUNFIGHT',
-    desc:        'Dodge and shoot in a tiny arena. One hit and you are out.',
+    desc:        'Shoot and dodge platform arena combat. First to 10 kills.',
     color:       '#ff7675',
     maxPlayers:  2,
     category:    'ACTION',
@@ -329,7 +371,7 @@ const MP_GAMES = [
   {
     id:          'top-down-racer',
     name:        'TURBO RACER',
-    desc:        'Micro machines style racing. Drift through the corners.',
+    desc:        'Micro machines style racing. Drift and collect items to win.',
     color:       '#6c5ce7',
     maxPlayers:  4,
     category:    'RACING',
@@ -338,7 +380,7 @@ const MP_GAMES = [
   {
     id:          'king-of-the-hill',
     name:        'KING OF THE HILL',
-    desc:        'Hold the center zone to gain points. Push others out.',
+    desc:        'Hold the shifting hill to gain points. Push others out.',
     color:       '#00cec9',
     maxPlayers:  4,
     category:    'ACTION',
@@ -347,7 +389,7 @@ const MP_GAMES = [
   {
     id:          'zombie-survival',
     name:        'ZOMBIE SURVIVAL',
-    desc:        'Co-op or versus mode against endless hordes of zombies.',
+    desc:        'Co-op wave survival. Revive teammates and grab upgrades.',
     color:       '#b2bec3',
     maxPlayers:  4,
     category:    'ACTION',
@@ -372,9 +414,9 @@ const MP_GAMES = [
     comingSoon:  true,
   },
   {
-    id:          'drawing-guess',
-    name:        'DRAW & GUESS',
-    desc:        'One player draws, others guess. Fast-paced party classic.',
+    id:          'rock-paper-scissors-tournament',
+    name:        'RPS TOURNAMENT',
+    desc:        '4-player elimination brackets match. Best of 5 tournament.',
     color:       '#fab1a0',
     maxPlayers:  4,
     category:    'PARTY',
@@ -507,21 +549,62 @@ joinBtn.addEventListener('click', () => {
 // ── QUICK MATCH ───────────────────────────────────────────────────────────
 const matchmakingOverlay = document.getElementById('matchmaking-overlay');
 const matchSub = document.getElementById('matchmaking-sub');
+let matchmakingTimer = null;
+let matchmakingStart = 0;
+
+function startMatchmakingTimer(gameId) {
+  matchmakingStart = Date.now();
+  if (matchmakingTimer) clearInterval(matchmakingTimer);
+
+  matchmakingTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - matchmakingStart) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s = (elapsed % 60).toString().padStart(2, '0');
+
+    if (elapsed >= 60) {
+      clearInterval(matchmakingTimer);
+      matchSub.innerHTML = `
+        <div style="margin-bottom: 12px; color: var(--warn);">No opponents found. Want to play with a bot?</div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+          <button class="btn-challenge" id="match-keep-searching" style="padding: 6px 12px; font-size: 10px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color:#fff; border-radius:4px; cursor:pointer;">KEEP SEARCHING</button>
+          <button class="btn-challenge" id="match-play-bot" style="padding: 6px 12px; font-size: 10px; background:var(--neon); color:#fff; border:none; border-radius:4px; cursor:pointer;">PLAY VS BOT</button>
+        </div>
+      `;
+
+      document.getElementById('match-keep-searching').addEventListener('click', () => {
+        matchSub.textContent = 'Searching...';
+        startMatchmakingTimer(gameId);
+      });
+      document.getElementById('match-play-bot').addEventListener('click', () => {
+        matchmakingOverlay.classList.remove('active');
+        cancelMatchmaking();
+        // Redirect to solo games page
+        window.location.href = '../games.html';
+      });
+    } else {
+      matchSub.textContent = `Searching... ${m}:${s}`;
+    }
+  }, 1000);
+}
 
 document.getElementById('quickmatch-btn').addEventListener('click', () => {
-  // Default to snake for now; later show game selection
+  const enabled = MP_GAMES.filter(g => !g.comingSoon);
+  const picked = enabled[Math.floor(Math.random() * enabled.length)];
   matchmakingOverlay.classList.add('active');
-  matchSub.textContent = 'Looking for an opponent in Neon Serpent...';
-  joinMatchmaking('multiplayer-snake');
+  matchSub.textContent = `Looking for opponents in ${picked.name}...`;
+  joinMatchmaking(picked.id);
+  startMatchmakingTimer(picked.id);
 });
 
 document.getElementById('cancel-matchmaking-btn').addEventListener('click', () => {
   matchmakingOverlay.classList.remove('active');
+  if (matchmakingTimer) clearInterval(matchmakingTimer);
   cancelMatchmaking();
 });
 
 SocketClient.onMatchFound(() => {
   matchmakingOverlay.classList.remove('active');
+  if (matchmakingTimer) clearInterval(matchmakingTimer);
 });
 
 // ── Identity System ───────────────────────────────────────────────────────
@@ -610,17 +693,27 @@ document.getElementById('invite-decline').addEventListener('click', () => {
 
 // ── Recent Opponents ──────────────────────────────────────────────────────
 function renderOpponents() {
-  const identity = SocketClient.getSavedIdentity();
-  const opponents = identity?.previousOpponents?.slice(0, 5) || [];
-  if (!opponents.length) return;
-
-  document.getElementById('opponents-section').style.display = '';
+  const container = document.getElementById('opponents-section');
   const list = document.getElementById('opponents-list');
-  list.innerHTML = opponents.map(opp => `
-    <div class="opponent-chip">
-      <div class="opponent-dot" style="background: ${opp.color || '#6c63ff'};"></div>
-      <span>${opp.name}</span>
-      <button class="btn-challenge-opp" data-socket-id="${opp.socketId || ''}" data-game="${opp.gameId || 'multiplayer-snake'}">
+  if (!container || !list) return;
+
+  const stored = JSON.parse(localStorage.getItem('cheatLabz_recent_opponents') || '[]');
+  if (stored.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  list.innerHTML = stored.map(opp => `
+    <div class="opponent-chip" style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:400px; margin-bottom:8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); padding:10px 14px; border-radius:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="opponent-dot" style="background: #ffd93d;"></div>
+        <div style="text-align:left;">
+          <div style="font-weight:600; font-size:12px;">${escHtml(opp.displayName)}</div>
+          <div style="font-size:9px; color:var(--text-3); font-family: monospace;">${opp.gameId.toUpperCase()} (${opp.outcome})</div>
+        </div>
+      </div>
+      <button class="btn-challenge-opp" data-socket-id="${opp.socketId}" data-game="${opp.gameId}" style="font-size:9px; padding:6px 10px; border-radius:4px; font-family:'Press Start 2P'; border:1px solid var(--neon); color:var(--neon); background:transparent; cursor:pointer;">
         CHALLENGE
       </button>
     </div>
@@ -634,10 +727,15 @@ function renderOpponents() {
         showToast('This player is not currently online.', 'info');
         return;
       }
-      SocketClient.sendChallenge(socketId, gameId);
-      showToast('Challenge sent!', 'success');
+      SocketClient.emit('challenge:send', { targetSocketId: socketId, gameId });
+      showToast('Challenge invitation sent!', 'success');
     });
   });
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ── Toast Helper ──────────────────────────────────────────────────────────
@@ -658,6 +756,61 @@ initTeamcodeInput();
 buildGameGrids();
 loadIdentity();
 renderOpponents();
+
+// Listen to presence update for scrolling stats ticker
+SocketClient.on('presence:update', (data) => {
+  const tickerText = document.getElementById('stats-ticker-text');
+  if (tickerText) {
+    tickerText.textContent = `${data.total || 0} players online  ·  ${data.inGame || 0} games in progress  ·  ${data.waitingRooms || 0} rooms waiting for players`;
+  }
+});
+
+// Listen to social events
+SocketClient.on('social:activity', (feed) => {
+  const feedEl = document.getElementById('live-activity-feed');
+  if (!feedEl) return;
+  if (!feed || feed.length === 0) {
+    feedEl.innerHTML = '<div class="sidebar-empty" style="font-size:10px; color:var(--text-3); font-family: monospace;">Waiting for activity...</div>';
+    return;
+  }
+  feedEl.innerHTML = feed.map(item => `
+    <div class="activity-item" style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-2);">
+      ${escHtml(item.text)}
+    </div>
+  `).join('');
+});
+
+SocketClient.on('social:active-rooms', (roomsList) => {
+  const roomsEl = document.getElementById('active-rooms-list');
+  if (!roomsEl) return;
+  if (!roomsList || roomsList.length === 0) {
+    roomsEl.innerHTML = '<div class="sidebar-empty" style="font-size:10px; color:var(--text-3); font-family: monospace;">No active lobbies...</div>';
+    return;
+  }
+  roomsEl.innerHTML = roomsList.map(r => `
+    <div class="room-item" style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 11px; font-family: 'JetBrains Mono', monospace;">
+      <div>
+        <strong style="color: var(--cyan);">${r.gameId.toUpperCase()}</strong>
+        <div style="color: var(--text-3); font-size: 9px;">by ${escHtml(r.hostName)} (${r.playersCount}/${r.maxPlayers})</div>
+      </div>
+      <button class="btn-challenge-join" data-code="${r.code}" style="padding: 3px 8px; font-size: 9px; font-family: 'Press Start 2P'; border-radius: 4px; border: 1px solid var(--border); color: #fff; background: rgba(255,255,255,0.04); cursor:pointer;">JOIN</button>
+    </div>
+  `).join('');
+
+  // Add join listeners
+  roomsEl.querySelectorAll('.btn-challenge-join').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.dataset.code;
+      const input = document.getElementById('teamcode-input');
+      const wrapper = document.getElementById('teamcode-wrapper');
+      if (input && wrapper) {
+        wrapper.classList.remove('hidden');
+        input.value = code;
+        document.getElementById('join-btn').click();
+      }
+    });
+  });
+});
 
 // Update game recap to save opponents
 SocketClient.on('gameRecap', ({ opponents }) => {
