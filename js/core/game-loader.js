@@ -52,13 +52,17 @@ export async function loadGame(gameId) {
       timeoutPromise
     ]);
 
-    // 4. Validate default export exists
-    if (!module || !('default' in module)) {
-      console.error(`[GameLoader] No default export found in: ${file}`);
-      return { error: 'NO_DEFAULT_EXPORT', file };
+    let GameClass = module ? module.default : null;
+    if (!GameClass && window.GameClass) {
+      GameClass = window.GameClass;
+      console.log(`[GameLoader] Falling back to window.GameClass for: ${file}`);
     }
 
-    const GameClass = module.default;
+    // 4. Validate default export (or window fallback) exists
+    if (!GameClass) {
+      console.error(`[GameLoader] No default export or window.GameClass found in: ${file}`);
+      return { error: 'NO_DEFAULT_EXPORT', file };
+    }
 
     // 5. Validate default export is a class (typeof === 'function')
     if (typeof GameClass !== 'function') {
@@ -68,13 +72,11 @@ export async function loadGame(gameId) {
 
     const proto = GameClass.prototype;
 
-    // Decorate missing lifecycle methods for multiplayer games to guarantee container compatibility
-    if (manifest.type === 'multi') {
-      if (typeof proto.start !== 'function') proto.start = function() {};
-      if (typeof proto.pause !== 'function') proto.pause = function() {};
-      if (typeof proto.resume !== 'function') proto.resume = function() {};
-      if (typeof proto.destroy !== 'function') proto.destroy = function() {};
-    }
+    // Decorate missing lifecycle methods to guarantee container compatibility
+    if (typeof proto.start !== 'function') proto.start = function() {};
+    if (typeof proto.pause !== 'function') proto.pause = function() {};
+    if (typeof proto.resume !== 'function') proto.resume = function() {};
+    if (typeof proto.destroy !== 'function') proto.destroy = function() {};
 
     // 6. Check required prototype methods
     const required = ['init', 'start', 'pause', 'resume', 'destroy'];

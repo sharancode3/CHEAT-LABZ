@@ -13,6 +13,7 @@
  */
 
 import express from 'express';
+import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { registerRoomEvents, leaveRoom, handleLobbyDisconnect, getRoomsStats, rooms } from './rooms.js';
@@ -73,6 +74,8 @@ const PORT = process.env.PORT || 4000;
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .concat([
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5500',
@@ -129,6 +132,10 @@ global.ioInstance = io;
 // HTTP Routes
 // ────────────────────────────────────────────────────────────────────────────
 app.use(express.json());
+app.use(cors({
+  origin: ALLOWED_ORIGINS,
+  credentials: true
+}));
 registerIdentityRoutes(app);
 
 app.get('/', (req, res) => {
