@@ -1,17 +1,13 @@
 /**
  * js/core/game-base.js
- *
- * Base class that all games extend.
- * Provides the required lifecycle hooks, canvas context cache,
- * and high-frequency collision/math utility helper functions.
+ * The standard base class for all games.
+ * Games must extend this and implement init, update, render, destroy, and getStats.
  */
 
+import { InputManager } from './input-manager.js';
+
 export class GameBase {
-  /**
-   * @param {HTMLCanvasElement} canvas - The canvas element to render to
-   * @param {Object} container - The GameContainer manager instance
-   */
-  constructor(canvas, container) {
+  constructor(canvas) {
     if (!canvas) {
       throw new Error("[GameBase] Canvas element is required");
     }
@@ -19,76 +15,33 @@ export class GameBase {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     
-    // For solo games, container is the GameContainer instance.
-    // For multiplayer games, container might be room, so handle gracefully.
-    this.container = container;
+    this.W = this.constructor.logicalWidth || 800;
+    this.H = this.constructor.logicalHeight || 600;
     
-    // Extract difficulty and config values
-    this.config = (container && container.config) ? container.config : {};
-    
-    // Virtual logical resolution defaults, subclasses override via static getters
-    this.width = this.constructor.logicalWidth || 600;
-    this.height = this.constructor.logicalHeight || 600;
+    this.canvas.logicalWidth = this.W;
+    this.canvas.logicalHeight = this.H;
 
-    // Standard properties
     this._score = 0;
     this._lives = 3;
-    this.frameCount = 0;
+    this._level = 1;
 
-    // Mock DOM elements to prevent exceptions on legacy direct DOM updates
-    const mockEl = {
-      set textContent(v) {},
-      get textContent() { return ''; },
-      set innerText(v) {},
-      get innerText() { return ''; },
-      style: {
-        set display(v) {},
-        get display() { return 'none'; }
-      }
-    };
-    this.scoreEl = mockEl;
-    this.livesEl = mockEl;
-    this.comboEl = mockEl;
-    this.timeEl = mockEl;
-    this.levelEl = mockEl;
-    this.spikeEl = mockEl;
-    this.lapsEl = mockEl;
-    this.driftEl = mockEl;
-    this.collisionEl = mockEl;
-    this.missEl = mockEl;
-    this.flashEl = mockEl;
+    this.isPaused = false;
+    this.isOver = false;
 
-    // Mathematical and Collision Utilities
-    this.utils = {
-      randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
-      randomFloat: (min, max) => Math.random() * (max - min) + min,
-      lerp: (a, b, t) => a + (b - a) * t,
-      clamp: (val, min, max) => Math.max(min, Math.min(max, val)),
-      distance: (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1),
-      circleCollision: (a, b) => {
-        const dist = Math.hypot((b.x || 0) - (a.x || 0), (b.y || 0) - (a.y || 0));
-        return dist < ((a.radius || 0) + (b.radius || 0));
-      },
-      rectCollision: (a, b) => {
-        return (
-          (a.x || 0) < (b.x || 0) + (b.w || 0) &&
-          (a.x || 0) + (a.w || 0) > (b.x || 0) &&
-          (a.y || 0) < (b.y || 0) + (b.h || 0) &&
-          (a.y || 0) + (a.h || 0) > (b.y || 0)
-        );
-      }
-    };
+    this.input = InputManager;
   }
 
-  // Reactive properties linked to the parent container HUD
+  // --- Properties with Reactive Setters ---
+
   get score() {
     return this._score;
   }
 
   set score(value) {
+    const delta = value - this._score;
     this._score = Math.max(0, value);
-    if (this.container && typeof this.container.updateScore === 'function') {
-      this.container.updateScore(this._score);
+    if (typeof this.onScoreChange === 'function') {
+      this.onScoreChange(this._score, delta);
     }
   }
 
@@ -98,65 +51,125 @@ export class GameBase {
 
   set lives(value) {
     this._lives = Math.max(0, value);
-    if (this.container && typeof this.container.updateLives === 'function') {
-      this.container.updateLives(this._lives);
+    if (typeof this.onLivesChange === 'function') {
+      this.onLivesChange(this._lives);
+    }
+    
+    if (this._lives === 0 && !this.isOver) {
+      this.triggerGameOver();
     }
   }
 
-  // Triggers game termination in the parent container
-  gameOver() {
-    if (this.container && typeof this.container.endGame === 'function') {
-      this.container.endGame();
+  get level() {
+    return this._level;
+  }
+
+  // Called by external UI / shell after level complete overlay finishes
+  setLevel(newLevel) {
+    this._level = newLevel;
+    if (typeof this.onLevelChange === 'function') {
+      this.onLevelChange(this._level);
     }
   }
 
-  // --- Mandatory overrides (Subclasses must implement these) ---
+  // --- Core Lifecycle Hooks (Must be overridden) ---
+  
   init() {
-    throw new Error("[GameBase] Subclass must implement init()");
+    throw new Error("Subclass must implement init()");
   }
 
   update(delta) {
-    throw new Error("[GameBase] Subclass must implement update(delta)");
+    throw new Error("Subclass must implement update(delta)");
   }
 
-  render(ctx) {
-    throw new Error("[GameBase] Subclass must implement render(ctx)");
+  render() {
+    throw new Error("Subclass must implement render()");
   }
 
-  getControls() {
-    throw new Error("[GameBase] Subclass must implement getControls()");
-  }
-
-  getFunStat() {
-    throw new Error("[GameBase] Subclass must implement getFunStat()");
-  }
-
-  getScoreBreakdown() {
-    throw new Error("[GameBase] Subclass must implement getScoreBreakdown()");
-  }
-
-  // --- Optional overrides ---
-  onDifficultyApplied(config) {}
-  onResize(newWidth, newHeight) {}
-  onVisibilityHidden() {
-    // Default behavior is to trigger pause if playing
-    if (this.container && this.container.state === 'PLAYING') {
-      this.container.pause();
-    }
-  }
-  onVisibilityVisible() {}
-
-  // --- Protected lifecycle controllers (Should not be overridden by subclasses) ---
-  start() {
-    // Handled authorized launch state machine inside Container
-  }
-  pause() {
-    // Handled toggle inside Container
-  }
-  resume() {
-    // Handled toggle inside Container
-  }
   destroy() {
-    // Handled teardown inside Container
+    throw new Error("Subclass must implement destroy()");
+  }
+
+  getStats() {
+    throw new Error("Subclass must implement getStats()");
+  }
+
+  // --- Flow Control ---
+
+  levelComplete() {
+    // Dispatch a custom event so the UI shell knows the level was completed
+    const event = new CustomEvent('game:levelComplete', { detail: { game: this, level: this.level } });
+    document.dispatchEvent(event);
+  }
+
+  triggerGameOver() {
+    this.isOver = true;
+    const event = new CustomEvent('game:gameOver', { detail: { game: this, score: this.score } });
+    document.dispatchEvent(event);
+  }
+
+  // --- Optional Hooks ---
+
+  onScoreChange(newScore, delta) {}
+  onLivesChange(newLives) {}
+  onLevelChange(newLevel) {}
+  onPause() {}
+  onResume() {}
+
+  // --- High-Frequency Utilities ---
+
+  clearCanvas(color = '#0a0a0f') {
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(0, 0, this.W, this.H);
+  }
+
+  drawText(text, x, y, options = {}) {
+    this.ctx.save();
+    this.ctx.fillStyle = options.color || '#ffffff';
+    this.ctx.font = `${options.size || 20}px ${options.font || 'Press Start 2P, monospace'}`;
+    this.ctx.textAlign = options.align || 'left';
+    this.ctx.textBaseline = options.baseline || 'top';
+    
+    if (options.shadow) {
+      this.ctx.shadowColor = options.shadow;
+      this.ctx.shadowBlur = options.blur || 10;
+    }
+    
+    this.ctx.fillText(text, x, y);
+    this.ctx.restore();
+  }
+
+  lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  distance(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+  }
+
+  circleHit(a, b) {
+    const dist = this.distance(a.x || 0, a.y || 0, b.x || 0, b.y || 0);
+    return dist < ((a.radius || 0) + (b.radius || 0));
+  }
+
+  rectHit(a, b) {
+    return (
+      (a.x || 0) < (b.x || 0) + (b.w || 0) &&
+      (a.x || 0) + (a.w || 0) > (b.x || 0) &&
+      (a.y || 0) < (b.y || 0) + (b.h || 0) &&
+      (a.y || 0) + (a.h || 0) > (b.y || 0)
+    );
+  }
+
+  randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  randomChoice(array) {
+    return array[Math.floor(Math.random() * array.length)];
   }
 }

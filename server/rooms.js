@@ -1,4 +1,5 @@
 import { logActivity } from './server.js';
+import { saveRoomState } from './supabase-service.js';
 /**
  * rooms.js — Room Management Logic for CHEAT LABZ Multiplayer
  *
@@ -53,11 +54,13 @@ function cleanRoom(room) {
     state: room.state,
     settings: room.settings,
     players: room.players.map(p => ({
+      uid: p.uid,
       socketId: p.socketId,
       displayName: p.displayName,
       color: p.color,
       ready: p.ready,
       isHost: p.isHost,
+      connected: p.connected !== false,
     })),
     createdAt: room.createdAt,
   };
@@ -87,20 +90,23 @@ export function registerRoomEvents(io, socket) {
       gameId,
       maxPlayers: Math.min(Math.max(Number(maxPlayers) || 4, 2), 4),
       players: [{
+        uid: socket.uid,
         socketId: socket.id,
         displayName: socket.playerName,
         color: socket.playerColor,
         ready: false,
         isHost: true,
+        connected: true,
       }],
       state: 'waiting',
       gameState: {},
       createdAt: Date.now(),
-      settings,
+      settings: { startingRound: '1', ...settings },
       countdownTimer: null,
     };
 
     rooms.set(code, room);
+    saveRoomState(room);
     socket.join(code);
     socket.currentRoom = code;
 
@@ -116,6 +122,30 @@ export function registerRoomEvents(io, socket) {
       socket.emit('room:error', { message: 'Room not found. Check the code.' });
       return;
     }
+
+    // Reconnection handling: check if a player with same uid was disconnected
+    const existingPlayer = room.players.find(p => p.uid && p.uid === socket.uid);
+    if (existingPlayer) {
+      if (existingPlayer.connected) {
+        socket.emit('room:error', { message: 'You are already in this room in another tab.' });
+        return;
+      }
+      // Re-bind the slot!
+      existingPlayer.socketId = socket.id;
+      existingPlayer.connected = true;
+      if (existingPlayer.disconnectTimer) {
+        clearTimeout(existingPlayer.disconnectTimer);
+        existingPlayer.disconnectTimer = null;
+      }
+      socket.join(room.code);
+      socket.currentRoom = room.code;
+      socket.emit('room:joined', { room: cleanRoom(room) });
+      io.to(room.code).emit('room:updated', { room: cleanRoom(room) });
+      io.to(room.code).emit('room:player-joined', { displayName: socket.playerName });
+      console.log(`[ROOM] Reconnected player ${socket.playerName} to ${room.code}`);
+      return;
+    }
+
     if (room.players.length >= room.maxPlayers) {
       socket.emit('room:error', { message: 'Room is full.' });
       return;
@@ -135,16 +165,23 @@ export function registerRoomEvents(io, socket) {
     }
 
     const player = {
+      uid: socket.uid,
       socketId: socket.id,
       displayName: socket.playerName,
       color: socket.playerColor,
       ready: false,
       isHost: false,
+      connected: true,
     };
 
     room.players.push(player);
     socket.join(room.code);
     socket.currentRoom = room.code;
+
+    // Transition state to ready-check if full
+    if (room.players.length === room.maxPlayers && room.state === 'waiting') {
+      room.state = 'ready-check';
+    }
 
     socket.emit('room:joined', { room: cleanRoom(room) });
     io.to(room.code).emit('room:updated', { room: cleanRoom(room) });
@@ -198,6 +235,23 @@ export function registerRoomEvents(io, socket) {
   socket.on('room:leave', ({ code } = {}) => {
     const roomCode = code || socket.currentRoom;
     leaveRoom(io, socket, roomCode);
+  });
+
+  // ── room:transfer-host ────────────────────────────────────────────────────
+  socket.on('room:transfer-host', ({ code, targetSocketId } = {}) => {
+    const room = findRoom(code || socket.currentRoom);
+    if (!room) return;
+
+    const me = room.players.find(p => p.socketId === socket.id);
+    if (!me || !me.isHost) return;
+
+    const target = room.players.find(p => p.socketId === targetSocketId);
+    if (!target) return;
+
+    me.isHost = false;
+    target.isHost = true;
+
+    io.to(room.code).emit('room:updated', { room: cleanRoom(room) });
   });
 
   // ── room:settings (host updates settings) ────────────────────────────────
@@ -425,6 +479,59 @@ export function leaveRoom(io, socket, code) {
   io.to(room.code).emit('room:player-left', { displayName: socket.playerName });
 
   console.log(`[ROOM] ${socket.playerName} left ${room.code} (${room.players.length} remaining)`);
+}
+
+export function handleLobbyDisconnect(io, socket, code) {
+  const room = findRoom(code);
+  if (!room) return;
+
+  const player = room.players.find(p => p.socketId === socket.id);
+  if (!player) return;
+
+  // If match in progress, handle normally (immediate drop/end)
+  if (room.state === 'playing') {
+    leaveRoom(io, socket, code);
+    return;
+  }
+
+  // Mark disconnected
+  player.connected = false;
+  io.to(room.code).emit('room:updated', { room: cleanRoom(room) });
+
+  // Start 10s grace timer
+  player.disconnectTimer = setTimeout(() => {
+    // Check if player is still disconnected
+    const currentRoom = findRoom(code);
+    if (!currentRoom) return;
+
+    const pState = currentRoom.players.find(p => p.socketId === socket.id);
+    if (!pState || pState.connected) return;
+
+    // Evict player
+    currentRoom.players = currentRoom.players.filter(p => p.socketId !== socket.id);
+    if (currentRoom.players.length === 0) {
+      if (currentRoom.countdownTimer) clearTimeout(currentRoom.countdownTimer);
+      rooms.delete(currentRoom.code);
+      console.log(`[ROOM] Deleted empty room ${currentRoom.code} after grace period`);
+      return;
+    }
+
+    if (player.isHost) {
+      reassignHost(currentRoom);
+    }
+
+    // Reset to waiting if countdown/ready checks interrupted
+    if (currentRoom.state === 'countdown') {
+      if (currentRoom.countdownTimer) clearTimeout(currentRoom.countdownTimer);
+      currentRoom.state = 'waiting';
+      currentRoom.players.forEach(p => { p.ready = false; });
+    } else if (currentRoom.state === 'ready-check') {
+      currentRoom.state = 'waiting';
+    }
+
+    io.to(currentRoom.code).emit('room:updated', { room: cleanRoom(currentRoom) });
+    io.to(currentRoom.code).emit('room:player-left', { displayName: player.displayName });
+  }, 10000);
 }
 
 // ────────────────────────────────────────────────────────────────────────────

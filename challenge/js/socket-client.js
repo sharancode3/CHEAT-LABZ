@@ -10,20 +10,10 @@
  *   SocketClient.onRoomUpdate(room => updateLobbyUI(room));
  */
 
-// ── Backend URL ──────────────────────────────────────────────────────────────
-// Set this to your Railway / Render URL after deploying server/
-// Local dev auto-falls back to localhost:4000
-const PRODUCTION_SERVER_URL = 'https://cheat-labz-server.up.railway.app'; // ← UPDATE THIS after Railway deploy
-
-const isLocalDev = (
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1' ||
-  window.location.hostname === ''
-);
-
 const SERVER_URL =
-  window.CHALLENGE_SERVER_URL ||        // manual override (optional)
-  (isLocalDev ? 'http://localhost:4000' : PRODUCTION_SERVER_URL);
+  import.meta.env?.VITE_SOCKET_URL ||
+  window.CHALLENGE_SERVER_URL ||
+  'http://localhost:4000';
 
 // ── Connection State ─────────────────────────────────────────────────────────
 const STATE = {
@@ -67,8 +57,66 @@ function emit(event, ...args) {
 }
 
 // ── Status Indicator ─────────────────────────────────────────────────────────
+let connectionTimeout = null;
+
+function showConnectionOverlay() {
+  let overlay = document.getElementById('connection-overlay');
+  if (overlay) return;
+  
+  overlay = document.createElement('div');
+  overlay.id = 'connection-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 100000;
+    background: #09090b;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff; font-family: 'Inter', sans-serif;
+  `;
+  overlay.innerHTML = `
+    <div class="spinner" id="conn-spinner" style="
+      width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.05);
+      border-top-color: #6c63ff; border-radius: 50%;
+      animation: spin 1s linear infinite; margin-bottom: 20px;
+    "></div>
+    <div id="conn-title" style="font-size: 14px; font-weight: 600; letter-spacing: 0.05em; color: rgba(255,255,255,0.9);">CONNECTING TO ARCADE NETWORK...</div>
+    <div id="conn-sub" style="font-size: 11px; margin-top: 8px; color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono';">Render server waking up (may take up to 60s)</div>
+    <style>
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  `;
+  document.body.appendChild(overlay);
+
+  if (connectionTimeout) clearTimeout(connectionTimeout);
+  connectionTimeout = setTimeout(() => {
+    const title = document.getElementById('conn-title');
+    const sub = document.getElementById('conn-sub');
+    const spinner = document.getElementById('conn-spinner');
+    if (title && sub) {
+      if (spinner) spinner.style.display = 'none';
+      title.textContent = 'CONNECTION FAILED';
+      title.style.color = '#ff6b6b';
+      sub.textContent = 'Server is currently offline. Please refresh or try again later.';
+    }
+  }, 90000);
+}
+
+function hideConnectionOverlay() {
+  if (connectionTimeout) {
+    clearTimeout(connectionTimeout);
+    connectionTimeout = null;
+  }
+  const overlay = document.getElementById('connection-overlay');
+  if (overlay) overlay.remove();
+}
+
 function updateStatusIndicator(state) {
   const indicator = document.getElementById('sc-status-indicator');
+  
+  if (state === STATE.CONNECTED) {
+    hideConnectionOverlay();
+  } else {
+    showConnectionOverlay();
+  }
+
   if (!indicator) return;
 
   const configs = {
@@ -87,6 +135,7 @@ function updateStatusIndicator(state) {
 }
 
 function injectStatusIndicator() {
+  showConnectionOverlay();
   if (document.getElementById('sc-status-indicator')) return;
   const div = document.createElement('div');
   div.id = 'sc-status-wrap';
@@ -119,16 +168,43 @@ function connect() {
     reconnectionDelay: 1000,
     reconnectionAttempts: 5,
     timeout: 10000,
+    query: {
+      uid: localStorage.getItem('cheatLabz_uid') || ''
+    }
   });
+
+  let heartbeatInterval = null;
+  const sendHeartbeat = () => {
+    if (socket && socket.connected && document.visibilityState === 'visible') {
+      const uid = localStorage.getItem('cheatLabz_uid');
+      if (uid) {
+        socket.emit('presence:heartbeat', { uid });
+      }
+    }
+  };
 
   // Connection lifecycle
   socket.on('connect', () => {
     connectionState = STATE.CONNECTED;
     updateStatusIndicator(STATE.CONNECTED);
     console.log('[SocketClient] Connected:', socket.id);
+    
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    sendHeartbeat();
+    heartbeatInterval = setInterval(sendHeartbeat, 10000);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && socket && socket.connected) {
+      sendHeartbeat();
+    }
   });
 
   socket.on('disconnect', (reason) => {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
     connectionState = STATE.DISCONNECTED;
     updateStatusIndicator(STATE.DISCONNECTED);
     console.log('[SocketClient] Disconnected:', reason);

@@ -1,308 +1,292 @@
 import { GameBase } from '../../core/game-base.js';
-import { Storage } from '../../core/storage.js';
 
-export default class PixelDodge extends GameBase {
-  static get logicalWidth() { return 600; }
-  static get logicalHeight() { return 600; }
-  
-  constructor(canvas, container) {
-    super(canvas, container);
-
-    this.playerSize = 10;
-    this.player = { x: 300, y: 300 };
-
-    this.dots = [];
-    this.warnings = []; // Active warnings scheduled to spawn bullets
-
-    this.timePlayed = 0;
-    this.difficultyLevel = 1;
-    this.spawnTimer = 0;
-    this.spawnRate = 1800; // ms between warning alerts
-    this.patternIndex = 0;
-  }
+class PixelDodge extends GameBase {
+  static WIDTH = 600;
+  static HEIGHT = 600;
 
   init() {
-    this.score = 0;
-    this.timePlayed = 0;
-    
-    this.player.x = 300;
-    this.player.y = 300;
+    this.playerVisualSize = 16;
+    this.playerHitboxSize = 10;
+    this.player = { x: 300, y: 300, speed: 300 };
 
-    this.dots = [];
-    this.warnings = [];
-    
-    this.difficultyLevel = 1;
-    this.spawnTimer = 500; // spawn first warning soon
-    this.spawnRate = 1800;
-    this.patternIndex = 0;
-
-    let runs = Storage.get('pixel-dodge_runs', 0);
-    Storage.set('pixel-dodge_runs', runs + 1);
-  }
-
-  onInput(key, event) {}
-
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-    this.timePlayed += deltaTime;
-    this.score = Math.floor(this.timePlayed);
-
-    // Speed / difficulty ramp every 12 seconds
-    const targetDifficulty = Math.floor(this.timePlayed / 12000) + 1;
-    if (targetDifficulty !== this.difficultyLevel) {
-      this.difficultyLevel = targetDifficulty;
-      this.spawnRate = Math.max(750, 1800 - this.difficultyLevel * 120);
-      this.container.audio.play('coin'); // cue level up
+    // Object Pool for Bullets
+    this.bullets = [];
+    for (let i = 0; i < 100; i++) {
+      this.bullets.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, size: 6, homing: false, bounces: 0 });
     }
 
-    // Move player based on sandbox pointer coordinates
-    const m = this.container.input.getMousePosition();
-    if (m && m.x > 0) {
+    this.warnings = []; // Telegraph lines: { x1, y1, x2, y2, timer }
+    this.timePlayed = 0;
+    this.spawnTimer = 0;
+    this.spawnInterval = 1500; // ms
+
+    this.score = 0;
+    this.lives = 3;
+  }
+
+  spawnBullet(x, y, vx, vy, size = 6, homing = false, bounces = 0) {
+    const b = this.bullets.find(bullet => !bullet.active);
+    if (b) {
+      b.active = true;
+      b.x = x;
+      b.y = y;
+      b.vx = vx;
+      b.vy = vy;
+      b.size = size;
+      b.homing = homing;
+      b.bounces = bounces;
+    }
+  }
+
+  update(delta) {
+    if (this.isPaused || this.isOver) return;
+
+    this.timePlayed += delta;
+    this.score = Math.floor(this.timePlayed / 1000);
+
+    const dt = delta / 1000;
+
+    // Movement: Keyboard support (WASD and Arrows)
+    const inp = this.input;
+    let dx = 0;
+    let dy = 0;
+
+    if (inp.isHeldAny(inp.ACTIONS.LEFT)) dx = -1;
+    if (inp.isHeldAny(inp.ACTIONS.RIGHT)) dx = 1;
+    if (inp.isHeldAny(inp.ACTIONS.UP)) dy = -1;
+    if (inp.isHeldAny(inp.ACTIONS.DOWN)) dy = 1;
+
+    // Normalize diagonal speed
+    if (dx !== 0 && dy !== 0) {
+      dx *= 0.707;
+      dy *= 0.707;
+    }
+
+    this.player.x += dx * this.player.speed * dt;
+    this.player.y += dy * this.player.speed * dt;
+
+    // Mouse control fallback
+    const m = inp.getMousePos();
+    if (inp.isMouseHeld()) {
       this.player.x = m.x;
       this.player.y = m.y;
     }
-    
-    // Bounds check
-    this.player.x = Math.max(10, Math.min(this.width - 10, this.player.x));
-    this.player.y = Math.max(10, Math.min(this.height - 10, this.player.y));
 
-    // Update Warnings: when timer reaches 0, spawn bullets
-    for (let i = this.warnings.length - 1; i >= 0; i--) {
-      const w = this.warnings[i];
-      w.timeRemaining -= deltaTime;
-      if (w.timeRemaining <= 0) {
-        // Spawn the bullets
-        w.bullets.forEach(b => {
-          this.dots.push({
-            x: b.x, y: b.y,
-            vx: b.vx, vy: b.vy,
-            r: b.r,
-            trail: []
-          });
-        });
-        this.container.audio.play('blip');
-        this.warnings.splice(i, 1);
+    this.player.x = this.clamp(this.player.x, 10, 590);
+    this.player.y = this.clamp(this.player.y, 10, 590);
+
+    // Update Warnings
+    this.warnings.forEach(w => {
+      w.timer -= delta;
+      if (w.timer <= 0) {
+        // Trigger bullet spawn
+        this.spawnBullet(w.x1, w.y1, w.vx, w.vy, w.size || 6, w.homing, w.bounces);
+        w.active = false;
       }
+    });
+    this.warnings = this.warnings.filter(w => w.timer > 0);
+
+    // Bullet Spawning Choreography
+    this.spawnTimer += delta;
+    if (this.spawnTimer >= this.spawnInterval) {
+      this.spawnTimer = 0;
+      this.triggerPattern();
     }
 
-    // Schedule Warning spawns
-    this.spawnTimer -= deltaTime;
-    if (this.spawnTimer <= 0) {
-      this.queueNextWarning();
-      this.spawnTimer = this.spawnRate;
-    }
+    // Update Bullets & Collisions
+    const px = this.player.x;
+    const py = this.player.y;
+    const halfHit = this.playerHitboxSize / 2;
 
-    // Update dots and evaluate player hit tests
-    const hitRadius = this.playerSize * 0.7; // 70% reduced hit box size
-    
-    for (let i = this.dots.length - 1; i >= 0; i--) {
-      const d = this.dots[i];
-      d.x += d.vx * dt;
-      d.y += d.vy * dt;
+    this.bullets.forEach(b => {
+      if (!b.active) return;
 
-      d.trail.push({ x: d.x, y: d.y });
-      if (d.trail.length > 5) d.trail.shift();
-
-      // Circle-Circle collision hit evaluation
-      const dx = d.x - this.player.x;
-      const dy = d.y - this.player.y;
-      const distance = Math.hypot(dx, dy);
-
-      if (distance < (d.r + hitRadius)) {
-        this.die();
-        return;
-      }
-
-      // Cleanup offscreen dots
-      if (d.x < -80 || d.x > this.width + 80 || d.y < -80 || d.y > this.height + 80) {
-        this.dots.splice(i, 1);
-      }
-    }
-  }
-
-  queueNextWarning() {
-    this.patternIndex++;
-    const type = this.patternIndex % 4;
-    const speed = 130 + this.difficultyLevel * 18;
-    const r = 5.5;
-
-    const bullets = [];
-    const lines = []; // for rendering dashed warnings
-
-    if (type === 0) {
-      // 1. RAIN PATTERN
-      // Set warning lines vertically
-      const colsCount = 12;
-      const gapCol = Math.floor(Math.random() * (colsCount - 2)) + 1; // leave 2 columns safe gap
-      for (let i = 0; i < colsCount; i++) {
-        if (i === gapCol || i === gapCol + 1) continue;
-        const x = i * (this.width / colsCount) + (this.width / colsCount) / 2;
-        bullets.push({ x, y: -10, vx: 0, vy: speed, r });
-        lines.push({ x1: x, y1: 0, x2: x, y2: this.height });
-      }
-    } else if (type === 1) {
-      // 2. CROSS PATTERN
-      // Horizontals flying from left and right
-      const lanes = 6;
-      for (let i = 0; i < lanes; i++) {
-        const y = 80 + i * (this.height - 120) / lanes;
-        if (i % 2 === 0) {
-          bullets.push({ x: -10, y, vx: speed * 1.3, vy: 0, r });
-          lines.push({ x1: 0, y1: y, x2: this.width, y2: y });
-        } else {
-          bullets.push({ x: this.width + 10, y, vx: -speed * 1.3, vy: 0, r });
-          lines.push({ x1: this.width, y1: y, x2: 0, y2: y });
+      // Homing algorithm (Level 6+)
+      if (b.homing) {
+        const dx = px - b.x;
+        const dy = py - b.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 0) {
+          b.vx = (dx / dist) * 150;
+          b.vy = (dy / dist) * 150;
         }
       }
-    } else if (type === 2) {
-      // 3. SPIRAL WAVE
-      // Outward spirals from the center
-      const points = 16;
-      for (let i = 0; i < points; i++) {
-        const angle = (i / points) * Math.PI * 2;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-        bullets.push({ x: this.width / 2, y: this.height / 2, vx, vy, r });
-        lines.push({ x1: this.width / 2, y1: this.height / 2, x2: this.width / 2 + vx * 2, y2: this.height / 2 + vy * 2 });
+
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+
+      // Bouncing off walls (Level 7)
+      if (b.bounces > 0) {
+        if (b.x <= 0 || b.x >= 600) {
+          b.vx *= -1;
+          b.bounces--;
+        }
+        if (b.y <= 0 || b.y >= 600) {
+          b.vy *= -1;
+          b.bounces--;
+        }
+      } else {
+        // Offscreen check
+        if (b.x < -20 || b.x > 620 || b.y < -20 || b.y > 620) {
+          b.active = false;
+        }
       }
-    } else {
-      // 4. CONVERGING PATTERN
-      // Spawns bullets at corners aiming toward player's current position
-      const px = this.player.x;
-      const py = this.player.y;
-      const corners = [
-        { x: 0, y: 0 },
-        { x: this.width, y: 0 },
-        { x: 0, y: this.height },
-        { x: this.width, y: this.height }
-      ];
 
-      corners.forEach(c => {
-        const angle = Math.atan2(py - c.y, px - c.x);
-        bullets.push({
-          x: c.x, y: c.y,
-          vx: Math.cos(angle) * speed * 1.2,
-          vy: Math.sin(angle) * speed * 1.2,
-          r
-        });
-        lines.push({ x1: c.x, y1: c.y, x2: px, y2: py });
-      });
-    }
-
-    this.warnings.push({
-      timeRemaining: 500, // 500ms warning duration
-      bullets,
-      lines
+      // Check collision
+      const dist = Math.hypot(b.x - px, b.y - py);
+      if (dist < halfHit + b.size) {
+        this.lives--;
+        b.active = false;
+        this.player.x = 300;
+        this.player.y = 300;
+      }
     });
-  }
 
-  die() {
-    this.container.audio.play('damage');
-    this.finishGame();
-  }
-
-  finishGame() {
-    const survivalSec = (this.timePlayed / 1000).toFixed(2);
-    const coins = Math.floor(this.score / 250);
-
-    this.scoreBreakdown = {
-      rows: [
-        { label: 'Time Dodged', value: `${survivalSec}s`, points: this.score }
-      ],
-      total: this.score,
-      coinsEarned: coins
-    };
-
-    if (window.awardCoins && coins > 0) {
-      window.awardCoins(coins, 'Pixel Dodge Score');
+    // Check Goal
+    const goal = this.getLevelGoal();
+    if (this.score >= goal.target) {
+      this.levelComplete();
     }
-
-    this.container.audio.play('gameover');
-    this.gameOver();
   }
 
-  render(ctx) {
-    // 1. Clear background
-    ctx.fillStyle = '#060608';
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    // 2. Draw warning lines (blinking red dashes)
-    ctx.strokeStyle = 'rgba(255, 59, 48, 0.45)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 6]);
+  triggerPattern() {
+    const lvl = this.level;
     
-    this.warnings.forEach(w => {
-      w.lines.forEach(l => {
-        ctx.beginPath();
-        ctx.moveTo(l.x1, l.y1);
-        ctx.lineTo(l.x2, l.y2);
-        ctx.stroke();
-      });
-    });
-    ctx.setLineDash([]); // reset
-
-    // 3. Draw dots and trails
-    for (let d of this.dots) {
-      // Trail
-      for (let i = 0; i < d.trail.length; i++) {
-        const pos = d.trail[i];
-        const alpha = ((i + 1) / d.trail.length) * 0.35;
-        ctx.fillStyle = `rgba(255, 59, 48, ${alpha})`; // red trail
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, d.r * 0.8, 0, Math.PI * 2);
-        ctx.fill();
+    // Level 1: Rain from top only
+    if (lvl === 1) {
+      const rx = this.randomInt(50, 550);
+      this.queueTelegraph(rx, 0, 0, 150);
+    }
+    // Level 2: Top and Side
+    else if (lvl === 2) {
+      this.queueTelegraph(this.randomInt(50, 550), 0, 0, 150);
+      this.queueTelegraph(0, this.randomInt(50, 550), 150, 0);
+    }
+    // Level 3: Center spiral
+    else if (lvl === 3) {
+      for (let i = 0; i < 4; i++) {
+        const angle = (this.timePlayed / 200) + (i * Math.PI / 2);
+        this.queueTelegraph(300, 300, Math.cos(angle) * 150, Math.sin(angle) * 150);
       }
-
-      // Ball core
-      ctx.fillStyle = '#ff3b30'; // neon red
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = '#ff3b30';
-      ctx.fill();
-      ctx.shadowBlur = 0;
     }
+    // Level 4: Cross pattern (4 sides)
+    else if (lvl === 4) {
+      this.queueTelegraph(this.randomInt(50, 550), 0, 0, 150);
+      this.queueTelegraph(this.randomInt(50, 550), 600, 0, -150);
+      this.queueTelegraph(0, this.randomInt(50, 550), 150, 0);
+      this.queueTelegraph(600, this.randomInt(50, 550), -150, 0);
+    }
+    // Level 5: Wave pattern
+    else if (lvl === 5) {
+      for (let i = 0; i < 5; i++) {
+        const rx = 50 + (i * 120);
+        const vy = 120;
+        const vx = Math.sin(this.timePlayed / 500) * 80;
+        this.queueTelegraph(rx, 0, vx, vy);
+      }
+    }
+    // Level 6: Homing bullets
+    else if (lvl === 6) {
+      this.queueTelegraph(this.randomInt(0, 600), 0, 0, 100, 6, true);
+    }
+    // Level 7: Bouncing bullets
+    else if (lvl === 7) {
+      this.queueTelegraph(0, this.randomInt(100, 500), 120, 120, 6, false, 1);
+    }
+    // Level 8: Expanding rings from center
+    else if (lvl === 8) {
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6) {
+        this.queueTelegraph(300, 300, Math.cos(angle) * 100, Math.sin(angle) * 100);
+      }
+    }
+    // Level 9 & 10: Mixed patterns
+    else {
+      // Pick a pattern at random
+      const r = Math.random();
+      if (r < 0.25) {
+        this.queueTelegraph(300, 300, 0, 0, 8, true); // Homing
+      } else if (r < 0.5) {
+        // Expanding ring
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+          this.queueTelegraph(300, 300, Math.cos(angle) * 120, Math.sin(angle) * 120);
+        }
+      } else {
+        this.queueTelegraph(this.randomInt(0, 600), 0, 0, 150, 6, false, 1);
+        this.queueTelegraph(0, this.randomInt(0, 600), 150, 0, 6, false, 1);
+      }
+    }
+  }
 
-    // 4. Draw Player Pixel (Neon Green)
-    ctx.fillStyle = '#10b981';
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#10b981';
-    ctx.fillRect(this.player.x - this.playerSize / 2, this.player.y - this.playerSize / 2, this.playerSize, this.playerSize);
-    ctx.shadowBlur = 0;
+  queueTelegraph(x1, y1, vx, vy, size = 6, homing = false, bounces = 0) {
+    this.warnings.push({
+      x1, y1,
+      vx, vy,
+      size, homing, bounces,
+      timer: 500 // 0.5 seconds telegraph
+    });
+  }
 
-    // Draw player hitbox ring guide (70% scale)
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+  render() {
+    this.clearCanvas();
+    const ctx = this.ctx;
+
+    // Draw Telegraph Warning lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(this.player.x, this.player.y, this.playerSize * 0.7, 0, Math.PI * 2);
-    ctx.stroke();
+    this.warnings.forEach(w => {
+      ctx.beginPath();
+      ctx.moveTo(w.x1, w.y1);
+      // Project the path out slightly for indicator line
+      ctx.lineTo(w.x1 + w.vx * 3, w.y1 + w.vy * 3);
+      ctx.stroke();
+    });
 
-    // HUD Stats
-    ctx.fillStyle = '#f0f0f8';
-    ctx.font = "bold 13px 'JetBrains Mono', monospace";
-    ctx.textAlign = 'left';
-    ctx.fillText(`DODGE LEVEL: ${this.difficultyLevel}`, 20, 50);
-    ctx.textAlign = 'right';
-    ctx.fillText(`SCORE: ${this.score}`, this.width - 20, 50);
+    // Draw Bullets
+    ctx.fillStyle = '#ef4444';
+    this.bullets.forEach(b => {
+      if (!b.active) return;
+      ctx.fillStyle = b.homing ? '#ffd93d' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Draw Player
+    ctx.fillStyle = '#6c63ff';
+    ctx.fillRect(this.player.x - this.playerVisualSize / 2, this.player.y - this.playerVisualSize / 2, this.playerVisualSize, this.playerVisualSize);
+
+    // Optional: Draw Hitbox guide lightly
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.strokeRect(this.player.x - this.playerHitboxSize / 2, this.player.y - this.playerHitboxSize / 2, this.playerHitboxSize, this.playerHitboxSize);
   }
 
-  getControls() {
+  destroy() {
+    super.destroy();
+  }
+
+  getStats() {
     return [
-      { key: 'MOUSE', action: 'Move pixel indicator' }
+      { label: 'Time', value: this.score },
+      { label: 'Level', value: this.level }
     ];
   }
 
-  getFunStat() {
-    return `Survived for ${(this.timePlayed / 1000).toFixed(2)} seconds at difficulty ${this.difficultyLevel}`;
-  }
-
-  getScoreBreakdown() {
-    if (this.scoreBreakdown && this.scoreBreakdown.rows) {
-      return this.scoreBreakdown.rows;
-    }
-    return [
-      { label: 'Score Accumulation', value: this.score }
+  getLevelGoal() {
+    const goals = [
+      null,
+      { type: 'time', target: 20 },
+      { type: 'time', target: 25 },
+      { type: 'time', target: 30 },
+      { type: 'time', target: 35 },
+      { type: 'time', target: 40 },
+      { type: 'time', target: 45 },
+      { type: 'time', target: 50 },
+      { type: 'time', target: 55 },
+      { type: 'time', target: 60 },
+      { type: 'time', target: 65 }
     ];
+    return goals[this.level];
   }
 }
-window.GameState = {};
+
+window.GameClass = PixelDodge;

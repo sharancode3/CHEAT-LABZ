@@ -1,7 +1,6 @@
 import { MultiplayerGameBase } from '../../core/multiplayer-game-base.js';
 
 const CHOICES = ['rock', 'paper', 'scissors'];
-const BEATS   = { rock: 'scissors', scissors: 'paper', paper: 'rock' };
 const EMOJIS  = { rock: '✊', paper: '🖐', scissors: '✌️' };
 const COLORS  = { rock: '#EF4444', paper: '#6c63ff', scissors: '#00d4aa' };
 
@@ -23,36 +22,16 @@ export default class RPSGame extends MultiplayerGameBase {
       animProgress: 0,
     };
 
-    this.buttons = [];
     this._btnHover = null;
     this._boundHandlers = {};
   }
 
   async init() {
-    this._buildButtons();
     this.bindSocket();
     this.bindInput();
 
     // Notify server ready
     this.socket.emit('game:client-ready', { code: this.room.code, gameId: 'rock-paper-scissors' });
-  }
-
-  start() {
-    // Handled by container
-  }
-
-  _buildButtons() {
-    const cw = RPSGame.logicalWidth;
-    const ch = RPSGame.logicalHeight;
-    const bw = 150, bh = 150;
-    const y  = ch * 0.45 - bh / 2;
-    const gap = (cw - bw * 3) / 4;
-
-    this.buttons = CHOICES.map((choice, i) => ({
-      choice,
-      x: gap + i * (bw + gap),
-      y, w: bw, h: bh,
-    }));
   }
 
   bindSocket() {
@@ -98,19 +77,20 @@ export default class RPSGame extends MultiplayerGameBase {
       if (this.gameState.phase !== 'choosing') return;
       const rect = this.canvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (RPSGame.logicalWidth / rect.width);
-      const my = (e.clientY - rect.top)  * (RPSGame.logicalHeight / rect.height);
+      
+      // Divide canvas into 3 equal vertical thirds
+      const zoneWidth = RPSGame.logicalWidth / 3;
+      let choice = 'rock';
+      if (mx >= zoneWidth && mx < zoneWidth * 2) choice = 'paper';
+      else if (mx >= zoneWidth * 2) choice = 'scissors';
 
-      for (const btn of this.buttons) {
-        if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
-          this.gameState.myChoice = btn.choice;
-          this.gameState.phase    = 'waiting';
-          if (this.container) {
-            this.container.audio.play('coin');
-          }
-          this.socket.emit('rps:choose', { code: this.room.code, choice: btn.choice });
-          break;
-        }
+      this.gameState.myChoice = choice;
+      this.gameState.phase    = 'waiting';
+      
+      if (this.container) {
+        this.container.audio.play('coin');
       }
+      this.socket.emit('rps:choose', { code: this.room.code, choice });
     };
 
     this._onMove = (e) => {
@@ -121,16 +101,13 @@ export default class RPSGame extends MultiplayerGameBase {
       }
       const rect = this.canvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (RPSGame.logicalWidth / rect.width);
-      const my = (e.clientY - rect.top)  * (RPSGame.logicalHeight / rect.height);
       
-      this._btnHover = null;
-      for (const btn of this.buttons) {
-        if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
-          this._btnHover = btn.choice;
-          break;
-        }
-      }
-      this.canvas.style.cursor = this._btnHover ? 'pointer' : 'default';
+      const zoneWidth = RPSGame.logicalWidth / 3;
+      if (mx < zoneWidth) this._btnHover = 'rock';
+      else if (mx < zoneWidth * 2) this._btnHover = 'paper';
+      else this._btnHover = 'scissors';
+
+      this.canvas.style.cursor = 'pointer';
     };
 
     this.canvas.addEventListener('click', this._onClick);
@@ -147,11 +124,8 @@ export default class RPSGame extends MultiplayerGameBase {
     const cw = RPSGame.logicalWidth;
     const ch = RPSGame.logicalHeight;
 
-    // Draw dark radial gradient background
-    const grad = ctx.createRadialGradient(cw / 2, ch / 2, 50, cw / 2, ch / 2, cw / 1.5);
-    grad.addColorStop(0, '#0d0d18');
-    grad.addColorStop(1, '#05050a');
-    ctx.fillStyle = grad;
+    // Draw dark background
+    ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, cw, ch);
 
     if (this.gameState.phase === 'choosing') {
@@ -164,79 +138,44 @@ export default class RPSGame extends MultiplayerGameBase {
   }
 
   _renderChoosing(ctx, cw, ch) {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.font = '700 13px "DM Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('MAKE YOUR CHOICE', cw / 2, ch * 0.22);
+    const zoneW = cw / 3;
 
-    for (const btn of this.buttons) {
-      const hover = this._btnHover === btn.choice;
-      const color = COLORS[btn.choice];
-
-      // Subtle drop shadow for hover card
-      if (hover) {
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 15;
-      } else {
-        ctx.shadowBlur = 0;
-      }
-
-      ctx.beginPath();
-      ctx.roundRect(btn.x, btn.y, btn.w, btn.h, 16);
-      ctx.fillStyle = hover ? 'rgba(255, 255, 255, 0.05)' : 'rgba(20, 20, 30, 0.6)';
-      ctx.fill();
-
-      ctx.shadowBlur = 0; // reset shadow
-      ctx.strokeStyle = hover ? color : 'rgba(255, 255, 255, 0.08)';
-      ctx.lineWidth = hover ? 2.5 : 1.5;
-      ctx.stroke();
-
-      // Top colored bar decoration
-      ctx.beginPath();
-      ctx.roundRect(btn.x, btn.y, btn.w, 5, [16, 16, 0, 0]);
-      ctx.fillStyle = color;
-      ctx.fill();
+    CHOICES.forEach((choice, idx) => {
+      const isHover = this._btnHover === choice;
+      const x = idx * zoneW;
+      
+      ctx.fillStyle = isHover ? 'rgba(255, 255, 255, 0.04)' : '#111118';
+      ctx.fillRect(x + 4, 100, zoneW - 8, 400);
+      
+      ctx.strokeStyle = isHover ? COLORS[choice] : 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = isHover ? 2.5 : 1;
+      ctx.strokeRect(x + 4, 100, zoneW - 8, 400);
 
       // Emoji
-      ctx.font = `${hover ? 70 : 60}px sans-serif`;
-      ctx.fillText(EMOJIS[btn.choice], btn.x + btn.w / 2, btn.y + btn.h / 2 - 10);
+      ctx.font = '72px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(EMOJIS[choice], x + zoneW / 2, 300);
 
-      // Card Label
-      ctx.font = 'bold 12px "JetBrains Mono", monospace';
-      ctx.fillStyle = hover ? '#fff' : 'rgba(255, 255, 255, 0.5)';
-      ctx.fillText(btn.choice.toUpperCase(), btn.x + btn.w / 2, btn.y + btn.h - 22);
-    }
+      // Label
+      ctx.font = '12px JetBrains Mono';
+      ctx.fillStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.4)';
+      ctx.fillText(choice.toUpperCase(), x + zoneW / 2, 450);
+    });
   }
 
   _renderWaiting(ctx, cw, ch) {
-    const choice = this.gameState.myChoice;
-    if (choice) {
-      const color = COLORS[choice];
-      const bw = 150, bh = 150;
-      const bx = cw / 2 - bw / 2, by = ch * 0.35;
+    // Grey out the canvas
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.8)';
+    ctx.fillRect(0, 0, cw, ch);
 
-      ctx.beginPath();
-      ctx.roundRect(bx, by, bw, bh, 16);
-      ctx.fillStyle = 'rgba(20, 20, 30, 0.8)';
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-
-      ctx.font = '64px sans-serif';
-      ctx.fillText(EMOJIS[choice], cw / 2, by + bh / 2 - 10);
-
-      ctx.font = 'bold 12px "JetBrains Mono", monospace';
-      ctx.fillStyle = color;
-      ctx.fillText('YOUR CHOICE', cw / 2, by + bh - 22);
-    }
-
+    // Waiting dot animation
     const dotCount = Math.floor(Date.now() / 300) % 4;
     const dots = '.'.repeat(dotCount);
-    ctx.font = '13px "DM Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.fillText(`WAITING FOR OPPONENT${dots}`, cw / 2, ch * 0.72);
+    
+    ctx.font = '14px DM Sans';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(`WAITING FOR OPPONENT${dots}`, cw / 2, ch / 2);
   }
 
   _renderRevealing(ctx, cw, ch) {
@@ -250,7 +189,6 @@ export default class RPSGame extends MultiplayerGameBase {
     const bw = 140, bh = 140;
     const cy = ch * 0.45;
 
-    // Slide cards in
     const myX = -bw + easeOut * (cw / 2 - bw - 20 + bw);
     const oppX = cw - easeOut * (cw / 2 - bw - 20 + bw);
 
@@ -264,32 +202,26 @@ export default class RPSGame extends MultiplayerGameBase {
       
       const text = isDraw ? 'DRAW' : isMe ? 'YOU WIN' : 'THEY WIN';
       const col  = isDraw ? '#F59E0B' : isMe ? '#10b981' : '#EF4444';
-      const alpha = (p - 0.85) / 0.15;
 
-      ctx.save();
-      ctx.globalAlpha = alpha;
       ctx.font = 'bold 24px "Press Start 2P", monospace';
       ctx.fillStyle = col;
       ctx.fillText(text, cw / 2, cy - bh / 2 - 35);
-      ctx.restore();
     }
   }
 
   _drawRevealCard(ctx, choice, x, y, w, h, label) {
     const color = COLORS[choice];
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 14);
-    ctx.fillStyle = 'rgba(20, 20, 30, 0.9)';
-    ctx.fill();
+    ctx.fillStyle = '#111118';
+    ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.strokeRect(x, y, w, h);
 
     ctx.font = '54px sans-serif';
     ctx.fillText(EMOJIS[choice], x + w / 2, y + h / 2 - 10);
 
-    ctx.font = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.fillText(label, x + w / 2, y + h - 18);
   }
 

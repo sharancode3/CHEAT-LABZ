@@ -54,91 +54,9 @@ export class InputManager {
   }
 
   _bindEvents() {
-    window.addEventListener('keydown', (e) => {
-      const key = this._normalizeKey(e.key);
-      if (this.context === InputContext.GAME && this.gameKeys.has(key)) {
-        e.preventDefault();
-      }
-      if (!this.nextKeys.has(key) || this.nextKeys.get(key) === KeyState.UP) {
-        this.nextKeys.set(key, KeyState.PRESSED);
-      }
-    }, { passive: false });
-
-    window.addEventListener('keyup', (e) => {
-      const key = this._normalizeKey(e.key);
-      this.nextKeys.set(key, KeyState.RELEASED);
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      const { x, y } = this.getLogicalCoordinates(e.clientX, e.clientY);
-      this.mouse.x = x;
-      this.mouse.y = y;
-    });
-
-    window.addEventListener('mousedown', (e) => {
-      if (this.context === InputContext.GAME && e.button === 0) {
-        this.mouse._nextDown = true;
-      }
-    });
-
-    window.addEventListener('mouseup', (e) => {
-      if (e.button === 0) {
-        this.mouse._nextDown = false;
-      }
-    });
-
-    // Touch Support
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    window.addEventListener('touchstart', (e) => {
-      if (this.context === InputContext.GAME) {
-        e.preventDefault();
-      }
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-      
-      const { x, y } = this.getLogicalCoordinates(touch.clientX, touch.clientY);
-      this.mouse.x = x;
-      this.mouse.y = y;
-      this.mouse._nextDown = true;
-      
-      this.nextKeys.set('space', KeyState.PRESSED);
-    }, { passive: false });
-
-    window.addEventListener('touchmove', (e) => {
-      if (this.context === InputContext.GAME) e.preventDefault();
-      const touch = e.touches[0];
-      const { x, y } = this.getLogicalCoordinates(touch.clientX, touch.clientY);
-      this.mouse.x = x;
-      this.mouse.y = y;
-    }, { passive: false });
-
-    window.addEventListener('touchend', (e) => {
-      if (this.context === InputContext.GAME) e.preventDefault();
-      this.mouse._nextDown = false;
-      this.nextKeys.set('space', KeyState.RELEASED);
-      
-      if (e.changedTouches.length > 0) {
-        const touch = e.changedTouches[0];
-        const dx = touch.clientX - touchStartX;
-        const dy = touch.clientY - touchStartY;
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-        
-        if (Math.max(absDx, absDy) > 30) {
-          if (absDx > absDy) {
-            this.nextKeys.set(dx > 0 ? 'right' : 'left', KeyState.PRESSED);
-            setTimeout(() => this.nextKeys.set(dx > 0 ? 'right' : 'left', KeyState.RELEASED), 50);
-          } else {
-            this.nextKeys.set(dy > 0 ? 'down' : 'up', KeyState.PRESSED);
-            setTimeout(() => this.nextKeys.set(dy > 0 ? 'down' : 'up', KeyState.RELEASED), 50);
-          }
-        }
-      }
-    }, { passive: false });
+    // Removed orphaned event listeners for Phase 1 cleanup
   }
+
 
   setContext(newContext) {
     this.context = newContext;

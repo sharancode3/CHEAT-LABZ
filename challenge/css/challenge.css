@@ -145,10 +145,10 @@ img, svg { display: block; }
   font-size: 13px;
   color: #fff;
   letter-spacing: 0.03em;
-  text-shadow: 0 0 30px rgba(139,92,246,0.6);
+  
   transition: text-shadow 0.3s;
 }
-.nav-logo:hover { text-shadow: 0 0 40px rgba(139,92,246,0.9); }
+.nav-logo:hover {  }
 
 .nav-links {
   display: flex;
@@ -218,12 +218,12 @@ img, svg { display: block; }
   border-radius: 50%;
   background: var(--green);
   flex-shrink: 0;
-  animation: presencePulse 2.5s ease-in-out infinite;
+  animation: presenceBreath 3s ease-in-out infinite;
 }
 
-@keyframes presencePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.5), 0 0 6px rgba(0,212,170,0.4); }
-  50%       { box-shadow: 0 0 0 6px rgba(0,212,170,0), 0 0 12px rgba(0,212,170,0.6); }
+@keyframes presenceBreath {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 1.0; }
 }
 
 .presence-bar strong { color: var(--green); font-weight: 700; }
@@ -362,7 +362,7 @@ img, svg { display: block; }
   transform: translateY(-2px);
   border-color: var(--cyan);
   color: var(--cyan);
-  box-shadow: 0 4px 20px rgba(6,182,212,0.15);
+  
 }
 .btn-challenge--join:active { transform: translateY(0); }
 
@@ -392,7 +392,7 @@ img, svg { display: block; }
 
 .teamcode-input-wrapper:focus-within {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(6,182,212,0.12);
+  
 }
 
 .teamcode-input-wrapper.hidden { display: none; }
@@ -621,8 +621,7 @@ img, svg { display: block; }
 .mp-card:hover {
   transform: translateY(-3px) scale(1.01);
   border-color: rgba(255,255,255,0.1);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.4),
-              0 0 0 1px var(--game-color, var(--neon)) inset;
+  
 }
 .mp-card:hover::before { opacity: 1; }
 .mp-card:hover::after { opacity: 0; }
@@ -675,7 +674,7 @@ img, svg { display: block; }
 
 .mp-card:hover .mp-card-icon {
   transform: scale(1.08) rotate(-3deg);
-  box-shadow: 0 0 20px var(--game-color, var(--neon));
+  
 }
 
 .mp-card-icon svg {
@@ -800,7 +799,7 @@ img, svg { display: block; }
   max-height: 82vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(139,92,246,0.1);
+  
   animation: modalSlideIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
 }
 @keyframes modalSlideIn {
@@ -915,7 +914,7 @@ img, svg { display: block; }
   letter-spacing: 0.35em;
   flex: 1;
   text-align: center;
-  text-shadow: 0 0 24px rgba(6,182,212,0.4);
+  
 }
 
 .rc-copy {
@@ -1091,11 +1090,11 @@ img, svg { display: block; }
   color: #fff;
   border: none;
   transition: all 0.25s;
-  box-shadow: 0 4px 20px rgba(139,92,246,0.35);
+  
 }
 .btn-start:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(139,92,246,0.5);
+  
 }
 .btn-start:active:not(:disabled) { transform: translateY(0) scale(0.99); }
 .btn-start:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -1198,7 +1197,7 @@ img, svg { display: block; }
   font-family: 'Press Start 2P', monospace;
   font-size: clamp(80px, 20vw, 160px);
   color: #fff;
-  text-shadow: 0 0 80px rgba(139,92,246,0.7);
+  
   animation: countNum 1s cubic-bezier(0.25,0.46,0.45,0.94) both;
 }
 .countdown-number.go {
@@ -1313,9 +1312,9 @@ img, svg { display: block; }
   font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
   text-transform: uppercase; border: none;
   transition: all 0.2s;
-  box-shadow: 0 4px 20px rgba(139,92,246,0.35);
+  
 }
-.btn-rematch:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(139,92,246,0.5); }
+.btn-rematch:hover { transform: translateY(-2px);  }
 .btn-lobby {
   padding: 14px 28px; border-radius: var(--radius);
   border: 1px solid var(--border); color: var(--text-2);
@@ -1441,7 +1440,7 @@ img, svg { display: block; }
   border-radius: var(--radius);
   padding: 20px 22px;
   max-width: 300px;
-  box-shadow: var(--shadow-lg), 0 0 0 1px var(--neon-dim);
+  
   animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
   display: none;
 }

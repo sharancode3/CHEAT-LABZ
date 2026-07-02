@@ -1,6 +1,10 @@
 import { checkStreak, getStreak, getCoins, formatCoins, awardCoins } from '../core/storage.js';
+import { Identity } from '../core/identity.js';
+import { checkIdentitySetup } from './identity-modal.js';
 
 export function initNavbar() {
+  checkIdentitySetup();
+
   const mount = document.getElementById('navbar-mount');
   if (!mount) return;
 
@@ -39,6 +43,13 @@ export function initNavbar() {
               <span id="coin-count">0</span>
             </div>
           </div>
+
+          <div id="player-profile-indicator" style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); padding:6px 12px; border-radius:6px; cursor:pointer;" title="Click to edit profile">
+            <span style="color:#00d4aa;">●</span>
+            <span id="nav-player-name" style="color:#fff; font-weight:bold;">${Identity.getDisplayName()}</span>
+            <span style="color:rgba(255,255,255,0.35);">#${Identity.getUID() ? Identity.getUID().slice(0, 4) : '0000'}</span>
+          </div>
+
           <button id="settings-toggle" class="btn-icon" aria-label="Settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
@@ -293,6 +304,20 @@ export function initNavbar() {
       };
     });
   }
+
+  // Profile Indicator Rename Action
+  const profileIndicator = document.getElementById('player-profile-indicator');
+  profileIndicator?.addEventListener('click', () => {
+    const newName = prompt('Enter new display name:', Identity.getDisplayName());
+    if (newName && newName.trim().length >= 3) {
+      const cleaned = newName.trim().replace(/[^a-zA-Z0-9_\-\s]/g, '');
+      const uid = Identity.getUID();
+      Identity.setIdentity(uid, cleaned);
+      Identity.registerWithSupabase(uid, cleaned);
+      const nameEl = document.getElementById('nav-player-name');
+      if (nameEl) nameEl.textContent = cleaned;
+    }
+  });
 }
 
 // Auto-init on load if mount exists
