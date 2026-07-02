@@ -1,271 +1,183 @@
 import { GameBase } from '../../core/game-base.js';
-import { Storage } from '../../core/storage.js';
 
 const WORD_LIST = [
-  "ALGORITHM", "BANDWIDTH", "COMPILER", "DEBUGGER", "ENCRYPTION",
-  "FIREWALL", "GATEWAY", "HACKER", "ITERATION", "JAVASCRIPT",
-  "KEYBOARD", "LATENCY", "MALWARE", "NETWORK", "OVERFLOW",
-  "PROTOCOL", "QUANTUM", "ROUTER", "SERVER", "TERMINAL",
-  "UPLOAD", "VARIABLE", "WIRELESS", "XML", "YOTTABYTE", "ZIP"
+  "CAT", "DOG", "MAP", "KEY", "CODE", "HACK", "DATA", "LINK",
+  "CYBER", "ROUTER", "SERVER", "SYSTEM", "GATEWAY", "FIREWALL",
+  "ENCRYPT", "DECRYPT", "COMPILER", "DATABASE", "ALGORITHM"
 ];
 
-export default class CipherQuest extends GameBase {
-  static get logicalWidth() { return 600; }
-  static get logicalHeight() { return 400; }
-  
-  constructor(canvas, container) {
-    super(canvas, container);
+class CipherQuest extends GameBase {
+  static WIDTH = 600;
+  static HEIGHT = 600;
 
-    this.round = 1;
-    this.maxRounds = 10;
-    this.maxTime = 30000; // 30s
-    this.timeLeft = 30000;
-
+  init() {
+    this.letters = "abcdefghijklmnopqrstuvwxyz".split('');
+    this.wordsSolved = 0;
+    
     this.word = "";
     this.encryptedWord = "";
     this.typedWord = "";
-    this.wrongLetter = "";
-    this.shift = 0;
+    this.shift = 3;
     
-    this.hints = {};
-    this.shakeTimer = 0;
+    this.timeLimit = 30000; // ms
+    this.timer = this.timeLimit;
+    
+    this.status = 'idle'; // 'idle', 'fail'
+    this.statusTimer = 0;
+
+    this.nextWord();
   }
 
-  init() {
-    this.round = 1;
-    this.maxRounds = 10;
-    this.maxTime = 30000;
-    
-    this.score = 0;
-    this.nextRound();
-    
-    let runs = Storage.get('cipher-quest_runs', 0);
-    Storage.set('cipher-quest_runs', runs + 1);
-  }
+  nextWord() {
+    const lvl = this.level;
+    // Filter word list by length based on level
+    let targetLength = 3;
+    if (lvl >= 3) targetLength = 4;
+    if (lvl >= 5) targetLength = 5;
+    if (lvl >= 7) targetLength = 7;
+    if (lvl >= 9) targetLength = 9;
 
-  nextRound() {
-    this.word = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
-    this.shift = Math.floor(Math.random() * 21) + 3; // 3 to 23 shift
+    const matchedWords = WORD_LIST.filter(w => Math.abs(w.length - targetLength) <= 1);
+    this.word = this.randomChoice(matchedWords.length > 0 ? matchedWords : WORD_LIST);
+    
+    // Shift changes based on level
+    this.shift = this.level <= 3 ? this.randomInt(1, 3) : this.randomInt(3, 10);
     this.encryptedWord = this.encrypt(this.word, this.shift);
     
     this.typedWord = "";
-    this.wrongLetter = "";
-    this.timeLeft = this.maxTime;
-    this.hints = {};
-    this.shakeTimer = 0;
+    this.timeLimit = Math.max(8000, 30000 - this.level * 2000);
+    this.timer = this.timeLimit;
+    this.status = 'idle';
   }
 
   encrypt(word, shift) {
     let result = "";
     for (let i = 0; i < word.length; i++) {
       const code = word.charCodeAt(i);
-      // Caeser Shift caps A-Z
       const newCode = ((code - 65 + shift) % 26) + 65;
       result += String.fromCharCode(newCode);
     }
     return result;
   }
 
-  onInput(key, event) {
-    if (this.isDead || this.timeLeft <= 0) return;
-    const k = key.toLowerCase();
+  update(delta) {
+    if (this.isPaused || this.isOver) return;
 
-    if (k === 'h') {
-      this.useHint();
+    if (this.statusTimer > 0) {
+      this.statusTimer -= delta;
+      if (this.statusTimer <= 0) {
+        this.nextWord();
+      }
       return;
     }
 
-    if (k.length === 1 && /[a-z]/i.test(k)) {
-      const inputChar = k.toUpperCase();
-      const targetChar = this.word[this.typedWord.length];
-      
-      if (inputChar === targetChar) {
-        this.container.audio.play('blip');
-        this.typedWord += inputChar;
-        this.wrongLetter = "";
-        
-        if (this.typedWord === this.word) {
-          this.roundComplete();
+    this.timer -= delta;
+    if (this.timer <= 0) {
+      this.lives--;
+      this.status = 'fail';
+      this.statusTimer = 1000;
+      return;
+    }
+
+    // Read input
+    const inp = this.input;
+    this.letters.forEach(char => {
+      if (inp.wasPressed(char)) {
+        const inputChar = char.toUpperCase();
+        const nextTargetChar = this.word[this.typedWord.length];
+
+        if (inputChar === nextTargetChar) {
+          this.typedWord += inputChar;
+          this.score += 10;
+          
+          if (this.typedWord === this.word) {
+            this.wordsSolved++;
+            
+            // Check Goal
+            const goal = this.getLevelGoal();
+            if (this.wordsSolved >= goal.target) {
+              this.levelComplete();
+            } else {
+              this.nextWord();
+            }
+          }
+        } else {
+          // Mistake reduces timer slightly
+          this.timer = Math.max(0, this.timer - 2000);
         }
-      } else {
-        this.container.audio.play('damage');
-        this.wrongLetter = inputChar;
-        this.shakeTimer = 250;
-        this.container.shake(120, 3.5);
       }
-    }
+    });
   }
 
-  useHint() {
-    let availableHints = [];
-    for (let i = 0; i < this.word.length; i++) {
-      if (!this.hints[this.encryptedWord[i]] && i >= this.typedWord.length) {
-        availableHints.push(this.encryptedWord[i]);
-      }
-    }
-    
-    if (availableHints.length > 0) {
-      this.container.audio.play('perfect');
-      
-      // Hint penalty cost
-      this.score = Math.max(0, this.score - 15);
-      
-      const toHint = availableHints[Math.floor(Math.random() * availableHints.length)];
-      const code = toHint.charCodeAt(0);
-      const decoded = ((code - 65 - this.shift + 26) % 26) + 65;
-      this.hints[toHint] = String.fromCharCode(decoded);
-    }
-  }
+  render() {
+    this.clearCanvas();
+    const ctx = this.ctx;
 
-  roundComplete() {
-    this.container.audio.play('coin');
-    
-    let points = 100;
-    const timeBonus = Math.floor((this.timeLeft / this.maxTime) * 60);
-    this.score += points + timeBonus;
-    
-    this.round++;
-    if (this.round > this.maxRounds) {
-      this.finishGame();
-    } else {
-      this.nextRound();
-    }
-  }
+    // Draw timer bar
+    const barWidth = (this.timer / this.timeLimit) * 400;
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillRect(100, 100, barWidth, 10);
 
-  update(deltaTime) {
-    this.timeLeft -= deltaTime;
-
-    if (this.shakeTimer > 0) {
-      this.shakeTimer -= deltaTime;
-      if (this.shakeTimer <= 0) {
-        this.wrongLetter = "";
-      }
-    }
-
-    if (this.timeLeft <= 0) {
-      this.container.audio.play('damage');
-      this.round++;
-      if (this.round > this.maxRounds) {
-        this.finishGame();
-      } else {
-        this.nextRound();
-      }
-    }
-  }
-
-  finishGame() {
-    const baseScore = this.score;
-    const coins = Math.floor(baseScore / 25);
-
-    this.scoreBreakdown = {
-      rows: [
-        { label: 'Cipher Solves', value: `${Math.min(this.maxRounds, this.round - 1)} Rounds`, points: baseScore }
-      ],
-      total: baseScore,
-      coinsEarned: coins
-    };
-
-    this.score = baseScore;
-
-    if (window.awardCoins && coins > 0) {
-      window.awardCoins(coins, 'Cipher Quest Score');
-    }
-
-    this.container.audio.play('gameover');
-    this.gameOver();
-  }
-
-  render(ctx) {
-    // 1. Clear background
-    ctx.fillStyle = '#060608';
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    // 2. Draw top timer bar
-    const ratio = Math.max(0, this.timeLeft / this.maxTime);
-    ctx.fillStyle = ratio > 0.3 ? '#00f0ff' : '#ff3b30';
-    ctx.fillRect(0, 0, this.width * ratio, 6);
-
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-
-    // 3. Draw Shift index key display
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = '11px "Press Start 2P"';
+    // Draw Shift Info
     ctx.textAlign = 'center';
-    ctx.fillText(`KEY ENCRYPTION SHIFT: +${this.shift}`, cx, cy - 80);
+    ctx.font = '16px DM Sans';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText(`CIPHER KEY SHIFT: +${this.shift}`, 300, 180);
 
-    // 4. Encrypted cipher word
-    ctx.fillStyle = '#8888a8';
-    ctx.font = '22px "Press Start 2P"';
-    ctx.fillText(this.encryptedWord, cx, cy - 35);
+    // Draw Ciphertext
+    ctx.font = '28px JetBrains Mono';
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(this.encryptedWord, 300, 260);
 
-    // 5. Letter-by-letter decoding panel
-    const charWidth = 26;
-    const startX = cx - (this.word.length * charWidth) / 2;
-    ctx.font = '22px "Press Start 2P"';
+    // Draw Decoded String Input Boxes
+    ctx.font = '28px JetBrains Mono';
+    this.word.split('').forEach((char, index) => {
+      const x = 300 + (index - (this.word.length - 1) / 2) * 40;
+      const y = 380;
+      
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.strokeRect(x - 16, y - 24, 32, 40);
 
-    for (let i = 0; i < this.word.length; i++) {
-      const x = startX + i * charWidth + charWidth / 2;
-      const y = cy + 25;
-
-      // Draw bottom underline guide
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.fillRect(x - charWidth / 2 + 2, y + 6, charWidth - 4, 3);
-
-      if (i < this.typedWord.length) {
-        // Correct text green
-        ctx.fillStyle = '#10b981';
-        ctx.fillText(this.typedWord[i], x, y);
-      } else if (i === this.typedWord.length && this.wrongLetter && this.shakeTimer > 0) {
-        // Incorrect character shaking in red
-        const shakeX = (Math.random() - 0.5) * 5;
-        ctx.fillStyle = '#ff3b30';
-        ctx.fillText(this.wrongLetter, x + shakeX, y);
+      if (index < this.typedWord.length) {
+        ctx.fillStyle = '#00d4aa';
+        ctx.fillText(this.typedWord[index], x, y + 8);
       }
+    });
+
+    if (this.status === 'fail') {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '18px Press Start 2P';
+      ctx.fillText('TIME UP!', 300, 480);
     }
-
-    // 6. Active hints reference
-    ctx.fillStyle = '#a855f7';
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('PRESS H FOR A DECODED LETTER HINT (-15 PTS)', cx, cy + 90);
-
-    let hintY = cy + 120;
-    const hintKeys = Object.keys(this.hints);
-    if (hintKeys.length > 0) {
-      ctx.fillStyle = '#8888a8';
-      ctx.font = '12px "JetBrains Mono", monospace';
-      const hintsText = hintKeys.map(k => `${k}→${this.hints[k]}`).join('   ');
-      ctx.fillText(hintsText, cx, hintY);
-    }
-
-    // Round indicator
-    ctx.fillStyle = '#f0f0f8';
-    ctx.font = "bold 13px 'JetBrains Mono', monospace";
-    ctx.textAlign = 'left';
-    ctx.fillText(`ROUND: ${Math.min(this.maxRounds, this.round)}/${this.maxRounds}`, 20, 60);
-    ctx.textAlign = 'right';
-    ctx.fillText(`SCORE: ${this.score}`, this.width - 20, 60);
   }
 
-  getControls() {
+  destroy() {
+    super.destroy();
+  }
+
+  getStats() {
     return [
-      { key: 'A-Z', action: 'Type decoded letter' },
-      { key: 'H', action: 'Reveal letter hint' }
+      { label: 'Words', value: `${this.wordsSolved}/${this.getLevelGoal().target}` },
+      { label: 'Level', value: this.level }
     ];
   }
 
-  getFunStat() {
-    return `Completed round ${this.round - 1} with total score ${this.score}`;
-  }
-
-  getScoreBreakdown() {
-    if (this.scoreBreakdown && this.scoreBreakdown.rows) {
-      return this.scoreBreakdown.rows;
-    }
-    return [
-      { label: 'Score Accumulation', value: this.score }
+  getLevelGoal() {
+    const goals = [
+      null,
+      { type: 'words', target: 3 },
+      { type: 'words', target: 3 },
+      { type: 'words', target: 4 },
+      { type: 'words', target: 4 },
+      { type: 'words', target: 5 },
+      { type: 'words', target: 5 },
+      { type: 'words', target: 6 },
+      { type: 'words', target: 6 },
+      { type: 'words', target: 7 },
+      { type: 'words', target: 8 }
     ];
+    return goals[this.level];
   }
 }
-window.GameState = {};
+
+window.GameClass = CipherQuest;

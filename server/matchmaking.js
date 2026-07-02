@@ -84,8 +84,8 @@ export function registerMatchmakingEvents(io, socket) {
     if (!queue.has(gameId)) queue.set(gameId, []);
     const gameQueue = queue.get(gameId);
 
-    // Prevent double-entry
-    if (gameQueue.some(s => s.id === socket.id)) return;
+    // Prevent double-entry by socket.id or socket.uid
+    if (gameQueue.some(s => s.id === socket.id || (socket.uid && s.uid === socket.uid))) return;
 
     gameQueue.push(socket);
     socket.matchmakingGame = gameId;

@@ -15,7 +15,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { registerRoomEvents, leaveRoom, getRoomsStats, rooms } from './rooms.js';
+import { registerRoomEvents, leaveRoom, handleLobbyDisconnect, getRoomsStats, rooms } from './rooms.js';
 import { registerMatchmakingEvents, removeFromQueue } from './matchmaking.js';
 import { registerRPSEvents }       from './games/rps.js';
 import { registerTTTEvents }       from './games/tictactoe.js';
@@ -36,6 +36,8 @@ import { registerGunfightEvents } from './games/pixel-gunfight.js';
 import { registerCtfEvents } from './games/capture-the-flag.js';
 import { registerClashEvents } from './games/mini-clash.js';
 import { registerRpsTournamentEvents } from './games/rps-tournament.js';
+
+import { registerIdentityRoutes } from './identity-handler.js';
 
 // Social features store
 const activityFeed = [];
@@ -68,18 +70,16 @@ function getActiveRooms() {
 // ────────────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 
-// Allow connections from:
-//   - GitHub Pages  
-//   - Local development
-const ALLOWED_ORIGINS = [
-  'https://sharancode3.github.io',
-  'http://localhost:3006',
-  'http://127.0.0.1:3006',
-  'http://localhost:5500',
-  'http://127.0.0.1:5500',
-  'http://localhost:8080',
-  'null', // file:// protocol (local file open)
-];
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .concat([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'https://sharancode3.github.io'
+  ])
+  .filter(Boolean);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Player Name / Color Assignment
@@ -129,6 +129,7 @@ global.ioInstance = io;
 // HTTP Routes
 // ────────────────────────────────────────────────────────────────────────────
 app.use(express.json());
+registerIdentityRoutes(app);
 
 app.get('/', (req, res) => {
   res.json({
@@ -150,17 +151,24 @@ app.get('/health', (req, res) => {
 
 // ────────────────────────────────────────────────────────────────────────────
 // Presence Broadcast (every 5 seconds to all connected clients)
-// ────────────────────────────────────────────────────────────────────────────
+const presenceStore = new Map(); // uid -> { lastSeen: timestamp, socketIds: Set }
+
 setInterval(() => {
+  const now = Date.now();
+  for (const [uid, data] of presenceStore.entries()) {
+    if (now - data.lastSeen > 30000) { // 30s timeout
+      presenceStore.delete(uid);
+    }
+  }
+
   const { inLobby, inGame } = getRoomsStats();
-  // Count waiting rooms
   let waitingRooms = 0;
   for (const r of rooms.values()) {
     if (r.state === 'waiting' || r.state === 'countdown') waitingRooms++;
   }
 
   io.emit('presence:update', {
-    total: io.engine.clientsCount,
+    total: presenceStore.size,
     inLobby,
     inGame,
     waitingRooms
@@ -168,7 +176,7 @@ setInterval(() => {
 
   // Also broadcast active rooms list
   io.emit('social:active-rooms', getActiveRooms());
-}, 5000);
+}, 10000);
 
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -176,6 +184,7 @@ setInterval(() => {
 // ────────────────────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   // Assign identity
+  socket.uid         = socket.handshake.query.uid || null;
   socket.playerName  = randomPlayerName();
   socket.playerColor = randomPlayerColor();
   socket.currentRoom = null;
@@ -198,10 +207,21 @@ io.on('connection', (socket) => {
   }
 
   socket.emit('presence:update', {
-    total: io.engine.clientsCount,
+    total: presenceStore.size,
     inLobby,
     inGame,
     waitingRooms
+  });
+
+  socket.on('presence:heartbeat', ({ uid }) => {
+    if (!uid) return;
+    let entry = presenceStore.get(uid);
+    if (!entry) {
+      entry = { lastSeen: Date.now(), socketIds: new Set() };
+      presenceStore.set(uid, entry);
+    }
+    entry.lastSeen = Date.now();
+    entry.socketIds.add(socket.id);
   });
 
   // Immediately send activity and active rooms
@@ -239,9 +259,19 @@ io.on('connection', (socket) => {
   socket.on('disconnect', (reason) => {
     console.log(`[DISCONNECT] ${socket.playerName} (${socket.id}) — reason: ${reason}`);
 
-    // Leave current room
+    // Remove from presenceStore
+    for (const [uid, data] of presenceStore.entries()) {
+      if (data.socketIds.has(socket.id)) {
+        data.socketIds.delete(socket.id);
+        if (data.socketIds.size === 0) {
+          presenceStore.delete(uid);
+        }
+      }
+    }
+
+    // Leave current room (calls handleLobbyDisconnect for grace periods)
     if (socket.currentRoom) {
-      leaveRoom(io, socket, socket.currentRoom);
+      handleLobbyDisconnect(io, socket, socket.currentRoom);
     }
 
     // Remove from matchmaking queue

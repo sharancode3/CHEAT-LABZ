@@ -1,411 +1,338 @@
 import { GameBase } from '../../core/game-base.js';
-import { Storage } from '../../core/storage.js';
 
-export default class LoopRally extends GameBase {
-  static get logicalWidth() { return 500; }
-  static get logicalHeight() { return 700; }
-  
-  constructor(canvas, container) {
-    super(canvas, container);
+class LoopRally extends GameBase {
+  static WIDTH = 600;
+  static HEIGHT = 600;
 
-    // Paddle sizes
+  init() {
     this.paddleW = 85;
     this.paddleH = 12;
     this.ballRadius = 7;
     
-    // Game entities
-    this.player = { x: 0, y: 650, speed: 450 };
-    this.ai = { x: 0, y: 38, speed: 220 };
-    this.ball = { x: 0, y: 0, vx: 0, vy: 0, speed: 380, baseVy: 320 };
-    this.ballTrail = [];
+    this.player = { x: 300 - this.paddleW / 2, y: 550, speed: 450 };
+    this.ai = { x: 300 - this.paddleW / 2, y: 50 };
     
-    // State
-    this.keys = { left: false, right: false };
-    this.aiSpeedFactor = 0.05; // ease target multiplier
-    
-    // Spike & glow timers
-    this.isSpike = false;
-    this.spikeTimer = 0;
-    this.spikeWarningTimer = 0;
-    this.timePlayed = 0;
+    // Support multiple balls
+    this.balls = [{ x: 300, y: 300, vx: 0, vy: 0, speed: 380, trail: [] }];
+    this.obstacles = [];
+    this.wallZones = []; // { x, y, w, h }
+    this.rallies = 0;
+    this.lastPaddleHit = null;
 
-    // Juice timers
-    this.wallHitFlashLeft = 0;
-    this.wallHitFlashRight = 0;
-    this.scorePulseTimer = 0;
-    this.scorePulseSide = ''; // 'player' or 'ai'
-    this.redFlashTimer = 0;
+    this.paddleShrinkAmount = 0;
+    this.powerBallTimer = 0;
+
+    this.setupLevel();
+    this.resetBalls();
   }
 
-  init() {
-    this.score = 0;
-    this.lives = 3;
-    this.timePlayed = 0;
-
-    this.player.x = this.width / 2 - this.paddleW / 2;
-    this.ai.x = this.width / 2 - this.paddleW / 2;
-    this.aiSpeedFactor = 0.05;
-    
-    this.ball.speed = 380;
-    this.ball.baseVy = 320;
-    this.isSpike = false;
-    this.spikeTimer = 0;
-    this.spikeWarningTimer = 0;
-
-    this.wallHitFlashLeft = 0;
-    this.wallHitFlashRight = 0;
-    this.scorePulseTimer = 0;
-    this.scorePulseSide = '';
-    this.redFlashTimer = 0;
-
-    this.resetBall();
-
-    let runs = Storage.get('loop-rally_runs', 0);
-    Storage.set('loop-rally_runs', runs + 1);
-  }
-
-  resetBall() {
-    this.ball.x = this.width / 2;
-    this.ball.y = this.height / 2;
-    
-    const angle = (Math.random() - 0.5) * (Math.PI / 4); // Random angle within 45 deg
-    const dir = Math.random() > 0.5 ? 1 : -1;
-    this.ball.vx = this.ball.speed * Math.sin(angle);
-    this.ball.vy = this.ball.speed * Math.cos(angle) * dir;
-    this.ballTrail = [];
-  }
-
-  onInput(key, event) {
-    const k = key.toLowerCase();
-    if (k === 'arrowleft' || k === 'a') this.keys.left = true;
-    if (k === 'arrowright' || k === 'd') this.keys.right = true;
-  }
-
-  onKeyUp(key, event) {
-    const k = key.toLowerCase();
-    if (k === 'arrowleft' || k === 'a') this.keys.left = false;
-    if (k === 'arrowright' || k === 'd') this.keys.right = false;
-  }
-
-  constrainPlayer() {
-    if (this.player.x < 0) this.player.x = 0;
-    if (this.player.x + this.paddleW > this.width) this.player.x = this.width - this.paddleW;
-  }
-
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-    this.timePlayed += deltaTime;
-
-    // Handle juice timers
-    if (this.wallHitFlashLeft > 0) this.wallHitFlashLeft -= deltaTime;
-    if (this.wallHitFlashRight > 0) this.wallHitFlashRight -= deltaTime;
-    if (this.scorePulseTimer > 0) this.scorePulseTimer -= deltaTime;
-    if (this.redFlashTimer > 0) this.redFlashTimer -= deltaTime;
-
-    // Spike warning scheduler
-    if (this.spikeWarningTimer > 0) {
-      this.spikeWarningTimer -= deltaTime;
-      if (this.spikeWarningTimer <= 0) {
-        this.triggerSpike();
-      }
-      return; // Freeze game actions during visual warning flash
+  setupLevel() {
+    const lvl = this.level;
+    // Level 3, 10: Power Balls setup
+    // Level 4, 10: Shrinking paddles
+    // Level 5, 10: Obstacle in center
+    if (lvl === 5 || lvl === 10) {
+      this.obstacles.push({ x: 300, y: 300, radius: 25 });
     }
-
-    // Move player paddle
-    if (this.keys.left) this.player.x -= this.player.speed * dt;
-    if (this.keys.right) this.player.x += this.player.speed * dt;
-    this.constrainPlayer();
-
-    // Mouse steering tracking
-    const m = this.container.input.getMousePosition();
-    if (m && m.x > 0) {
-      this.player.x = m.x - this.paddleW / 2;
-      this.constrainPlayer();
+    // Level 6, 10: Two balls
+    if (lvl === 6 || lvl === 10) {
+      this.balls.push({ x: 300, y: 300, vx: 0, vy: 0, speed: 380, trail: [] });
     }
-
-    // AI paddle ease tracking: Target is ball horizontal center
-    const targetX = this.ball.x - this.paddleW / 2;
-    this.ai.x += (targetX - this.ai.x) * this.aiSpeedFactor;
-    
-    // AI boundary constraints
-    if (this.ai.x < 0) this.ai.x = 0;
-    if (this.ai.x + this.paddleW > this.width) this.ai.x = this.width - this.paddleW;
-
-    // Active speed spikes
-    if (this.isSpike) {
-      this.spikeTimer -= deltaTime;
-      if (this.spikeTimer <= 0) {
-        this.isSpike = false;
-        // Revert ball speed back to base
-        this.ball.speed = 380 + this.score * 5;
-        const speedRatio = this.ball.speed / Math.hypot(this.ball.vx, this.ball.vy);
-        this.ball.vx *= speedRatio;
-        this.ball.vy *= speedRatio;
-      }
-    }
-
-    // Move ball
-    this.ball.x += this.ball.vx * dt;
-    this.ball.y += this.ball.vy * dt;
-
-    // Track trail segments
-    this.ballTrail.push({ x: this.ball.x, y: this.ball.y });
-    if (this.ballTrail.length > 6) this.ballTrail.shift();
-
-    // Side walls bounce
-    if (this.ball.x - this.ballRadius < 0) {
-      this.ball.x = this.ballRadius;
-      this.ball.vx = Math.abs(this.ball.vx);
-      this.wallHitFlashLeft = 150;
-      this.container.audio.play('blip');
-    } else if (this.ball.x + this.ballRadius > this.width) {
-      this.ball.x = this.width - this.ballRadius;
-      this.ball.vx = -Math.abs(this.ball.vx);
-      this.wallHitFlashRight = 150;
-      this.container.audio.play('blip');
-    }
-
-    // Paddle collision steps
-    this.checkPaddleCollision(this.player, true);
-    this.checkPaddleCollision(this.ai, false);
-
-    // Scoring conditions
-    if (this.ball.y > this.height) {
-      this.loseLife();
-    } else if (this.ball.y < 0) {
-      this.scorePoint();
+    // Level 7: Paddle splits - handled in render/collision
+    // Level 9, 10: Wall zones
+    if (lvl === 9 || lvl === 10) {
+      this.wallZones.push({ x: 0, y: 250, w: 20, h: 100, active: true });
+      this.wallZones.push({ x: 580, y: 250, w: 20, h: 100, active: true });
     }
   }
 
-  checkPaddleCollision(paddle, isPlayer) {
-    if (this.ball.x + this.ballRadius > paddle.x &&
-        this.ball.x - this.ballRadius < paddle.x + this.paddleW &&
-        this.ball.y + this.ballRadius > paddle.y &&
-        this.ball.y - this.ballRadius < paddle.y + this.paddleH) {
+  resetBalls() {
+    this.balls.forEach((ball, i) => {
+      ball.x = 300;
+      ball.y = 300 + (i * 20);
+      const angle = (Math.random() - 0.5) * (Math.PI / 4);
+      const dir = Math.random() > 0.5 ? 1 : -1;
+      ball.vx = ball.speed * Math.sin(angle);
+      ball.vy = ball.speed * Math.cos(angle) * dir;
+      ball.trail = [];
+    });
+  }
+
+  update(delta) {
+    if (this.isPaused || this.isOver) return;
+
+    const dt = delta / 1000;
+
+    // Read Input
+    const inp = this.input;
+    if (inp.isHeldAny(inp.ACTIONS.LEFT)) {
+      this.player.x -= this.player.speed * dt;
+    }
+    if (inp.isHeldAny(inp.ACTIONS.RIGHT)) {
+      this.player.x += this.player.speed * dt;
+    }
+
+    // Shrinking paddle calculation (Level 4)
+    if (this.level === 4 || this.level === 10) {
+      const shrinkFactor = Math.floor(this.rallies / 5);
+      this.paddleShrinkAmount = Math.min(40, shrinkFactor * 2);
+    }
+    const currentPaddleW = this.paddleW - this.paddleShrinkAmount;
+
+    // Clamping Player
+    this.player.x = this.clamp(this.player.x, 0, 600 - currentPaddleW);
+
+    // Ball Power Speed timer
+    if (this.powerBallTimer > 0) {
+      this.powerBallTimer -= delta;
+    }
+
+    // AI movement logic (target first ball)
+    const targetBall = this.balls[0];
+    if (targetBall) {
+      let aiSpeed = 2 + (this.level * 0.6); // Beatable speeds
+      if (this.level === 5) aiSpeed = 7;
+      if (this.level >= 9) aiSpeed = 8;
       
-      this.container.audio.play('blip');
-      this.container.shake(80, 2.5);
+      const aiTarget = targetBall.x - currentPaddleW / 2;
+      const diff = aiTarget - this.ai.x;
+      this.ai.x += this.clamp(diff, -aiSpeed, aiSpeed);
+      this.ai.x = this.clamp(this.ai.x, 0, 600 - currentPaddleW);
+    }
 
-      // Lock position outside paddle boundaries
-      if (isPlayer) {
-        this.ball.y = paddle.y - this.ballRadius;
-      } else {
-        this.ball.y = paddle.y + this.paddleH + this.ballRadius;
+    // Update Balls
+    this.balls.forEach(ball => {
+      // Trail
+      ball.trail.push({ x: ball.x, y: ball.y });
+      if (ball.trail.length > 5) ball.trail.shift();
+
+      let currentSpeed = ball.speed;
+      if (this.powerBallTimer > 0) currentSpeed *= 2;
+
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+
+      // Bounce off walls
+      if (ball.x - this.ballRadius <= 0) {
+        ball.x = this.ballRadius;
+        ball.vx = Math.abs(ball.vx);
+      } else if (ball.x + this.ballRadius >= 600) {
+        ball.x = 600 - this.ballRadius;
+        ball.vx = -Math.abs(ball.vx);
       }
 
-      // Zone Reflection Angle System (7 distinct segments)
-      const relativeX = Math.max(0, Math.min(1.0, (this.ball.x - paddle.x) / this.paddleW));
-      const zone = Math.floor(relativeX * 7);
-      
-      // Map zones to reflection angles in radians
-      const angleMap = [
-        -Math.PI / 3, // Zone 0: -60 deg
-        -Math.PI / 4.5, // Zone 1: -40 deg
-        -Math.PI / 9, // Zone 2: -20 deg
-        0,            // Zone 3: 0 deg straight back
-        Math.PI / 9,  // Zone 4: +20 deg
-        Math.PI / 4.5, // Zone 5: +40 deg
-        Math.PI / 3   // Zone 6: +60 deg
-      ];
+      // Check Wall Zones (Level 9, 10)
+      this.wallZones.forEach(zone => {
+        if (this.rectHit({ x: ball.x - this.ballRadius, y: ball.y - this.ballRadius, w: this.ballRadius * 2, h: this.ballRadius * 2 }, zone)) {
+          this.score = Math.max(0, this.score - 5);
+          ball.vx *= -1;
+        }
+      });
 
-      const reflectionAngle = angleMap[zone] || 0;
-      const speed = this.ball.speed;
+      // Obstacle collision (Level 5, 10)
+      this.obstacles.forEach(obs => {
+        const dist = this.distance(ball.x, ball.y, obs.x, obs.y);
+        if (dist <= obs.radius + this.ballRadius) {
+          // Reflect off normal
+          const nx = (ball.x - obs.x) / dist;
+          const ny = (ball.y - obs.y) / dist;
+          const dot = ball.vx * nx + ball.vy * ny;
+          ball.vx -= 2 * dot * nx;
+          ball.vy -= 2 * dot * ny;
+        }
+      });
 
-      this.ball.vx = speed * Math.sin(reflectionAngle);
-      this.ball.vy = speed * Math.cos(reflectionAngle) * (isPlayer ? -1 : 1);
-
-      // Stuck safeguard (Enforce min vertical speed of 30% total magnitude)
-      const minVy = speed * 0.3;
-      if (Math.abs(this.ball.vy) < minVy) {
-        this.ball.vy = minVy * Math.sign(this.ball.vy);
-        // Normalize vx to preserve overall velocity magnitude
-        this.ball.vx = Math.sqrt(speed * speed - this.ball.vy * this.ball.vy) * Math.sign(this.ball.vx);
+      // Player Paddle Collision
+      if (ball.vy > 0 && ball.y + this.ballRadius >= this.player.y && ball.y <= this.player.y + this.paddleH) {
+        // Check X overlap
+        const isHit = this.checkPaddleCollision(ball.x, this.player.x, currentPaddleW);
+        if (isHit) {
+          this.processPaddleHit(ball, this.player.x, currentPaddleW);
+          this.rallies++;
+          this.score += 10;
+        }
       }
+
+      // AI Paddle Collision
+      if (ball.vy < 0 && ball.y - this.ballRadius <= this.ai.y + this.paddleH && ball.y >= this.ai.y) {
+        const isHit = this.checkPaddleCollision(ball.x, this.ai.x, currentPaddleW);
+        if (isHit) {
+          this.processPaddleHit(ball, this.ai.x, currentPaddleW);
+          this.rallies++;
+        }
+      }
+
+      // Out of bounds
+      if (ball.y < 0 || ball.y > 600) {
+        this.lives--;
+        this.resetBalls();
+      }
+    });
+
+    // Check Goal
+    const goal = this.getLevelGoal();
+    if (this.rallies >= goal.target) {
+      this.levelComplete();
     }
   }
 
-  scorePoint() {
-    this.container.audio.play('coin');
-    this.score++;
-
-    this.scorePulseTimer = 300;
-    this.scorePulseSide = 'player';
-
-    // Ease AI tracking speed factor (capped at 0.15)
-    if (this.score % 5 === 0) {
-      this.aiSpeedFactor = Math.min(0.15, this.aiSpeedFactor + 0.005);
-      this.ball.speed += 15;
+  checkPaddleCollision(ballX, paddleX, paddleW) {
+    if (this.level === 7) {
+      // Split paddle: left half and right half with gap in middle
+      const half = paddleW / 2.5;
+      const leftHit = ballX >= paddleX && ballX <= paddleX + half;
+      const rightHit = ballX >= paddleX + paddleW - half && ballX <= paddleX + paddleW;
+      return leftHit || rightHit;
     }
-
-    // Schedule 2x speed spikes every 10 points
-    if (this.score % 10 === 0) {
-      this.spikeWarningTimer = 500; // trigger visual glow phase
-    } else {
-      this.resetBall();
-    }
+    return ballX >= paddleX && ballX <= paddleX + paddleW;
   }
 
-  triggerSpike() {
-    this.isSpike = true;
-    this.spikeTimer = 2200;
-    this.resetBall();
-    // Double speeds
-    this.ball.vx *= 1.8;
-    this.ball.vy *= 1.8;
-  }
-
-  loseLife() {
-    this.container.audio.play('damage');
-    this.lives--;
-    this.redFlashTimer = 100;
-
-    this.scorePulseTimer = 300;
-    this.scorePulseSide = 'ai';
-
-    this.container.shake(200, 4);
-
-    if (this.lives <= 0) {
-      this.finishGame();
-    } else {
-      this.resetBall();
-    }
-  }
-
-  finishGame() {
-    const timePlayed = this.timePlayed || 0;
-    const baseScore = this.score * 500;
-    const timeBonus = Math.floor(timePlayed / 1000) * 10;
-    const maxSpeedBonus = Math.floor(this.ball.speed) * 2;
-    const totalScore = baseScore + timeBonus + maxSpeedBonus;
+  processPaddleHit(ball, paddleX, paddleW) {
+    // Relative position normalized to 0.0 - 1.0
+    let relativeX = (ball.x - paddleX) / paddleW;
+    relativeX = this.clamp(relativeX, 0.0, 1.0);
     
-    const coinsEarned = Math.floor(totalScore / 100);
+    // Zone 0 to 6
+    const zone = Math.floor(relativeX * 7);
+    const angleDeg = (zone - 3) * 20; // -60 to 60 deg
+    const angleRad = angleDeg * (Math.PI / 180);
 
-    this.scoreBreakdown = {
-      rows: [
-        { label: 'Rallies Won', value: this.score, points: baseScore },
-        { label: 'Survival Time', value: `${Math.floor(timePlayed / 1000)}s`, points: timeBonus },
-        { label: 'Top Ball Speed', value: `${Math.floor(this.ball.speed)} px/s`, points: maxSpeedBonus }
-      ],
-      total: totalScore,
-      coinsEarned: coinsEarned
-    };
+    const dir = ball.vy > 0 ? -1 : 1;
+    let currentSpeed = ball.speed;
+    if (this.powerBallTimer > 0) currentSpeed *= 2;
 
-    this.score = totalScore;
+    ball.vx = currentSpeed * Math.sin(angleRad);
+    ball.vy = currentSpeed * Math.cos(angleRad) * dir;
 
-    if (window.awardCoins && coinsEarned > 0) {
-      window.awardCoins(coinsEarned, 'Loop Rally Match');
+    // Power ball trigger
+    if (this.level === 3 && Math.random() < 0.3) {
+      this.powerBallTimer = 2000; // 2 seconds double speed
     }
 
-    this.gameOver();
+    // Reverse ball trigger
+    if (this.level === 8 && Math.random() < 0.2) {
+      ball.vx *= -1;
+      ball.vy *= -1;
+    }
   }
 
-  render(ctx) {
-    // 1. Clear background
-    ctx.fillStyle = '#060608';
-    ctx.fillRect(0, 0, this.width, this.height);
+  render() {
+    this.clearCanvas();
+    const ctx = this.ctx;
 
-    // 2. Score field pulse
-    if (this.scorePulseTimer > 0) {
-      const alpha = this.scorePulseTimer / 300;
-      ctx.fillStyle = this.scorePulseSide === 'player' 
-        ? `rgba(108, 99, 255, ${alpha * 0.12})` 
-        : `rgba(255, 107, 107, ${alpha * 0.12})`;
-      if (this.scorePulseSide === 'player') {
-        ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
-      } else {
-        ctx.fillRect(0, 0, this.width, this.height / 2);
-      }
-    }
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, 600);
+    grad.addColorStop(0, '#0a0a0f');
+    grad.addColorStop(0.1, '#111118');
+    grad.addColorStop(0.9, '#111118');
+    grad.addColorStop(1, '#0a0a0f');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 600, 600);
 
-    // 3. Center line dividing field
-    ctx.setLineDash([8, 12]);
-    ctx.beginPath();
-    ctx.moveTo(0, this.height / 2);
-    ctx.lineTo(this.width, this.height / 2);
+    // Dashed center line
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 8]);
+    ctx.beginPath();
+    ctx.moveTo(0, 300);
+    ctx.lineTo(600, 300);
     ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.setLineDash([]); // Reset
 
-    // 4. Draw wall hit flashes
-    if (this.wallHitFlashLeft > 0) {
-      const alpha = this.wallHitFlashLeft / 150;
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.45})`;
-      ctx.fillRect(0, 0, 5, this.height);
+    const currentPaddleW = this.paddleW - this.paddleShrinkAmount;
+
+    // Draw Player
+    ctx.fillStyle = '#6c63ff';
+    if (this.level === 7) {
+      const half = currentPaddleW / 2.5;
+      this.drawRoundedRect(this.player.x, this.player.y, half, this.paddleH, 4);
+      this.drawRoundedRect(this.player.x + currentPaddleW - half, this.player.y, half, this.paddleH, 4);
+    } else {
+      this.drawRoundedRect(this.player.x, this.player.y, currentPaddleW, this.paddleH, 4);
     }
-    if (this.wallHitFlashRight > 0) {
-      const alpha = this.wallHitFlashRight / 150;
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.45})`;
-      ctx.fillRect(this.width - 5, 0, 5, this.height);
+
+    // Draw AI
+    ctx.fillStyle = '#ef4444';
+    if (this.level === 7) {
+      const half = currentPaddleW / 2.5;
+      this.drawRoundedRect(this.ai.x, this.ai.y, half, this.paddleH, 4);
+      this.drawRoundedRect(this.ai.x + currentPaddleW - half, this.ai.y, half, this.paddleH, 4);
+    } else {
+      this.drawRoundedRect(this.ai.x, this.ai.y, currentPaddleW, this.paddleH, 4);
     }
 
-    // 5. Draw Paddles
-    ctx.fillStyle = '#ffffff'; // Player (white)
-    ctx.beginPath();
-    ctx.roundRect(this.player.x, this.player.y, this.paddleW, this.paddleH, 5);
-    ctx.fill();
-
-    ctx.fillStyle = '#ff6b6b'; // AI (red)
-    ctx.beginPath();
-    ctx.roundRect(this.ai.x, this.ai.y, this.paddleW, this.paddleH, 5);
-    ctx.fill();
-
-    // 6. Draw Ball Trails
-    for (let i = 0; i < this.ballTrail.length; i++) {
-      const pos = this.ballTrail[i];
-      const alpha = ((i + 1) / this.ballTrail.length) * 0.4;
+    // Draw Obstacles (Level 5, 10)
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    this.obstacles.forEach(obs => {
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, this.ballRadius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(108, 99, 255, ${alpha})`;
+      ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
       ctx.fill();
-    }
+    });
 
-    // 7. Draw Ball (yellow if spike, pulsing neon blue otherwise)
+    // Draw Wall Zones (Level 9, 10)
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+    this.wallZones.forEach(zone => {
+      ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+      ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+    });
+
+    // Draw Balls with Motion Blur Trail
+    this.balls.forEach(ball => {
+      ball.trail.forEach((pos, index) => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (index + 1)})`;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, this.ballRadius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Active Ball
+      ctx.fillStyle = this.powerBallTimer > 0 ? '#ffd93d' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, this.ballRadius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  drawRoundedRect(x, y, w, h, r) {
+    const ctx = this.ctx;
     ctx.beginPath();
-    ctx.arc(this.ball.x, this.ball.y, this.ballRadius, 0, Math.PI * 2);
-    ctx.fillStyle = this.isSpike ? '#ffcc00' : '#00f0ff';
-    ctx.shadowBlur = this.isSpike ? 15 : 8;
-    ctx.shadowColor = this.isSpike ? '#ffcc00' : '#00f0ff';
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
     ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // 8. Draw red damage indicators
-    if (this.redFlashTimer > 0) {
-      const alpha = this.redFlashTimer / 100;
-      ctx.fillStyle = `rgba(255, 59, 48, ${alpha * 0.3})`;
-      ctx.fillRect(0, 0, this.width, this.height);
-    }
-
-    // 9. Speed warning screen glow overlay
-    if (this.spikeWarningTimer > 0) {
-      const alpha = Math.sin(performance.now() / 50) * 0.5 + 0.5;
-      ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
-      ctx.lineWidth = 6;
-      ctx.strokeRect(0, 0, this.width, this.height);
-
-      ctx.fillStyle = '#f97316';
-      ctx.font = "bold 14px 'Press Start 2P', monospace";
-      ctx.textAlign = 'center';
-      ctx.fillText("SPIKE COMING!", this.width / 2, this.height / 2 - 30);
-    }
   }
 
-  getControls() {
+  destroy() {
+    super.destroy();
+  }
+
+  getStats() {
     return [
-      { key: '← A / → D', action: 'Move Paddle Left/Right' },
-      { key: 'MOUSE', action: 'Steer Paddle' }
+      { label: 'Rallies', value: this.rallies },
+      { label: 'Level', value: this.level }
     ];
   }
 
-  getFunStat() {
-    return `Rallies: ${this.score} | Target AI tracking multiplier: ${this.aiSpeedFactor.toFixed(3)}`;
-  }
-
-  getScoreBreakdown() {
-    if (this.scoreBreakdown && this.scoreBreakdown.rows) {
-      return this.scoreBreakdown.rows;
-    }
-    return [
-      { label: 'Score Accumulation', value: this.score }
+  getLevelGoal() {
+    const goals = [
+      null, // index 0 unused
+      { type: 'rallies', target: 15 },
+      { type: 'rallies', target: 20 },
+      { type: 'rallies', target: 25 },
+      { type: 'rallies', target: 30 },
+      { type: 'rallies', target: 35 },
+      { type: 'rallies', target: 40 },
+      { type: 'rallies', target: 45 },
+      { type: 'rallies', target: 50 },
+      { type: 'rallies', target: 55 },
+      { type: 'rallies', target: 60 }
     ];
+    return goals[this.level];
   }
 }
+
+window.GameClass = LoopRally;

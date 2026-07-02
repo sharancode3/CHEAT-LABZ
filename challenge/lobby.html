@@ -185,7 +185,9 @@ const GAME_DATA = {
     desc: 'Best of 5 rounds. Simple, fast, psychological warfare.',
     controls: 'Click the Rock, Paper, or Scissors card before time runs out.',
     rules: { players: '2 players', win: 'First to 3 round wins', rounds: 'Best of 5' },
-    settings: [],
+    settings: [
+      { key: 'startingRound', label: 'Starting Round', opts: ['1', '2', '3', '4', '5'] }
+    ],
   },
   'tic-tac-toe': {
     name: 'TIC TAC TOE',
@@ -193,7 +195,9 @@ const GAME_DATA = {
     desc: '30-second turn limit. Best of 3 games. The classic, evolved.',
     controls: 'Click an empty cell to place your symbol. 30 second time limit per turn.',
     rules: { players: '2 players', win: 'Best of 3 games wins', rounds: 'Best of 3' },
-    settings: [],
+    settings: [
+      { key: 'startingRound', label: 'Starting Round', opts: ['1', '2', '3'] }
+    ],
   },
   'reflex-duel': {
     name: 'REFLEX DUEL',
@@ -201,7 +205,9 @@ const GAME_DATA = {
     desc: 'React to the stimulus faster than your opponent. No false starts!',
     controls: 'Press SPACE or tap the screen the moment the shape or color appears. Do not press early.',
     rules: { players: '2 players', win: 'Most rounds won', rounds: '10 rounds' },
-    settings: [],
+    settings: [
+      { key: 'startingRound', label: 'Starting Round', opts: ['1', '2', '3', '4', '5'] }
+    ],
   },
   'word-duel': {
     name: 'WORD DUEL',
@@ -209,7 +215,9 @@ const GAME_DATA = {
     desc: 'Real-time typing race. Type the words before they do. 5 rounds.',
     controls: 'Type the displayed word on your keyboard. Case-insensitive.',
     rules: { players: '2 players', win: 'Highest score wins', rounds: '5 rounds' },
-    settings: [],
+    settings: [
+      { key: 'startingRound', label: 'Starting Round', opts: ['1', '2', '3', '4', '5'] }
+    ],
   },
   'multiplayer-snake': {
     name: 'SNAKE ARENA',
@@ -217,7 +225,9 @@ const GAME_DATA = {
     desc: 'Head-to-head snake. Cut them off, grab power-ups, outlast them.',
     controls: 'Arrow keys or WASD to steer. Avoid walls and snakes.',
     rules: { players: '2 players', win: 'First to 3 round wins', rounds: 'Best of 3' },
-    settings: [],
+    settings: [
+      { key: 'startingRound', label: 'Starting Round', opts: ['1', '2', '3', '4', '5'] }
+    ],
   },
 };
 

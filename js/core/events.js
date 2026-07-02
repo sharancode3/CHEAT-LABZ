@@ -52,30 +52,7 @@ export const GameState = {
   }
 };
 
-document.addEventListener('keydown', (e) => {
-  const key = e.key.toLowerCase();
-  
-  if (key === 'm') {
-    if (window.Sound) {
-      window.Sound.toggleMute();
-      // Optional: Add a visual indicator
-    }
-    return;
-  }
-
-  if (GameState.isPlaying && GAME_KEYS.includes(key)) {
-    e.preventDefault(); // Stop browser from doing anything like scrolling or refreshing
-    GameState.dispatchKey(key, e); // Route to active game
-  }
-});
-
-document.addEventListener('keyup', (e) => {
-  const key = e.key.toLowerCase();
-  if (GameState.isPlaying && GAME_KEYS.includes(key)) {
-    e.preventDefault();
-    GameState.dispatchKeyUp(key, e);
-  }
-});
+// Removed orphaned event listeners for Phase 1 cleanup
 
 window.GameState = GameState;
 

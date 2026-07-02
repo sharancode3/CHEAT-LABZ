@@ -1,261 +1,127 @@
 import { GameBase } from '../../core/game-base.js';
-import { Storage } from '../../core/storage.js';
 
-export default class HyperTap extends GameBase {
-  static get logicalWidth() { return 500; }
-  static get logicalHeight() { return 500; }
-  
-  constructor(canvas, container) {
-    super(canvas, container);
-
-    this.lives = 3;
-    this.level = 1;
-    
-    this.tapTimes = [];
-    this.targetRate = 3.0; // Target taps per second (180 BPM)
-    this.actualRate = 0.0;
-    
-    // Hold progression matching variables
-    this.holdTimer = 0;
-    this.targetHoldTime = 2200; // Must hold for 2.2s
-    
-    // Metronome timer guides
-    this.metronomeTimer = 0;
-    this.visualScale = 1.0;
-    this.rings = [];
-    this.successFlash = 0;
-  }
+class HyperTap extends GameBase {
+  static WIDTH = 600;
+  static HEIGHT = 600;
 
   init() {
-    this.lives = 3;
-    this.level = 1;
+    this.dots = [];
     this.score = 0;
-    this.tapTimes = [];
+    this.lives = 3;
+    this.tapsCount = 0;
+
+    this.time = 0;
+    this.setupLevel();
+  }
+
+  setupLevel() {
+    const lvl = this.level;
+    const dotCount = lvl >= 8 ? 3 : (lvl >= 5 ? 2 : 1);
     
-    this.targetRate = 3.0;
-    this.actualRate = 0.0;
-    this.holdTimer = 0;
-    this.metronomeTimer = 0;
-    this.visualScale = 1.0;
-    this.rings = [];
-    this.successFlash = 0;
+    // Dot size shrinks as level goes up
+    const radius = Math.max(15, 35 - lvl * 2);
 
-    let runs = Storage.get('hyper-tap_runs', 0);
-    Storage.set('hyper-tap_runs', runs + 1);
-  }
-
-  onInput(key, event) {
-    const k = key.toLowerCase();
-    if (k === ' ' || k === 'enter') {
-      this.registerTap();
-    }
-  }
-
-  onMouseDown(x, y, event) {
-    if (this.state === 'PLAYING') {
-      this.registerTap();
-    }
-  }
-
-  registerTap() {
-    const now = performance.now();
-    this.tapTimes.push(now);
-
-    this.visualScale = 1.35; // Expands on tap click
-    this.container.audio.play('coin');
-
-    // Spawn a quick accent ring
-    this.rings.push({
-      radius: 45,
-      alpha: 1.0
-    });
-  }
-
-  update(deltaTime) {
-    const dt = deltaTime / 1000;
-    const now = performance.now();
-
-    // Fade visual scale back to normal
-    if (this.visualScale > 1.0) {
-      this.visualScale -= 2.0 * dt;
-      if (this.visualScale < 1.0) this.visualScale = 1.0;
-    }
-
-    if (this.successFlash > 0) this.successFlash -= deltaTime;
-
-    // Prune tap times older than 1.5 seconds
-    this.tapTimes = this.tapTimes.filter(t => now - t < 1500);
-    // Rate is size of tap history / time window
-    this.actualRate = this.tapTimes.length / 1.5;
-
-    // Evaluate matching deviation window (±0.45 taps per sec)
-    const deviation = Math.abs(this.actualRate - this.targetRate);
-    const isMatching = deviation <= 0.45;
-
-    if (isMatching && this.tapTimes.length > 0) {
-      this.holdTimer += deltaTime;
-      if (this.holdTimer >= this.targetHoldTime) {
-        this.levelCompleted();
-      }
-    } else {
-      // Hold decays if not matching
-      this.holdTimer = Math.max(0, this.holdTimer - deltaTime * 0.6);
-    }
-
-    // Metronome guide ticks sound at target BPM
-    this.metronomeTimer += deltaTime;
-    const metronomeInterval = 1000 / this.targetRate;
-    if (this.metronomeTimer >= metronomeInterval) {
-      this.metronomeTimer -= metronomeInterval;
-      this.container.audio.play('blip');
-      // Visual indicator expands metronome dot
-      this.rings.push({
-        radius: 40,
-        alpha: 0.55
+    for (let i = 0; i < dotCount; i++) {
+      this.dots.push({
+        x: 300,
+        y: 300,
+        radius: radius,
+        speed: 100 + lvl * 20,
+        offset: i * (Math.PI / 2),
+        type: lvl >= 6 ? 'lissajous' : 'linear'
       });
     }
-
-    // Update rings ripples
-    this.rings.forEach(r => {
-      r.radius += dt * 180;
-      r.alpha -= dt * 2.2;
-    });
-    this.rings = this.rings.filter(r => r.alpha > 0);
   }
 
-  levelCompleted() {
-    this.container.audio.play('perfect');
-    this.score += 150;
-    this.level++;
-    this.successFlash = 250;
-    
-    // Increment speed target rate (capping at 7.0 taps per second)
-    this.targetRate = Math.min(7.0, 3.0 + this.level * 0.4);
-    
-    this.holdTimer = 0;
-    this.tapTimes = [];
-  }
+  update(delta) {
+    if (this.isPaused || this.isOver) return;
 
-  finishGame() {
-    const baseScore = this.score;
-    const coins = Math.floor(baseScore / 30);
+    const dt = delta / 1000;
+    this.time += dt;
 
-    this.scoreBreakdown = {
-      rows: [
-        { label: 'Levels Cleared', value: `${this.level - 1} Rates`, points: baseScore }
-      ],
-      total: baseScore,
-      coinsEarned: coins
-    };
-
-    if (window.awardCoins && coins > 0) {
-      window.awardCoins(coins, 'Hyper Tap Run');
-    }
-
-    this.container.audio.play('gameover');
-    this.gameOver();
-  }
-
-  render(ctx) {
-    // 1. Clear background
-    ctx.fillStyle = '#060608';
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-
-    // Draw success flashes
-    if (this.successFlash > 0) {
-      const alpha = this.successFlash / 250;
-      ctx.fillStyle = `rgba(16, 185, 129, ${alpha * 0.15})`;
-      ctx.fillRect(0, 0, this.width, this.height);
-    }
-
-    // 2. Draw metronome pulse rings
-    ctx.strokeStyle = '#00f0ff';
-    ctx.lineWidth = 2.0;
-    for (let r of this.rings) {
-      ctx.globalAlpha = r.alpha;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r.radius, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1.0;
-
-    // 3. Central metronome dot
-    const baseRad = 40;
-    const drawR = baseRad * this.visualScale;
-    
-    // Determine matching indicator ring color
-    const deviation = Math.abs(this.actualRate - this.targetRate);
-    const isMatching = deviation <= 0.45;
-    
-    ctx.fillStyle = isMatching ? '#10b981' : '#ff3b30'; // green if matching, red otherwise
-    ctx.beginPath();
-    ctx.arc(cx, cy, drawR, 0, Math.PI * 2);
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = isMatching ? '#10b981' : '#ff3b30';
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, drawR * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 4. Circular Timing progress holds bar
-    const progress = Math.min(1.0, this.holdTimer / this.targetHoldTime);
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 60, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
-    ctx.stroke();
-
-    // 5. Draw Timing deviation pointer / gauge
-    ctx.fillStyle = '#8888a8';
-    ctx.font = '10px "Press Start 2P"';
-    ctx.textAlign = 'center';
-    ctx.fillText(`TARGET: ${this.targetRate.toFixed(2)} taps/s`, cx, cy - 90);
-    ctx.fillText(`ACTUAL: ${this.actualRate.toFixed(2)} taps/s`, cx, cy + 90);
-
-    // Accuracy helper
-    if (this.tapTimes.length > 0) {
-      if (isMatching) {
-        ctx.fillStyle = '#10b981';
-        ctx.fillText("KEEP IT UP!", cx, cy + 120);
+    this.dots.forEach(d => {
+      if (d.type === 'linear') {
+        // Move in a horizontal linear back and forth path
+        d.x = 300 + Math.sin(this.time * (d.speed / 100) + d.offset) * 200;
+        d.y = 300;
       } else {
-        ctx.fillStyle = this.actualRate < this.targetRate ? '#ff9f0a' : '#ff3b30';
-        ctx.fillText(this.actualRate < this.targetRate ? "TAP FASTER!" : "TAP SLOWER!", cx, cy + 120);
+        // Lissajous curve motion
+        d.x = 300 + Math.sin(this.time * (d.speed / 100) * 2 + d.offset) * 200;
+        d.y = 300 + Math.cos(this.time * (d.speed / 100) * 3 + d.offset) * 200;
+      }
+    });
+
+    // Poll mouse/touch clicks
+    const inp = this.input;
+    if (inp.wasMouseClicked()) {
+      const m = inp.getMousePos();
+      
+      // Check if clicked any dot
+      let hit = false;
+      this.dots.forEach(d => {
+        const dist = this.distance(m.x, m.y, d.x, d.y);
+        if (dist <= d.radius + 10) { // Slight click buffer
+          hit = true;
+          this.tapsCount++;
+          this.score += 50;
+        }
+      });
+
+      if (!hit) {
+        this.lives--;
+      } else {
+        // Check Goal
+        const goal = this.getLevelGoal();
+        if (this.tapsCount >= goal.target) {
+          this.levelComplete();
+        }
       }
     }
-
-    // HUD Level / Score
-    ctx.fillStyle = '#ffffff';
-    ctx.font = "bold 13px 'JetBrains Mono', monospace";
-    ctx.textAlign = 'left';
-    ctx.fillText(`STAGE: ${this.level}`, 20, 50);
-    ctx.textAlign = 'right';
-    ctx.fillText(`SCORE: ${this.score}`, this.width - 20, 50);
   }
 
-  getControls() {
+  render() {
+    this.clearCanvas();
+    const ctx = this.ctx;
+
+    // Draw Targets
+    this.dots.forEach((d, idx) => {
+      ctx.fillStyle = idx === 0 ? '#6c63ff' : '#00d4aa';
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
+
+  destroy() {
+    super.destroy();
+  }
+
+  getStats() {
     return [
-      { key: 'SPACE / CLICK', action: 'Tap to match target rate' }
+      { label: 'Taps', value: `${this.tapsCount}/${this.getLevelGoal().target}` },
+      { label: 'Level', value: this.level }
     ];
   }
 
-  getFunStat() {
-    return `Completed rate targets at speed: ${this.targetRate.toFixed(2)}`;
-  }
-
-  getScoreBreakdown() {
-    if (this.scoreBreakdown && this.scoreBreakdown.rows) {
-      return this.scoreBreakdown.rows;
-    }
-    return [
-      { label: 'Score Accumulation', value: this.score }
+  getLevelGoal() {
+    const goals = [
+      null,
+      { type: 'taps', target: 5 },
+      { type: 'taps', target: 6 },
+      { type: 'taps', target: 8 },
+      { type: 'taps', target: 10 },
+      { type: 'taps', target: 12 },
+      { type: 'taps', target: 14 },
+      { type: 'taps', target: 16 },
+      { type: 'taps', target: 18 },
+      { type: 'taps', target: 20 },
+      { type: 'taps', target: 25 }
     ];
+    return goals[this.level];
   }
 }
-window.GameState = {};
+
+window.GameClass = HyperTap;

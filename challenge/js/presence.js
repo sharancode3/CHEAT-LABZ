@@ -1,5 +1,5 @@
 /**
- * presence.js — Live Online Counter Subscriber
+ * presence.js — Live Online Counter Subscriber with Debounce and Smooth Animations
  * 
  * Subscribes to SocketClient 'presence' events and updates DOM elements:
  *   #online-count  — total connected players
@@ -9,47 +9,74 @@
 import SocketClient from './socket-client.js';
 
 let lastUpdate = null;
+let updateTimeout = null;
+let updateQueue = null;
 
 function animateCount(el, newVal) {
   if (!el) return;
   const current = parseInt(el.textContent) || 0;
   if (current === newVal) return;
 
-  // Quick number tick animation
-  el.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-  el.style.transform = 'translateY(-4px)';
-  el.style.opacity = '0';
+  // Let's do a smooth count animation
+  const duration = 400; // ms
+  const startTime = performance.now();
 
-  setTimeout(() => {
-    el.textContent = newVal;
-    el.style.transform = 'translateY(0)';
-    el.style.opacity = '1';
-  }, 200);
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Lerp
+    const currentVal = Math.floor(current + (newVal - current) * progress);
+    el.textContent = currentVal;
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      el.textContent = newVal;
+    }
+  }
+
+  requestAnimationFrame(tick);
 }
 
-function updatePresenceUI({ total, inLobby, inGame }) {
-  lastUpdate = { total, inLobby, inGame };
+function processPresenceUpdate(data) {
+  lastUpdate = data;
 
   const countEl   = document.getElementById('online-count');
   const inGameEl  = document.getElementById('in-game-count');
   const inLobbyEl = document.getElementById('in-lobby-count');
 
-  animateCount(countEl,   total  || 0);
-  animateCount(inGameEl,  inGame  || 0);
-  animateCount(inLobbyEl, inLobby || 0);
+  animateCount(countEl,   data.total  || 0);
+  animateCount(inGameEl,  data.inGame  || 0);
+  animateCount(inLobbyEl, data.inLobby || 0);
+}
+
+function debouncedPresenceUI(data) {
+  // Batch/debounce updates over 500ms
+  updateQueue = data;
+  if (updateTimeout) return;
+
+  updateTimeout = setTimeout(() => {
+    if (updateQueue) {
+      processPresenceUpdate(updateQueue);
+      updateQueue = null;
+    }
+    updateTimeout = null;
+  }, 500);
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 export function initPresence() {
   // Update immediately from cached value
-  updatePresenceUI({
+  const initial = {
     total:   SocketClient.getOnlineCount(),
     inLobby: SocketClient.getInLobbyCount(),
     inGame:  SocketClient.getInGameCount(),
-  });
+  };
+  processPresenceUpdate(initial);
 
   // Subscribe to future updates
-  SocketClient.onPresence(updatePresenceUI);
+  SocketClient.onPresence(debouncedPresenceUI);
 }
 
 export default initPresence;
