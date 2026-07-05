@@ -9,6 +9,8 @@ import { GameRunner } from '../core/game-runner.js';
 import { renderDetailScreen, updateStartButtonState } from './game-detail.js';
 import { showToast } from '../core/notifications.js';
 import { GAMES } from '../core/game-manifest.js';
+import { Storage } from '../core/storage.js';
+import { Identity } from '../core/identity.js';
 
 let activeGameInstance = null;
 let currentActiveGameId = null;
@@ -27,6 +29,8 @@ function ensureModalDOM() {
     modal = document.createElement('div');
     modal.id = 'game-modal';
     document.body.appendChild(modal);
+  } else {
+    modal.removeAttribute('style');
   }
 
   // Inject structural CSS
@@ -34,186 +38,241 @@ function ensureModalDOM() {
   if (!styleEl) {
     styleEl = document.createElement('style');
     styleEl.id = 'game-modal-styles';
-    styleEl.innerHTML = `
+    document.head.appendChild(styleEl);
+  }
+  styleEl.innerHTML = `
       .game-modal-shell {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: flex;
-        flex-direction: row;
-        background-color: transparent;
-        transform: translateY(100%);
-        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        font-family: 'DM Sans', sans-serif;
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 9999 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        background-color: #060608 !important;
+        transform: translateY(100%) !important;
+        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        font-family: 'DM Sans', sans-serif !important;
       }
-      .game-modal-shell.active {
-        transform: translateY(0);
-      }
-      
+      .game-modal-shell.active { transform: translateY(0) !important; }
+
       .panel-left {
-        width: 60%;
-        height: 100%;
-        background-color: #0a0a0f;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        flex: 0 0 60% !important;
+        width: 60% !important;
+        height: 100% !important;
+        background-color: #0a0a0f !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
       }
 
       .canvas-wrapper {
-        position: relative;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.08);
+        position: relative !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        width: 100% !important;
+        height: 100% !important;
+        background-color: #0e0e11 !important;
+      }
+
+      .canvas-loader {
+        position: absolute !important;
+        inset: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: #0e0e11 !important;
+        color: #a1a1aa !important;
+        gap: 16px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 11px !important;
+        letter-spacing: 0.1em !important;
+        z-index: 5 !important;
+      }
+      .loader-spinner {
+        width: 24px !important;
+        height: 24px !important;
+        border: 2px solid rgba(255, 255, 255, 0.08) !important;
+        border-top-color: var(--accent) !important;
+        border-radius: 50% !important;
+        animation: spin 0.8s linear infinite !important;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .canvas-error {
+        position: absolute !important;
+        inset: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: #0e0e11 !important;
+        color: #f3f3f5 !important;
+        gap: 12px !important;
+        padding: 24px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 12px !important;
+        text-align: center !important;
+        z-index: 6 !important;
+      }
+      .error-title {
+        color: #ef4444 !important;
+        font-weight: bold !important;
+        letter-spacing: 0.1em !important;
+      }
+      .error-message {
+        color: #a1a1aa !important;
+        font-size: 11px !important;
+        max-width: 320px !important;
+        line-height: 1.5 !important;
+      }
+      .error-retry-btn {
+        margin-top: 8px !important;
+        background-color: var(--accent) !important;
+        color: #ffffff !important;
+        padding: 8px 16px !important;
+        border-radius: 6px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+        border: none !important;
+        cursor: pointer !important;
+        transition: opacity 0.15s ease !important;
+      }
+      .error-retry-btn:hover {
+        opacity: 0.9 !important;
+      }
+      .error-retry-btn:disabled {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
       }
 
       .hud-top-bar {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 40px;
-        background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 16px;
-        pointer-events: none;
-        z-index: 10;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 40px !important;
+        background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 16px !important;
+        pointer-events: none !important;
+        z-index: 10 !important;
       }
 
       .hud-game-name {
-        font-family: 'DM Sans', sans-serif;
-        font-size: 12px;
-        color: rgba(255,255,255,0.5);
+        font-size: 12px !important;
+        color: rgba(255,255,255,0.85) !important;
+        background: rgba(10, 10, 15, 0.65) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
       }
-
       .hud-score {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 20px;
-        font-weight: bold;
-        color: #ffffff;
+        position: absolute !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 20px !important;
+        font-weight: bold !important;
+        color: #ffffff !important;
+        background: rgba(10, 10, 15, 0.65) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        padding: 4px 16px !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
       }
-
       .hud-right {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        background: rgba(10, 10, 15, 0.65) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
       }
-
-      .hud-lives {
-        display: flex;
-        gap: 4px;
-      }
-      .hud-lives .dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #ffffff;
-      }
-
-      .hud-pause-icon {
-        width: 16px;
-        height: 16px;
-        opacity: 0.6;
-        fill: #ffffff;
-      }
-
+      .hud-lives { display: flex !important; gap: 4px !important; }
+      .hud-lives .dot { width: 6px !important; height: 6px !important; border-radius: 50% !important; background: #ffffff !important; }
+      .hud-pause-icon { width: 16px !important; height: 16px !important; opacity: 0.6 !important; fill: #ffffff !important; }
       .hud-level-indicator {
-        position: absolute;
-        bottom: 16px;
-        left: 16px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-family: 'DM Sans', sans-serif;
-        font-size: 11px;
-        color: rgba(255,255,255,0.6);
-        pointer-events: none;
-        z-index: 10;
+        position: absolute !important;
+        bottom: 16px !important;
+        left: 16px !important;
+        background: rgba(10, 10, 15, 0.65) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        font-size: 11px !important;
+        color: rgba(255,255,255,0.85) !important;
+        pointer-events: none !important;
+        z-index: 10 !important;
       }
 
       .panel-right {
-        width: 40%;
-        height: 100%;
-        background-color: #111118;
-        border-left: 1px solid rgba(255,255,255,0.06);
-        overflow-y: auto;
-        position: relative;
+        flex: 0 0 40% !important;
+        width: 40% !important;
+        height: 100% !important;
+        background-color: #111118 !important;
+        border-left: 1px solid rgba(255,255,255,0.06) !important;
+        overflow-y: auto !important;
+        position: relative !important;
       }
 
-      .close-btn {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.05);
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ffffff;
-        transition: background 0.15s ease;
-        z-index: 50;
+      .close-btn, .back-btn {
+        position: absolute !important;
+        top: 16px !important;
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        background: rgba(255,255,255,0.05) !important;
+        border: none !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #ffffff !important;
+        transition: background 0.15s ease !important;
+        z-index: 50 !important;
       }
-      .close-btn:hover {
-        background: rgba(255,255,255,0.1);
-      }
+      .close-btn { right: 16px !important; }
+      .back-btn { left: 16px !important; }
+      .close-btn:hover, .back-btn:hover { background: rgba(255,255,255,0.1) !important; }
 
-      .overlay-container {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 20;
-      }
+      .overlay-container { position: absolute !important; inset: 0 !important; pointer-events: none !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 20 !important; }
+      .card-overlay { background: rgba(10,10,15,0.92) !important; backdrop-filter: blur(12px) !important; border-radius: 12px !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 32px !important; width: 320px !important; text-align: center !important; pointer-events: auto !important; opacity: 0 !important; transform: scale(0.85) !important; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease !important; }
+      .card-overlay.active { opacity: 1 !important; transform: scale(1.0) !important; }
 
-      .card-overlay {
-        background: rgba(10,10,15,0.92);
-        backdrop-filter: blur(12px);
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 32px;
-        width: 320px;
-        text-align: center;
-        pointer-events: auto;
-        opacity: 0;
-        transform: scale(0.85);
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
-      }
-      .card-overlay.active {
-        opacity: 1;
-        transform: scale(1.0);
-      }
-
-      /* Mobile layout */
+      /* Mobile layout override */
       @media (max-width: 768px) {
         .game-modal-shell {
-          flex-direction: column;
+          flex-direction: column !important;
         }
         .panel-left {
-          width: 100%;
-          height: 55%;
+          flex: 0 0 55% !important;
+          width: 100% !important;
+          height: 55% !important;
         }
         .panel-right {
-          width: 100%;
-          height: 45%;
-          border-left: none;
-          border-top: 1px solid rgba(255,255,255,0.06);
+          flex: 0 0 45% !important;
+          width: 100% !important;
+          height: 45% !important;
+          border-left: none !important;
+          border-top: 1px solid rgba(255,255,255,0.06) !important;
         }
       }
     `;
-    document.head.appendChild(styleEl);
-  }
 
   modal.className = 'game-modal-shell hidden';
   return modal;
@@ -243,9 +302,15 @@ export async function launchGameModal(gameId) {
       <div class="overlay-container" id="overlay-container"></div>
     </div>
     <div class="panel-right" id="panel-right">
+      <button class="back-btn" id="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
       <button class="close-btn" id="close-btn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
       <div id="detail-content"></div>
@@ -253,6 +318,7 @@ export async function launchGameModal(gameId) {
   `;
 
   modal.querySelector('#close-btn').addEventListener('click', closeGameModal);
+  modal.querySelector('#back-btn').addEventListener('click', closeGameModal);
 
   // Animate open
   modal.classList.remove('hidden');
@@ -270,7 +336,7 @@ export async function launchGameModal(gameId) {
   setupEventListeners();
 }
 
-async function startGame(gameId, level) {
+async function startGame(gameId, level, isRetry = false) {
   const overlayContainer = document.getElementById('overlay-container');
   overlayContainer.innerHTML = ''; // Clear overlays
 
@@ -281,21 +347,62 @@ async function startGame(gameId, level) {
     activeGameInstance = null;
   }
 
+  const canvasWrapper = document.getElementById('canvas-wrapper');
+  
+  // Selectively clean up previous instances of canvas, loader, or errors to keep HUD elements intact
+  const oldCanvas = canvasWrapper.querySelector('canvas');
+  if (oldCanvas) oldCanvas.remove();
+  const oldLoader = canvasWrapper.querySelector('.canvas-loader');
+  if (oldLoader) oldLoader.remove();
+  const oldError = canvasWrapper.querySelector('.canvas-error');
+  if (oldError) oldError.remove();
+
+  // Show Loading indicator
+  const loader = document.createElement('div');
+  loader.className = 'canvas-loader';
+  loader.innerHTML = `
+    <div class="loader-spinner"></div>
+    <div class="loader-text">${isRetry ? 'RETRYING LOADING...' : 'LOADING MODULE...'}</div>
+  `;
+  canvasWrapper.appendChild(loader);
+
   const loadResult = await loadGame(gameId);
   if (loadResult.error) {
-    showToast(ERROR_MESSAGES[loadResult.error] || "Failed to load game", "error");
+    loader.remove(); // Remove loading spinner
     updateStartButtonState(`START LEVEL ${level}`);
+
+    // Differentiate error
+    const friendlyMsg = ERROR_MESSAGES[loadResult.error] || "An unexpected error occurred.";
+    
+    // Create proper in-panel error state inside canvas wrapper
+    const errorEl = document.createElement('div');
+    errorEl.className = 'canvas-error';
+    errorEl.innerHTML = `
+      <div class="error-title">COULD NOT LOAD MODULE</div>
+      <div class="error-message">${friendlyMsg}</div>
+      <button id="error-retry-btn" class="error-retry-btn">RETRY CONNECTION</button>
+    `;
+    canvasWrapper.appendChild(errorEl);
+
+    // Set up retry with brief backoff
+    const retryBtn = errorEl.querySelector('#error-retry-btn');
+    retryBtn.addEventListener('click', async () => {
+      retryBtn.disabled = true;
+      retryBtn.innerText = 'WAITING BACKOFF...';
+      
+      // 1000ms brief backoff delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      startGame(gameId, level, true);
+    });
+
     return;
   }
 
+  loader.remove(); // Remove loading spinner
+
   const { GameClass } = loadResult;
   
-  // Create a clean canvas
-  const canvasWrapper = document.getElementById('canvas-wrapper');
-  // Remove old canvas if exists
-  const oldCanvas = canvasWrapper.querySelector('canvas');
-  if (oldCanvas) oldCanvas.remove();
-
   const canvas = document.createElement('canvas');
   // Temporary dimensions until we adapt to GameBase logical sizes
   canvas.width = 800;
@@ -377,9 +484,53 @@ export function closeGameModal() {
 
 // --- Event Handlers for Overlays ---
 
+async function submitStats(gameId, score, level) {
+  const uid = Identity.getUID();
+  const displayName = Identity.getDisplayName();
+  if (!uid) return;
+
+  // 1. Update localStorage immediately for instant offline-first experience
+  const saved = Storage.get(gameId, null);
+  let record = { score: 0, runs: 0, history: [], highestLevel: 1 };
+  if (saved && typeof saved === 'object') {
+    record = saved;
+  } else if (typeof saved === 'number') {
+    record = { score: saved, runs: 1, history: [saved], highestLevel: 1 };
+  }
+
+  record.runs++;
+  record.score = Math.max(record.score, score);
+  record.highestLevel = Math.max(record.highestLevel, level);
+  record.lastPlayed = Date.now();
+  record.history.push(score);
+  Storage.set(gameId, record);
+
+  // Trigger real-time UI refresh in the right-hand panel
+  const detailContent = document.getElementById('detail-content');
+  if (detailContent && currentActiveGameId === gameId) {
+    renderDetailScreen(gameId, detailContent, (l) => startGame(gameId, l), record.highestLevel);
+  }
+
+  // 2. Sync to Supabase DB via Express API endpoint
+  const API_URL = import.meta.env?.VITE_SOCKET_URL || 'http://localhost:4000';
+  try {
+    const res = await fetch(`${API_URL}/api/stats/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, gameId, displayName, score, level })
+    });
+    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+  } catch (e) {
+    console.warn('[Supabase] Stats submission failed (offline/schema mismatch):', e);
+  }
+}
+
 function handleLevelComplete(e) {
   const { game, level } = e.detail;
   GameRunner.stop(); // Freeze canvas
+
+  // Submit and sync stats
+  submitStats(currentActiveGameId, game.score, level);
 
   const overlayContainer = document.getElementById('overlay-container');
   const gameManifest = GAMES.find(g => g.id === currentActiveGameId);
@@ -441,6 +592,9 @@ function handleLevelComplete(e) {
 function handleGameOverEvent(e) {
   const { game, score } = e.detail;
   GameRunner.stop();
+
+  // Submit and sync stats
+  submitStats(currentActiveGameId, score, game.level || 1);
 
   const overlayContainer = document.getElementById('overlay-container');
   const gameManifest = GAMES.find(g => g.id === currentActiveGameId);

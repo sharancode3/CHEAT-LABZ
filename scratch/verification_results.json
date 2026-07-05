@@ -1,0 +1,282 @@
+[
+  {
+    "name": "Neon Serpent",
+    "type": "SOLO",
+    "file": "/js/games/solo/neon-serpent.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Loop Rally",
+    "type": "SOLO",
+    "file": "/js/games/solo/loop-rally.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Turbo Drift",
+    "type": "SOLO",
+    "file": "/js/games/solo/turbo-drift.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Key Frenzy",
+    "type": "SOLO",
+    "file": "/js/games/solo/key-frenzy.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Astro Strider",
+    "type": "SOLO",
+    "file": "/js/games/solo/astro-strider.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Cipher Quest",
+    "type": "SOLO",
+    "file": "/js/games/solo/cipher-quest.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Phantom Calc",
+    "type": "SOLO",
+    "file": "/js/games/solo/phantom-calc.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Word Pulse",
+    "type": "SOLO",
+    "file": "/js/games/solo/word-pulse.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Pixel Dodge",
+    "type": "SOLO",
+    "file": "/js/games/solo/pixel-dodge.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Stack Blitz",
+    "type": "SOLO",
+    "file": "/js/games/solo/stack-blitz.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Memory Grid",
+    "type": "SOLO",
+    "file": "/js/games/solo/memory-grid.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Hyper Tap",
+    "type": "SOLO",
+    "file": "/js/games/solo/hyper-tap.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Gravity Flip",
+    "type": "SOLO",
+    "file": "/js/games/solo/gravity-flip.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Chain Burst",
+    "type": "SOLO",
+    "file": "/js/games/solo/chain-burst.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Reflex Rush",
+    "type": "SOLO",
+    "file": "/js/games/solo/reflex-rush.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Tile Runner",
+    "type": "SOLO",
+    "file": "/js/games/solo/tile-runner.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Beat Drop",
+    "type": "SOLO",
+    "file": "/js/games/solo/beat-drop.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Slide Forge",
+    "type": "SOLO",
+    "file": "/js/games/solo/slide-forge.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Orb Pop Deluxe",
+    "type": "SOLO",
+    "file": "/js/games/solo/orb-pop-deluxe.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Rock Paper Scissors",
+    "type": "MULTI",
+    "file": "/js/games/multi/rock-paper-scissors.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Tic Toe",
+    "type": "MULTI",
+    "file": "/js/games/multi/tic-tac-toe.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Reflex Duel",
+    "type": "MULTI",
+    "file": "/js/games/multi/reflex-duel.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Word Duel",
+    "type": "MULTI",
+    "file": "/js/games/multi/word-duel.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Multiplayer Snake",
+    "type": "MULTI",
+    "file": "/js/games/multi/multiplayer-snake.js",
+    "verdict": "PASSED",
+    "details": "Valid interface. 5/5 prototype methods."
+  },
+  {
+    "name": "Battleship",
+    "type": "MULTI",
+    "file": "/js/games/multi/battleship.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Physics Soccer",
+    "type": "MULTI",
+    "file": "/js/games/multi/physics-soccer.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Ludo",
+    "type": "MULTI",
+    "file": "/js/games/multi/ludo.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Bomberman Arena",
+    "type": "MULTI",
+    "file": "/js/games/multi/bomberman-arena.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Tank Battle",
+    "type": "MULTI",
+    "file": "/js/games/multi/tank-battle.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "King of the Hill",
+    "type": "MULTI",
+    "file": "/js/games/multi/king-of-the-hill.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Color Flood Duel",
+    "type": "MULTI",
+    "file": "/js/games/multi/color-flood-duel.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Top Down Racer",
+    "type": "MULTI",
+    "file": "/js/games/multi/top-down-racer.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Zombie Survival",
+    "type": "MULTI",
+    "file": "/js/games/multi/zombie-survival.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Mini Party Pack",
+    "type": "MULTI",
+    "file": "/js/games/multi/mini-party-pack.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Pixel Gunfight",
+    "type": "MULTI",
+    "file": "/js/games/multi/pixel-gunfight.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Capture The Flag",
+    "type": "MULTI",
+    "file": "/js/games/multi/capture-the-flag.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Mini Clash",
+    "type": "MULTI",
+    "file": "/js/games/multi/mini-clash.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "RPS Tournament",
+    "type": "MULTI",
+    "file": "/js/games/multi/rock-paper-scissors-tournament.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Unknown Target Mock",
+    "type": "SOLO",
+    "file": "/js/games/solo/non-existent.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  },
+  {
+    "name": "Beta Target Mock",
+    "type": "SOLO",
+    "file": "/js/games/solo/neon-serpent.js",
+    "verdict": "FAILED",
+    "details": "Error: UNKNOWN_GAME"
+  }
+]

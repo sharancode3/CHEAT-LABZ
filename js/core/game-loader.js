@@ -4,17 +4,20 @@
  * Handles loading game modules dynamically and validating their prototype.
  */
 
-import { GAMES } from './game-manifest.js';
+import { getValidGames } from './game-manifest.js';
 
 // Friendly error messages mapping
 export const ERROR_MESSAGES = {
   UNKNOWN_GAME: "Game not recognized. Contact support.",
   NOT_LIVE: "Coming soon! This game is in development.",
   LOAD_TIMEOUT: "Game took too long to load. Check connection.",
-  NO_DEFAULT_EXPORT: "Game file is broken. Try refreshing.",
-  INVALID_EXPORT_TYPE: "Game file is broken. Try refreshing.",
-  MISSING_METHODS: "Game is incomplete. Check back later.",
-  NETWORK_ERROR: "Couldn't load game. Check your connection."
+  NO_DEFAULT_EXPORT: "Game file is broken. No default export found.",
+  INVALID_EXPORT_TYPE: "Game file is broken. Default export is not a class.",
+  MISSING_METHODS: "Game is incomplete. Missing required methods.",
+  NETWORK_ERROR: "Couldn't load game. Check your connection.",
+  SYNTAX_ERROR: "Syntax error in game code. Open console to view.",
+  MODULE_NOT_FOUND: "Game file could not be found on the server.",
+  IMPORT_ERROR: "Failed to import game module. Open console to view."
 };
 
 /**
@@ -24,7 +27,8 @@ export const ERROR_MESSAGES = {
  */
 export async function loadGame(gameId) {
   // 1. Locate manifest entry
-  const manifest = GAMES.find(g => g.id === gameId);
+  const validGames = getValidGames();
+  const manifest = validGames.find(g => g.id === gameId);
   if (!manifest) {
     console.error(`[GameLoader] Unknown game ID: ${gameId}`);
     return { error: 'UNKNOWN_GAME', id: gameId };
@@ -92,11 +96,16 @@ export async function loadGame(gameId) {
     return { success: true, GameClass, manifest };
 
   } catch (err) {
-    console.error(`[GameLoader] Failed to load module ${file}:`, err);
+    console.error(`[GameLoader] Dynamic import failed for ${file}:`, err);
     if (err.message === 'TIMEOUT') {
-      return { error: 'LOAD_TIMEOUT', file };
+      return { error: 'LOAD_TIMEOUT', file, originalError: err };
     }
-    // Differentiate network/import syntax errors
-    return { error: 'NETWORK_ERROR', file };
+    if (err instanceof SyntaxError) {
+      return { error: 'SYNTAX_ERROR', file, originalError: err };
+    }
+    if (err.name === 'TypeError' || (err.message && err.message.includes('Failed to fetch dynamically imported module'))) {
+      return { error: 'MODULE_NOT_FOUND', file, originalError: err };
+    }
+    return { error: 'IMPORT_ERROR', file, originalError: err };
   }
 }

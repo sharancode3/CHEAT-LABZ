@@ -1,4 +1,11 @@
-import { registerPlayer, fetchPlayer } from './supabase-service.js';
+import { 
+  registerPlayer, 
+  fetchPlayer, 
+  saveGameStats, 
+  fetchUserStats, 
+  fetchGlobalLeaderboard, 
+  syncCurrencyAndStreak 
+} from './supabase-service.js';
 
 // Simple memory-based rate limiter
 const rateLimits = new Map(); // ip -> { count, windowStart }
@@ -6,7 +13,7 @@ const rateLimits = new Map(); // ip -> { count, windowStart }
 function checkRateLimit(ip) {
   const now = Date.now();
   const windowMs = 5 * 60 * 1000; // 5 minutes
-  const maxRequests = 5;
+  const maxRequests = 100; // Raised from 5 to 100 to support high-frequency game updates & page loads
 
   let limit = rateLimits.get(ip);
   if (!limit || (now - limit.windowStart > windowMs)) {
@@ -69,13 +76,86 @@ export function registerIdentityRoutes(app) {
     try {
       const player = await fetchPlayer(uid);
       if (player) {
-        res.json({ exists: true, displayName: player.display_name });
+        res.json({ 
+          exists: true, 
+          displayName: player.display_name,
+          coins: player.coins,
+          streak: player.streak
+        });
       } else {
         res.json({ exists: false });
       }
     } catch (e) {
       console.error('[API] Validate player exception:', e);
       res.status(500).json({ error: 'Database error validating player.' });
+    }
+  });
+
+  // ── Stats submission ────────────────────────────────────────────────────────
+  app.post('/api/stats/submit', async (req, res) => {
+    const { uid, gameId, displayName, score, level } = req.body || {};
+    if (!uid || !gameId || !displayName) {
+      return res.status(400).json({ error: 'uid, gameId, and displayName are required.' });
+    }
+
+    try {
+      await saveGameStats(uid, gameId, displayName, parseInt(score) || 0, parseInt(level) || 1);
+      res.json({ success: true });
+    } catch (e) {
+      console.error('[API] Stats submission exception:', e);
+      res.status(500).json({ error: 'Database error saving stats.' });
+    }
+  });
+
+  // ── Fetch user stats ────────────────────────────────────────────────────────
+  app.get('/api/stats/user', async (req, res) => {
+    const { uid } = req.query || {};
+    if (!uid) {
+      return res.status(400).json({ error: 'UID is required.' });
+    }
+
+    try {
+      const data = await fetchUserStats(uid);
+      if (data) {
+        res.json({ success: true, data });
+      } else {
+        res.json({ success: false, error: 'Database schema missing.' });
+      }
+    } catch (e) {
+      console.error('[API] Fetch stats exception:', e);
+      res.status(500).json({ error: 'Database error retrieving stats.' });
+    }
+  });
+
+  // ── Fetch global leaderboard ────────────────────────────────────────────────
+  app.get('/api/leaderboard/global', async (req, res) => {
+    const { gameId } = req.query || {};
+    if (!gameId) {
+      return res.status(400).json({ error: 'gameId is required.' });
+    }
+
+    try {
+      const leaderboard = await fetchGlobalLeaderboard(gameId);
+      res.json({ success: true, leaderboard });
+    } catch (e) {
+      console.error('[API] Fetch leaderboard exception:', e);
+      res.status(500).json({ error: 'Database error retrieving leaderboard.' });
+    }
+  });
+
+  // ── Sync currency and streak ────────────────────────────────────────────────
+  app.post('/api/currency/sync', async (req, res) => {
+    const { uid, coins, streak, lastSeen } = req.body || {};
+    if (!uid) {
+      return res.status(400).json({ error: 'UID is required.' });
+    }
+
+    try {
+      await syncCurrencyAndStreak(uid, parseInt(coins) || 0, parseInt(streak) || 0, lastSeen || new Date().toISOString());
+      res.json({ success: true });
+    } catch (e) {
+      console.error('[API] Currency sync exception:', e);
+      res.status(500).json({ error: 'Database error syncing currency.' });
     }
   });
 }

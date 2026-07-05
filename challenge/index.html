@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="css/challenge.css">
+  <link rel="stylesheet" href="/challenge/css/challenge.css">
 
   <!-- Socket.IO Client -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -240,11 +240,10 @@
 <!-- ── Toast Container ───────────────────────────────────────── -->
 <div class="challenge-toast-container" id="toast-container" aria-live="polite"></div>
 
-<!-- ── Scripts ───────────────────────────────────────────────── -->
 <script type="module">
-import SocketClient   from './js/socket-client.js';
-import { initPresence } from './js/presence.js';
-import { initTeamcodeInput, createRoom, joinMatchmaking, cancelMatchmaking } from './js/room-manager.js';
+import SocketClient   from '/challenge/js/socket-client.js';
+import { initPresence } from '/challenge/js/presence.js';
+import { initTeamcodeInput, createRoom, joinMatchmaking, cancelMatchmaking } from '/challenge/js/room-manager.js';
 
 import { getChallengeIcon } from '../assets/icons/challenge-icons.js';
 

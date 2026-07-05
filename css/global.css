@@ -12,20 +12,23 @@ html, body {
 }
 
 :root {
-  --bg-primary: #0a0a0f;       /* Near-black with blue tint */
-  --bg-secondary: #111118;     
-  --bg-card: #16161f;          
-  --bg-card-hover: #1e1e2a;    
-  --border: #2a2a3a;           
-  --border-bright: #3d3d55;    
-  --text-primary: #f0f0f8;     
-  --text-secondary: #8888a8;   
-  --text-muted: #555570;       
-  --accent-1: #6c63ff;         /* Purple — primary CTA */
-  --accent-2: #00d4aa;         /* Teal — secondary */
-  --accent-3: #ff6b6b;         /* Red — danger/hard */
-  --accent-4: #ffd93d;         /* Yellow — highlights/gold */
-  --accent-5: #4ecdc4;         /* Cyan — easy/chill */
+  --bg-primary: #0e0e11;       /* Premium desaturated charcoal/graphite */
+  --bg-secondary: #151518;     
+  --bg-card: #1d1d21;          
+  --bg-card-hover: #25252a;    
+  --border: rgba(255, 255, 255, 0.06);           
+  --border-bright: rgba(255, 255, 255, 0.12);    
+  --text-primary: #f3f3f5;     
+  --text-secondary: #a1a1aa;   
+  --text-muted: #52525b;       
+  
+  /* Restrained cool blue accent color used sparingly across the platform */
+  --accent: #3b82f6;           
+  --accent-1: var(--accent);         
+  --accent-2: var(--accent);         
+  --accent-3: var(--accent);         
+  --accent-4: var(--accent);         
+  --accent-5: var(--accent);         
   
   --font-display: 'Press Start 2P', monospace;
   --font-body: 'DM Sans', sans-serif;
@@ -35,38 +38,38 @@ html, body {
   --radius-lg: 20px;
   
   --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-glow-purple: 0 0 20px rgba(108,99,255,0.3);
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-glow-purple: none;
 }
 
 .theme-neon {
-  --bg-primary: #0f0a14;
-  --bg-secondary: #181120;
-  --bg-card: #20162b;
-  --bg-card-hover: #291c36;
-  --border: #3d2455;
-  --border-bright: #563377;
-  --accent-1: #ff007f;
-  --accent-2: #00f0ff;
-  --shadow-glow-purple: 0 0 20px rgba(255,0,127,0.4);
+  --bg-primary: #0e0e11;
+  --bg-secondary: #151518;
+  --bg-card: #1d1d21;
+  --bg-card-hover: #25252a;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-bright: rgba(255, 255, 255, 0.12);
+  --accent-1: var(--accent);
+  --accent-2: var(--accent);
+  --shadow-glow-purple: none;
 }
 
 .theme-matrix {
-  --bg-primary: #050a05;
-  --bg-secondary: #0a140a;
-  --bg-card: #0f1c0f;
-  --bg-card-hover: #142814;
-  --border: #1f3d1f;
-  --border-bright: #2d592d;
-  --accent-1: #00ff00;
-  --accent-2: #00cc00;
-  --shadow-glow-purple: 0 0 20px rgba(0,255,0,0.3);
+  --bg-primary: #0e0e11;
+  --bg-secondary: #151518;
+  --bg-card: #1d1d21;
+  --bg-card-hover: #25252a;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-bright: rgba(255, 255, 255, 0.12);
+  --accent-1: var(--accent);
+  --accent-2: var(--accent);
+  --shadow-glow-purple: none;
 }
 
 /* CHALLENGE tab live dot animation */
 @keyframes navChallengePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.5); }
-  50%       { box-shadow: 0 0 0 5px rgba(0,212,170,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0); }
 }
 
 body {
@@ -401,6 +404,8 @@ button {
   position: fixed; inset: 0; z-index: 10000;
   background: var(--bg-primary);
   display: flex; flex-direction: column;
+  width: 100vw;
+  height: 100vh;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

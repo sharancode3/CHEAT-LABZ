@@ -100,6 +100,54 @@ class LeaderboardUI {
     });
 
     this.render();
+
+    // Asynchronously fetch stats from Supabase to sync and re-render Hall of Fame
+    const uid = localStorage.getItem('cheatLabz_uid');
+    if (uid) {
+      const API_URL = 'http://localhost:4000'; // Fallback to localhost port 4000
+      fetch(`${API_URL}/api/stats/user?uid=${encodeURIComponent(uid)}`)
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.success && resData.data) {
+            const remoteStats = resData.data.stats;
+            
+            // Merge stats to local storage
+            remoteStats.forEach(stat => {
+              const currentLocal = Storage.get(stat.game_id, null);
+              let localRecord = { score: 0, runs: 0, history: [], highestLevel: 1 };
+              if (currentLocal && typeof currentLocal === 'object') {
+                localRecord = currentLocal;
+              } else if (typeof currentLocal === 'number') {
+                localRecord = { score: currentLocal, runs: 1, history: [currentLocal], highestLevel: 1 };
+              }
+
+              localRecord.score = Math.max(localRecord.score, stat.best_score);
+              localRecord.runs = Math.max(localRecord.runs, stat.total_runs);
+              localRecord.highestLevel = Math.max(localRecord.highestLevel, stat.highest_level);
+              Storage.set(stat.game_id, localRecord);
+            });
+
+            // Sync coins
+            if (typeof resData.data.coins === 'number') {
+              const coinsObj = Storage.get('coins', { total: 0, allTimeEarned: 0, history: [] });
+              coinsObj.total = resData.data.coins;
+              Storage.set('coins', coinsObj);
+              const coinEl = document.getElementById('coin-count');
+              if (coinEl) coinEl.textContent = coinsObj.total;
+            }
+            // Sync streaks
+            if (typeof resData.data.streak === 'number') {
+              const streakObj = Storage.get('streak', { current: 0, longest: 0, lastVisit: '', totalDays: 0 });
+              streakObj.current = resData.data.streak;
+              Storage.set('streak', streakObj);
+            }
+
+            // Re-render the leaderboard views with the newly updated stats
+            this.render();
+          }
+        })
+        .catch(err => console.warn('[Supabase] Failed to sync remote stats for Hall of Fame:', err));
+    }
   }
 
   getScores() {

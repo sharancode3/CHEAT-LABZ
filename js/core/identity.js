@@ -64,9 +64,25 @@ export const Identity = {
       if (!data.exists) {
         // Recreate missing record
         await this.registerWithBackend(uid, name);
-      } else if (data.displayName !== name) {
-        // Sync name if changed out of band
-        localStorage.setItem('cheatLabz_displayName', data.displayName);
+      } else {
+        if (data.displayName !== name) {
+          // Sync name if changed out of band
+          localStorage.setItem('cheatLabz_displayName', data.displayName);
+        }
+
+        // Sync coins and streak from Supabase if present
+        if (typeof data.coins === 'number') {
+          const coinsObj = localStorage.getItem('cheatLabz_coins') ? JSON.parse(localStorage.getItem('cheatLabz_coins')) : { total: 0, allTimeEarned: 0, history: [] };
+          coinsObj.total = data.coins;
+          localStorage.setItem('cheatLabz_coins', JSON.stringify(coinsObj));
+          const coinEl = document.getElementById('coin-count');
+          if (coinEl) coinEl.textContent = data.coins;
+        }
+        if (typeof data.streak === 'number') {
+          const streakObj = localStorage.getItem('cheatLabz_streak') ? JSON.parse(localStorage.getItem('cheatLabz_streak')) : { current: 0, longest: 0, lastVisit: '', totalDays: 0 };
+          streakObj.current = data.streak;
+          localStorage.setItem('cheatLabz_streak', JSON.stringify(streakObj));
+        }
       }
       return true;
     } catch (e) {
