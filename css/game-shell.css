@@ -79,6 +79,11 @@
   }
 }
 
+#game-canvas {
+  width: 100%;
+  height: 100%;
+}
+
 /* Mobile Controls Overlay */
 #mobile-controls {
   position: fixed;

@@ -148,6 +148,30 @@ export function showStreakNotification(streakCount, bonus) {
   }, 3100);
 }
 
+async function syncCurrencyWithSupabase() {
+  const uid = localStorage.getItem('cheatLabz_uid');
+  if (!uid) return;
+
+  const coinsObj = getCoins();
+  const streakObj = getStreak();
+
+  const API_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SOCKET_URL) || 'http://localhost:4000';
+  try {
+    await fetch(`${API_URL}/api/currency/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid,
+        coins: coinsObj.total,
+        streak: streakObj.current,
+        lastSeen: streakObj.lastVisit || new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    console.warn('[Supabase] Currency sync failed:', e);
+  }
+}
+
 export function awardCoins(amount, reason) {
   const data = getCoins();
   data.total += amount;
@@ -166,6 +190,9 @@ export function awardCoins(amount, reason) {
   if (coinEl) {
     coinEl.textContent = formatCoins(data.total);
   }
+
+  // Sync to database
+  syncCurrencyWithSupabase();
 }
 
 export function checkStreak() {
@@ -205,6 +232,9 @@ export function checkStreak() {
     Storage.set('streak', data);
     awardCoins(5, 'Day 1 streak!');
   }
+
+  // Sync to database
+  syncCurrencyWithSupabase();
 }
 
 export function isGameLocked(gameId) {

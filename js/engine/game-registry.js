@@ -72,23 +72,42 @@ export const MULTI_GAMES = {
  * @returns {Promise<{GameClass: any, meta: Object}>}
  */
 export async function loadGame(id, registry) {
-  const meta = registry[id];
-  if (!meta) throw new Error(`UNKNOWN_GAME:${id}`);
+  // Try to get metadata from the provided registry
+  let meta = registry[id];
+
+  // If not found, attempt to construct a fallback meta assuming standard file location
+  if (!meta) {
+    // Guess file path based on id convention
+    const guessedFile = `/js/games/solo/${id}.js`;
+    // Derive class name from id (e.g., "neon-serpent" -> "NeonSerpent")
+    const className = id
+      .split(/[-_]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+    meta = {
+      id,
+      name: className,
+      file: guessedFile,
+      className,
+      accentColor: '#ffffff',
+      logicalWidth: 800,
+      logicalHeight: 600,
+      status: 'live'
+    };
+  }
+
   if (meta.status !== 'live') throw new Error(`NOT_LIVE:${id}`);
-  
+
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject(new Error('TIMEOUT: Connection too slow. Try again.')), 5000)
   );
-  
+
   const load = import(meta.file);
-  
+
   try {
     const module = await Promise.race([load, timeout]);
-    // Allow either default export or named export matching className
     const GameClass = module.default || module[meta.className];
-    
     if (!GameClass) throw new Error('NO_DEFAULT_EXPORT: Game file has an error.');
-    
     return { GameClass, meta };
   } catch (err) {
     if (err.message.startsWith('TIMEOUT')) throw err;

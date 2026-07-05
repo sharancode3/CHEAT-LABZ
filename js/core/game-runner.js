@@ -30,8 +30,9 @@ class GameRunnerClass {
     if (this.activeGame && !this.activeGame.isPaused && !this.activeGame.isOver) {
       this.activeGame.update(delta);
       
-      // We pass the context to render just in case, but the game has this.ctx anyway
-      this.activeGame.render(this.activeGame.ctx);
+      if (this.activeGame && !this.activeGame.isPaused && !this.activeGame.isOver) {
+        this.activeGame.render(this.activeGame.ctx);
+      }
     }
     
     // Always call endFrame to clear single-frame inputs
@@ -41,6 +42,9 @@ class GameRunnerClass {
   }
 
   start(gameInstance) {
+    // Emit custom event when a game starts
+    const startEvent = new Event('game:start');
+    window.dispatchEvent(startEvent);
     if (this.activeGame) {
       this.stop();
     }

@@ -87,11 +87,11 @@ export class GameBase {
   }
 
   destroy() {
-    throw new Error("Subclass must implement destroy()");
+    // Default empty implementation to prevent crashes when calling super.destroy()
   }
 
   getStats() {
-    throw new Error("Subclass must implement getStats()");
+    return []; // Return empty array by default if subclass doesn't implement
   }
 
   // --- Flow Control ---

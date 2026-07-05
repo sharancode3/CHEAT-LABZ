@@ -821,3 +821,36 @@ export const GAMES = [
     status: 'coming-soon'
   }
 ];
+// ---- Manifest validation ---------------------------------------------------
+// Verify that each declared game file actually exists on the server. This runs
+// once when the module is imported. Missing entries are marked with `missing: true`
+// and a warning is printed to the console.
+async function _validateManifest() {
+  const missing = [];
+  await Promise.all(GAMES.map(async (game) => {
+    try {
+      const resp = await fetch(game.file, { method: 'HEAD' });
+      if (!resp.ok) {
+        console.warn(`[Manifest] Missing game file for ${game.id}: ${game.file}`);
+        game.missing = true;
+        missing.push(game.id);
+      }
+    } catch (e) {
+      console.warn(`[Manifest] Error fetching game file for ${game.id}: ${e}`);
+      game.missing = true;
+      missing.push(game.id);
+    }
+  }));
+  if (missing.length) {
+    console.warn(`[Manifest] ${missing.length} game(s) have missing files: ${missing.join(', ')}`);
+  }
+}
+_validateManifest();
+
+/**
+ * Returns a filtered list of games that have a valid file reference.
+ * Used by the loader to avoid attempting to import missing modules.
+ */
+export function getValidGames() {
+  return GAMES.filter(g => !g.missing);
+}

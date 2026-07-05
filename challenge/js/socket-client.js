@@ -13,7 +13,7 @@
 const SERVER_URL =
   import.meta.env?.VITE_SOCKET_URL ||
   window.CHALLENGE_SERVER_URL ||
-  'http://localhost:4000';
+  'ws://localhost:4000';
 
 // ── Connection State ─────────────────────────────────────────────────────────
 const STATE = {
