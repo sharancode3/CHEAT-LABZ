@@ -12,6 +12,45 @@ import { saveRoomState } from './supabase-service.js';
 // ────────────────────────────────────────────────────────────────────────────
 const rooms = new Map(); // code → room object
 
+// Periodic cleanup scanner: runs every minute to delete empty or inactive rooms
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms.entries()) {
+    // 1. Delete if all players are disconnected or empty
+    const allDisconnected = room.players.length === 0 || room.players.every(p => !p.connected);
+    if (allDisconnected) {
+      if (room.countdownTimer) clearTimeout(room.countdownTimer);
+      rooms.delete(code);
+      console.log(`[ROOM] Cleaned up empty/disconnected room ${code}`);
+      continue;
+    }
+
+    // 2. Track game over time or lobby inactivity
+    if (room.state === 'playing') {
+      room.lastGameEndedAt = null;
+    } else if (room.state === 'waiting' && !room.lastGameEndedAt) {
+      room.lastGameEndedAt = now;
+    }
+
+    // 3. Delete if inactive/over for more than 10 minutes
+    if (room.state !== 'playing' && room.lastGameEndedAt && (now - room.lastGameEndedAt > 10 * 60 * 1000)) {
+      if (room.countdownTimer) clearTimeout(room.countdownTimer);
+      rooms.delete(code);
+      console.log(`[ROOM] Deleted room ${code} due to 10 minutes of inactivity`);
+      
+      // Notify remaining players
+      room.players.forEach(p => {
+        const sock = global.ioInstance?.sockets.sockets.get(p.socketId);
+        if (sock) {
+          sock.emit('room:error', { message: 'Room closed due to inactivity.' });
+          sock.leave(code);
+          sock.currentRoom = null;
+        }
+      });
+    }
+  }
+}, 60000);
+
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────

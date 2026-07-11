@@ -13,55 +13,460 @@
   <link rel="stylesheet" href="css/home.css">
   <style>
     /* Premium Homepage Overrides */
-    body { background-color: var(--bg-primary); color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-    .hero-cyber { position: relative; height: 80vh; min-height: 600px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
-    .hero-bg-parallax { position: absolute; inset: -50px; background: radial-gradient(circle at center, rgba(139,92,246,0.15) 0%, rgba(9,9,11,1) 70%); z-index: 0; pointer-events: none; }
-    #pixel-dust-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
-    .hero-content { position: relative; z-index: 2; max-width: 800px; padding: 0 24px; }
-    .glitch-title { font-family: 'Press Start 2P', monospace; font-size: 4rem; margin-bottom: 24px; color: #fff; text-shadow: 0 0 20px var(--cyan); position: relative; display: inline-block; }
-    .glitch-title::before, .glitch-title::after { content: "CHEAT LABZ"; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; }
-    .glitch-title::before { left: 2px; text-shadow: -2px 0 var(--danger); animation: glitch-anim-1 2s infinite linear alternate-reverse; }
-    .glitch-title::after { left: -2px; text-shadow: -2px 0 var(--cyan); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
-    .hero-subtitle { font-size: 1.25rem; color: var(--muted); margin-bottom: 40px; line-height: 1.6; }
+    body { background-color: var(--bg-base); color: var(--text-primary); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
     
-    .mission-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; backdrop-filter: blur(12px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s; position: relative; overflow: hidden; }
-    .mission-card::before { content:''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-    .mission-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 20px rgba(6,182,212,0.2); }
+    /* Hero Cyber Section */
+    .hero-cyber {
+      position: relative;
+      min-height: 88vh;
+      padding-top: 52px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      text-align: center;
+    }
+    .hero-bg-parallax {
+      position: absolute;
+      inset: -50px;
+      background: radial-gradient(circle at center, rgba(108,99,255,0.12) 0%, var(--bg-base) 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+    #pixel-dust-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .glitch-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 3.5rem;
+      margin-bottom: 0;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(108,99,255,0.4);
+      position: relative;
+      display: inline-block;
+      letter-spacing: 0.05em;
+    }
+    .glitch-title::before, .glitch-title::after {
+      content: "CHEAT LABZ";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+    }
+    .glitch-title::before {
+      left: 2px;
+      text-shadow: -2px 0 var(--danger);
+      animation: glitch-anim-1 2s infinite linear alternate-reverse;
+    }
+    .glitch-title::after {
+      left: -2px;
+      text-shadow: -2px 0 var(--success);
+      animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    }
+    .hero-subtitle {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 480px;
+      line-height: 1.65;
+      margin: 16px auto 0;
+    }
     
-    .carousel-container { display: flex; gap: 24px; padding: 24px 50vw 48px 24px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab; }
-    .carousel-container::-webkit-scrollbar { display: none; }
-    .carousel-container:active { cursor: grabbing; }
-    .carousel-item { flex: 0 0 320px; scroll-snap-align: center; }
+    .cta-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 40px;
+      justify-content: center;
+    }
     
-    .hot-card { height: 420px; background: rgba(16,16,20,0.9); border: 1px solid rgba(139,92,246,0.2); border-radius: 20px; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); overflow: hidden; display: flex; flex-direction: column; padding: 24px; z-index: 1; }
-    .hot-card:hover { transform: scale(1.05) translateY(-10px); z-index: 10; border-color: var(--neon); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.3); }
+    .btn-enter-grid {
+      background: var(--accent);
+      color: white;
+      padding: 14px 32px;
+      border-radius: var(--radius-md);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background var(--transition), transform var(--transition);
+      display: inline-block;
+    }
+    .btn-enter-grid:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+    .btn-enter-grid:active {
+      transform: translateY(0);
+    }
+    
+    .btn-survive-arena {
+      background: transparent;
+      color: var(--text-primary);
+      padding: 14px 32px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-bright);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background var(--transition), border-color var(--transition), transform var(--transition);
+      display: inline-block;
+    }
+    .btn-survive-arena:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+    .btn-survive-arena:active {
+      transform: translateY(0);
+    }
+    
+    .scroll-hint-chevron {
+      margin-top: 48px;
+      color: var(--text-muted);
+      animation: chevronBounce 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes chevronBounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(6px); }
+    }
+
+    /* Section Headers */
+    .section-header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .section-header-bar {
+      width: 3px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .section-header-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .section-header-badge {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+
+    /* Active Missions Cards */
+    .mission-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: border-color var(--transition);
+      position: relative;
+    }
+    .mission-card:hover {
+      border-color: var(--border-default);
+    }
+    .mission-card.accepted-state {
+      border-color: rgba(0, 212, 170, 0.2);
+      background: rgba(0, 212, 170, 0.04);
+    }
+    .mission-card-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .mission-card-ap {
+      display: inline-block;
+      background: rgba(255, 215, 61, 0.12);
+      border: 1px solid rgba(255, 215, 61, 0.25);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    .mission-card-desc {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin: 10px 0 16px 0;
+    }
+    .btn-mission-accept {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-mission-accept:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border-bright);
+      color: var(--text-primary);
+    }
+    .mission-card-accepted-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--success);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Trending Uplinks / Game Cards */
+    .carousel-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .carousel-wrapper::before,
+    .carousel-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 60px;
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .carousel-wrapper::before {
+      left: 0;
+      background: linear-gradient(to right, var(--bg-base), transparent);
+    }
+    .carousel-wrapper::after {
+      right: 0;
+      background: linear-gradient(to left, var(--bg-base), transparent);
+    }
+
+    .carousel-container {
+      display: flex;
+      gap: 12px;
+      padding: 24px 24px 48px 24px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      cursor: grab;
+    }
+    .carousel-container::-webkit-scrollbar {
+      display: none;
+    }
+    .carousel-container:active {
+      cursor: grabbing;
+    }
+    .carousel-item {
+      flex: 0 0 auto;
+    }
+    
+    .hot-card {
+      width: 180px;
+      box-sizing: border-box;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .hot-card:hover {
+      border-color: var(--border-default);
+      transform: translateY(-3px);
+    }
     /* Blur siblings on hover container */
-    .carousel-container:hover .hot-card:not(:hover) { filter: blur(4px) brightness(0.6); transform: scale(0.95); }
-    
-    .hot-card-icon { width: 80px; height: 80px; margin: 0 auto 24px auto; color: var(--cyan); transition: transform 0.3s; }
-    .hot-card:hover .hot-card-icon { transform: scale(1.1); filter: drop-shadow(0 0 15px var(--cyan)); }
-    .hot-card-title { font-family: 'Press Start 2P', monospace; font-size: 14px; text-align: center; margin-bottom: 8px; color: #fff; }
-    
-    .hot-card-metrics { opacity: 0; transform: translateY(20px); transition: all 0.4s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
-    .hot-card:hover .hot-card-metrics { opacity: 1; transform: translateY(0); }
-    
-    .metric-row { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px; }
-    
-    .hot-card-footer { display: flex; justify-content: space-between; align-items: center; opacity: 0; transition: opacity 0.4s; margin-top: auto; }
-    .hot-card:hover .hot-card-footer { opacity: 1; }
-    
-    .btn-play-hidden { background: var(--cyan); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 800; cursor: pointer; transition: all 0.2s; flex-grow: 1; margin-right: 12px; }
-    .btn-play-hidden:hover { background: #fff; box-shadow: 0 0 15px var(--cyan); }
-    
-    .btn-question { width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold; cursor: help; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
-    .btn-question:hover { background: var(--neon); border-color: var(--neon); }
-    
-    /* Tooltip */
-    .premium-tooltip { position: absolute; bottom: 120%; right: 0; width: 260px; background: rgba(9,9,11,0.98); border: 1px solid var(--neon); border-radius: 12px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 100; transform: translateY(10px); pointer-events: none; text-align: left; }
-    .btn-question:hover .premium-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
-    
+    .carousel-container:hover .hot-card:not(:hover) {
+      filter: blur(4px) brightness(0.6);
+      transform: scale(0.95);
+    }
+    .hot-card-icon {
+      width: 36px;
+      height: 36px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--transition);
+    }
+    .hot-card:hover .hot-card-icon {
+      color: var(--card-accent, var(--accent));
+      filter: drop-shadow(0 0 8px var(--card-accent, var(--accent)));
+    }
+    .hot-card-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 12px;
+      margin-bottom: 0;
+      color: var(--text-primary);
+    }
+
+    /* Hover Stats Popup Styles */
+    .hot-card-popup {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      width: 220px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 150ms ease, transform 150ms ease;
+      z-index: 100;
+      text-align: left;
+    }
+    .hot-card:hover .hot-card-popup {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .popup-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    .popup-stats-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .popup-stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .popup-stat-row:last-child {
+      border-bottom: none;
+    }
+    .popup-stat-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .popup-stat-value {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .popup-actions {
+      margin-top: 14px;
+    }
+    .popup-play-btn {
+      flex: 1;
+      padding: 10px;
+      background: var(--accent);
+      color: white;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .popup-play-btn:hover {
+      background: var(--accent-hover);
+    }
+    .popup-info-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color var(--transition), color var(--transition);
+    }
+    .popup-info-btn:hover {
+      border-color: var(--border-bright);
+      color: var(--text-primary);
+    }
+    .popup-info-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
     @keyframes glitch-anim-1 { 0% { clip-path: inset(20% 0 80% 0); } 20% { clip-path: inset(60% 0 10% 0); } 40% { clip-path: inset(40% 0 50% 0); } 60% { clip-path: inset(80% 0 5% 0); } 80% { clip-path: inset(10% 0 70% 0); } 100% { clip-path: inset(30% 0 20% 0); } }
     @keyframes glitch-anim-2 { 0% { clip-path: inset(10% 0 60% 0); } 20% { clip-path: inset(30% 0 20% 0); } 40% { clip-path: inset(70% 0 10% 0); } 60% { clip-path: inset(20% 0 50% 0); } 80% { clip-path: inset(50% 0 30% 0); } 100% { clip-path: inset(5% 0 80% 0); } }
+
+    .home-section {
+      padding: 72px 48px 0 48px;
+      max-width: 1160px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+    .home-section:last-of-type {
+      padding-bottom: 80px;
+    }
+    .section-header-wrapper {
+      padding: 0 48px;
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+    @media (max-width: 768px) {
+      .home-section {
+        padding: 72px 20px 0 20px;
+      }
+      .section-header-wrapper {
+        padding: 0 20px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -81,40 +486,51 @@
     
     <div class="hero-content">
       <h1 class="glitch-title">CHEAT LABZ</h1>
-      <p class="hero-subtitle">The underground cyber arcade. No rules. Just pure skill.<br>Master all 19 challenges and dominate the global leaderboards.</p>
+      <p class="hero-subtitle">The underground arcade. 19 games. No rules. Just pure skill.</p>
       
-      <div style="display: flex; gap: 16px; justify-content: center;">
-        <a href="games.html" class="btn-play-hidden" style="text-decoration: none; display: inline-block;">ENTER THE GRID</a>
-        <a href="arena.html" style="padding: 12px 24px; border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; font-weight: 800; text-decoration: none; transition: all 0.2s;">SURVIVE ARENA</a>
+      <div class="cta-row">
+        <a href="games.html" class="btn-enter-grid">Enter the Grid</a>
+        <a href="arena.html" class="btn-survive-arena">Survive Arena</a>
+      </div>
+
+      <div class="scroll-hint-chevron">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
       </div>
     </div>
   </section>
 
   <!-- Collectible Missions Section -->
-  <section style="padding: 80px 24px; max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
-    <h2 style="font-family: 'Press Start 2P', monospace; font-size: 18px; margin-bottom: 40px; display: flex; align-items: center; gap: 16px;">
-      <span style="color: var(--cyan);">//</span> ACTIVE MISSIONS
-    </h2>
+  <section class="home-section">
+    <div class="section-header-row">
+      <div class="section-header-bar"></div>
+      <h2 class="section-header-title">Active Missions</h2>
+    </div>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;" id="missions-grid">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px;" id="missions-grid">
       <!-- Injected via JS -->
     </div>
   </section>
 
   <!-- Hot Games Momentum Carousel -->
-  <section style="padding: 40px 0 100px 0; position: relative; z-index: 10; overflow: hidden;">
-    <div style="padding: 0 24px; max-width: 1200px; margin: 0 auto;">
-      <h2 style="font-family: 'Press Start 2P', monospace; font-size: 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
-        <span style="color: var(--danger);">🔥</span> TRENDING UPLINKS
-      </h2>
+  <section class="home-section" style="overflow: hidden; max-width: none; padding-left: 0; padding-right: 0;">
+    <div class="section-header-wrapper">
+      <div class="section-header-row">
+        <div class="section-header-bar"></div>
+        <h2 class="section-header-title">Trending Uplinks</h2>
+        <span class="section-header-badge">8 games</span>
+      </div>
     </div>
     
-    <div class="carousel-container" id="hot-carousel">
-      <!-- Injected via JS -->
+    <div class="carousel-wrapper">
+      <div class="carousel-container" id="hot-carousel">
+        <!-- Injected via JS -->
+      </div>
     </div>
     
-    <div style="text-align: center; margin-top: 40px; position: relative; z-index: 10;">
-      <a href="ideas.html" style="font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--accent-1); text-decoration: none; border: 1px solid var(--accent-1); padding: 12px 24px; border-radius: 4px; display: inline-block; transition: all 0.2s; cursor: pointer;">GOT AN IDEA? SUBMIT IT HERE</a>
+    <div style="text-align: center; margin-top: 56px; position: relative; z-index: 10;">
+      <a href="ideas.html" class="btn-survive-arena" style="text-decoration: none; display: inline-block;">Submit your game idea</a>
     </div>
   </section>
 

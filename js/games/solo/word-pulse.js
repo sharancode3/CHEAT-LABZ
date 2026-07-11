@@ -1,148 +1,331 @@
 import { GameBase } from '../../core/game-base.js';
 
-const WORD_LIST = [
-  "BEAT", "TEMPO", "PULSE", "RHYTHM", "SYNTH", "SOUND", "CYCLE", "OCTAVE",
-  "CHORD", "DRUM", "MELODY", "HARMONY", "TUNING", "RESONANCE", "FREQUENCY"
-];
-
 class WordPulse extends GameBase {
-  static WIDTH = 600;
-  static HEIGHT = 600;
+  static logicalWidth = 580;
+  static logicalHeight = 420;
 
   init() {
-    this.letters = "abcdefghijklmnopqrstuvwxyz".split('');
     this.wordsSolved = 0;
-    this.word = "";
-    this.charIndex = 0;
-
-    // BPM config
-    this.bpm = 60 + this.level * 7; // BPM scales from 67 to 130
-    this.beatInterval = 60 / this.bpm; // Seconds per beat
-    this.beatTimer = 0;
-    this.pulseScale = 1.0;
-
-    this.nextWord();
-    
     this.score = 0;
     this.lives = 3;
+    this.isOver = false;
+
+    // Web Audio setup
+    this.audioCtx = null;
+    this.nextBeatTime = 0;
+    this.beatHistory = []; // Array of timestamps
+
+    // BPM & Level variables
+    this.bpm = 60;
+    this.windowSize = 0.150; // seconds (150ms)
+    
+    // Streaks & visuals
+    this.streak = 0;
+    this.onBeatFlash = 0; // visual trigger timer
+    this.greenRingRadius = 0;
+    this.greenRingOpacity = 0;
+    
+    this.totalTime = 0;
+    
+    this.words = {
+      4: ["beat", "synt", "drum", "tune", "note", "loop", "wave"],
+      5: ["tempo", "pulse", "synth", "sound", "cycle", "chord", "audio"],
+      6: ["rhythm", "octave", "melody", "tuning", "volume", "player"],
+      7: ["harmony", "singing", "guitars", "concert", "decibel"],
+      8: ["resonance", "frequency", "sequencer", "equalizer", "synthesizer"],
+      9: ["metronome", "acoustics", "amplitude", "vibraphone", "recording"],
+      10: ["soundtrack", "modulation", "instrument", "microphone"],
+      12: ["orchestration", "improvisation", "retrograde-synth"]
+    };
+
+    this.currentWord = "";
+    this.typedIndex = 0;
+
+    this.nextWord();
   }
 
   nextWord() {
     const lvl = this.level;
-    let targetLen = 4;
-    if (lvl >= 3) targetLen = 5;
-    if (lvl >= 5) targetLen = 6;
-    if (lvl >= 7) targetLen = 8;
-    if (lvl >= 9) targetLen = 10;
+    
+    // Set level stats
+    const bpms = [0, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
+    this.bpm = bpms[lvl] || 150;
+    
+    const windows = [0, 0.150, 0.130, 0.120, 0.110, 0.100, 0.090, 0.080, 0.070, 0.060, 0.050];
+    this.windowSize = windows[lvl] || 0.050;
 
-    const matched = WORD_LIST.filter(w => Math.abs(w.length - targetLen) <= 1);
-    this.word = this.randomChoice(matched.length > 0 ? matched : WORD_LIST);
-    this.charIndex = 0;
+    let len = 4;
+    if (lvl === 2) len = 5;
+    else if (lvl === 3) len = 6;
+    else if (lvl === 4) len = 7;
+    else if (lvl === 5) len = 8;
+    else if (lvl === 6) len = 9;
+    else if (lvl === 7 || lvl === 8) len = 10;
+    else if (lvl === 9 || lvl === 10) len = 12;
+
+    const list = this.words[len] || this.words[4];
+    this.currentWord = this.randomChoice(list);
+    this.typedIndex = 0;
+
+    // Initialize AudioContext on first interact or automatically if permitted
+    if (!this.audioCtx) {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      this.nextBeatTime = this.audioCtx.currentTime + 0.5;
+    }
   }
 
   update(delta) {
     if (this.isPaused || this.isOver) return;
 
-    const dt = delta / 1000;
+    this.totalTime += delta;
 
-    // Pulse Timer
-    this.beatTimer += dt;
-    if (this.beatTimer >= this.beatInterval) {
-      this.beatTimer -= this.beatInterval;
-      this.pulseScale = 1.25; // Visual beat bounce
+    // Ring expansion timers
+    if (this.greenRingOpacity > 0) {
+      this.greenRingRadius += delta * 0.15;
+      this.greenRingOpacity = Math.max(0, this.greenRingOpacity - delta / 300);
     }
-    this.pulseScale = this.lerp(this.pulseScale, 1.0, 10 * dt);
+    if (this.onBeatFlash > 0) {
+      this.onBeatFlash = Math.max(0, this.onBeatFlash - delta);
+    }
 
-    // Timing window: generous at lvl 1 (±200ms), tight at lvl 10 (±80ms)
-    const windowLeeway = Math.max(0.08, 0.20 - this.level * 0.012);
-
-    // Read input
-    const inp = this.input;
-    this.letters.forEach(char => {
-      if (inp.wasPressed(char)) {
-        const inputChar = char.toUpperCase();
-        const nextChar = this.word[this.charIndex];
-
-        // Check if hit timing was close to a beat
-        const offset = Math.min(this.beatTimer, this.beatInterval - this.beatTimer);
-        const onBeat = offset <= windowLeeway;
-
-        if (inputChar === nextChar && onBeat) {
-          this.charIndex++;
-          this.score += 15;
-          if (this.charIndex >= this.word.length) {
-            this.wordsSolved++;
-            
-            const goal = this.getLevelGoal();
-            if (this.wordsSolved >= goal.target) {
-              this.levelComplete();
-            } else {
-              this.nextWord();
-            }
-          }
-        } else {
-          // Missed or off-beat reduces lives
-          this.lives--;
-        }
+    // Schedule beat beeps
+    if (this.audioCtx) {
+      // Resume if suspended (browser rules)
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
       }
-    });
+
+      const now = this.audioCtx.currentTime;
+      // Lookahead 150ms
+      while (this.nextBeatTime < now + 0.15) {
+        let skipBeat = false;
+        
+        // Level 6: skip beats occasionally
+        if (this.level === 6 && Math.random() < 0.15) {
+          skipBeat = true;
+        }
+
+        if (!skipBeat) {
+          this.playOscillatorBeep(this.nextBeatTime);
+          this.beatHistory.push(this.nextBeatTime);
+          // Keep history short
+          if (this.beatHistory.length > 20) this.beatHistory.shift();
+        }
+
+        // Advance scheduling
+        let interval = 60 / this.bpm;
+
+        // Level 8: Tempo shifts mid-word
+        if (this.level === 8 && this.typedIndex >= Math.floor(this.currentWord.length / 2)) {
+          interval = 60 / (this.bpm + 20); // Faster mid-word
+        }
+
+        // Level 10: Syncopated beat pattern (swing / double beat)
+        if (this.level === 10) {
+          const beatIndex = Math.floor(this.nextBeatTime * (this.bpm / 60));
+          if (beatIndex % 4 === 1 || beatIndex % 4 === 3) {
+            interval = (60 / this.bpm) * 0.5; // double-time skip
+          } else {
+            interval = (60 / this.bpm) * 1.5;
+          }
+        }
+
+        this.nextBeatTime += interval;
+      }
+    }
+
+    // Input processing
+    const inp = this.input;
+    let typedChar = null;
+    for (const key of inp.pressed) {
+      if (key.length === 1 && key.toLowerCase() >= 'a' && key.toLowerCase() <= 'z') {
+        typedChar = key.toLowerCase();
+        break;
+      }
+    }
+
+    if (typedChar) {
+      const correctChar = this.currentWord[this.typedIndex];
+      if (typedChar === correctChar) {
+        // Find nearest beat
+        const now = this.audioCtx ? this.audioCtx.currentTime : performance.now() / 1000;
+        let nearestBeat = 0;
+        let minDiff = Infinity;
+        this.beatHistory.forEach(b => {
+          const diff = Math.abs(now - b);
+          if (diff < minDiff) {
+            minDiff = diff;
+            nearestBeat = b;
+          }
+        });
+
+        // Determine if inside window
+        if (minDiff <= this.windowSize) {
+          // On Beat!
+          this.score += 10;
+          this.streak++;
+          this.onBeatFlash = 200; // flash circle
+          this.greenRingRadius = 40;
+          this.greenRingOpacity = 1.0;
+        } else {
+          // Off Beat!
+          this.streak = 0;
+        }
+
+        this.typedIndex++;
+        
+        // Word clear check
+        if (this.typedIndex >= this.currentWord.length) {
+          this.wordsSolved++;
+          if (this.wordsSolved >= 15) {
+            this.levelComplete();
+          } else {
+            this.nextWord();
+          }
+        }
+      } else {
+        // Missed (wrong key) breaks streak
+        this.streak = 0;
+      }
+    }
   }
 
-  render() {
-    this.clearCanvas();
-    const ctx = this.ctx;
+  playOscillatorBeep(time) {
+    if (!this.audioCtx) return;
+    try {
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      
+      // Tone pitch
+      osc.frequency.setValueAtTime(440, time);
+      gain.gain.setValueAtTime(0.08, time);
+      gain.gain.exponentialRampToValueAtTime(0.005, time + 0.05);
+      
+      osc.start(time);
+      osc.stop(time + 0.06);
+    } catch(e) {}
+  }
 
-    // Draw Pulse Ring
-    ctx.strokeStyle = `rgba(108, 99, 255, ${0.1 + (this.pulseScale - 1) * 2})`;
-    ctx.lineWidth = 4;
+  render(ctx) {
+    this.clear();
+
+    const cx = this.W / 2;
+    const cy = this.H / 2;
+
+    // Draw Pulse Ring & scale animation
+    // Find time elapsed since nearest beat to calculate circle scale
+    const now = this.audioCtx ? this.audioCtx.currentTime : performance.now() / 1000;
+    let nearestBeat = 0;
+    let minDiff = Infinity;
+    this.beatHistory.forEach(b => {
+      const diff = Math.abs(now - b);
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearestBeat = b;
+      }
+    });
+
+    // expansion: 80ms, return: 140ms. Let's calculate scale factor
+    let scale = 1.0;
+    let opacity = 0.3;
+    const msDiff = minDiff * 1000;
+    if (now >= nearestBeat) {
+      // past beat: shrink back
+      if (msDiff <= 140) {
+        const t = msDiff / 140; // 0 to 1
+        scale = 1.35 - t * 0.35;
+        opacity = 0.7 - t * 0.4;
+      }
+    } else {
+      // heading to beat: expand
+      if (msDiff <= 80) {
+        const t = msDiff / 80; // 1 to 0
+        scale = 1.0 + (1.0 - t) * 0.35;
+        opacity = 0.3 + (1.0 - t) * 0.4;
+      }
+    }
+
+    // On-beat correct keypress bright override
+    if (this.onBeatFlash > 0) {
+      opacity = 1.0;
+      scale = 1.35;
+    }
+
+    // 1. Draw expanding green ring on hit
+    if (this.greenRingOpacity > 0) {
+      ctx.strokeStyle = `rgba(0, 212, 170, ${this.greenRingOpacity})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.greenRingRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 2. Draw beat circle
+    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+    ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.arc(300, 300, 100 * this.pulseScale, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 60 * scale, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Draw Word
+    // 3. Draw Word in center
+    ctx.font = "bold 32px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center';
-    ctx.font = '32px DM Sans';
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText(this.word, 300, 300);
+    
+    // Draw letters with proper highlights
+    const letterSpacing = 24;
+    const totalW = (this.currentWord.length - 1) * letterSpacing;
+    const startX = cx - totalW / 2;
 
-    // Highlight typed characters
-    const typedText = this.word.slice(0, this.charIndex);
-    ctx.fillStyle = '#00d4aa';
-    ctx.fillText(typedText, 300 - (ctx.measureText(this.word).width - ctx.measureText(typedText).width) / 2, 300);
+    for (let i = 0; i < this.currentWord.length; i++) {
+      const lx = startX + i * letterSpacing;
+      const ly = cy + 120;
 
-    // BPM Indicator
-    ctx.font = '14px JetBrains Mono';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText(`${this.bpm} BPM`, 300, 420);
+      if (i < this.typedIndex) {
+        ctx.fillStyle = '#fd79a8'; // Typed letters: accent color
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'; // Remaining: white
+      }
+
+      ctx.fillText(this.currentWord[i].toUpperCase(), lx, ly);
+
+      // Underscore cursor on current letter
+      if (i === this.typedIndex) {
+        ctx.fillStyle = '#fd79a8';
+        ctx.fillRect(lx - 10, ly + 8, 20, 3);
+      }
+    }
+
+    // Streak and status
+    if (this.streak >= 3) {
+      ctx.fillStyle = '#00d4aa';
+      ctx.font = "bold 13px 'DM Sans', sans-serif";
+      ctx.textAlign = 'center';
+      ctx.fillText(`×${this.streak} ON BEAT`, cx, cy - 100);
+    }
+
+    // Top Right: BPM
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = "12px 'DM Sans', sans-serif";
+    ctx.textAlign = 'right';
+    ctx.fillText(`${this.bpm} BPM`, this.W - 24, 30);
+
+    // Bottom Left: solved words counter
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.font = "12px 'DM Sans', sans-serif";
+    ctx.textAlign = 'left';
+    ctx.fillText(`WORDS CLEAR: ${this.wordsSolved}/15`, 24, this.H - 24);
   }
 
   destroy() {
+    if (this.audioCtx) {
+      this.audioCtx.close();
+    }
     super.destroy();
-  }
-
-  getStats() {
-    return [
-      { label: 'Words Solved', value: `${this.wordsSolved}/${this.getLevelGoal().target}` },
-      { label: 'BPM', value: this.bpm }
-    ];
-  }
-
-  getLevelGoal() {
-    const goals = [
-      null,
-      { type: 'words', target: 3 },
-      { type: 'words', target: 3 },
-      { type: 'words', target: 4 },
-      { type: 'words', target: 4 },
-      { type: 'words', target: 5 },
-      { type: 'words', target: 5 },
-      { type: 'words', target: 6 },
-      { type: 'words', target: 6 },
-      { type: 'words', target: 7 },
-      { type: 'words', target: 8 }
-    ];
-    return goals[this.level];
   }
 }
 
 window.GameClass = WordPulse;
+export default WordPulse;

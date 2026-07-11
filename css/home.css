@@ -269,9 +269,9 @@
   --card-accent: #00f0ff;
   position: relative;
   min-width: 280px;
-  background: linear-gradient(145deg, rgba(22,22,31,0.95), rgba(16,16,24,0.98));
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: 28px 24px 24px;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex;
@@ -446,9 +446,9 @@
 
 /* Challenge cards — upgrade */
 .challenge-card {
-  background: linear-gradient(145deg, rgba(22,22,31,0.95), rgba(16,16,24,0.98));
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;
   flex-direction: column;

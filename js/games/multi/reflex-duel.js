@@ -1,44 +1,14 @@
 import { MultiplayerGameBase } from '../../core/multiplayer-game-base.js';
 
-const SHAPES = {
-  circle:   (c, cx, cy, r) => { c.beginPath(); c.arc(cx, cy, r, 0, Math.PI*2); c.fill(); },
-  triangle: (c, cx, cy, r) => {
-    c.beginPath();
-    c.moveTo(cx, cy - r);
-    c.lineTo(cx + r * 0.87, cy + r * 0.5);
-    c.lineTo(cx - r * 0.87, cy + r * 0.5);
-    c.closePath(); c.fill();
-  },
-  star: (c, cx, cy, r) => {
-    c.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const rad  = i % 2 === 0 ? r : r * 0.4;
-      const angle = (i * Math.PI * 2) / 10 - Math.PI / 2;
-      i === 0 ? c.moveTo(cx + Math.cos(angle)*rad, cy + Math.sin(angle)*rad)
-              : c.lineTo(cx + Math.cos(angle)*rad, cy + Math.sin(angle)*rad);
-    }
-    c.closePath(); c.fill();
-  },
-  hexagon: (c, cx, cy, r) => {
-    c.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI * 2) / 6 - Math.PI / 6;
-      i === 0 ? c.moveTo(cx + Math.cos(angle)*r, cy + Math.sin(angle)*r)
-              : c.lineTo(cx + Math.cos(angle)*r, cy + Math.sin(angle)*r);
-    }
-    c.closePath(); c.fill();
-  },
-};
-
 export default class ReflexDuelGame extends MultiplayerGameBase {
-  static logicalWidth = 600;
-  static logicalHeight = 600;
+  static logicalWidth = 680;
+  static logicalHeight = 400;
 
   constructor(canvas, room, mySocketId, socket) {
     super(canvas, room, mySocketId, socket);
 
     this.gameState = {
-      phase: 'ready', // 'waiting' | 'ready' | 'stimulus' | 'result' | 'false-start'
+      phase: 'ready', // 'ready' | 'stimulus' | 'result' | 'false-start'
       round: 0,
       total: 10,
       myScore: 0,
@@ -48,6 +18,8 @@ export default class ReflexDuelGame extends MultiplayerGameBase {
       falseStart: null,
       bgFlash: null,
       waitDots: 0,
+      roundHistory: [],
+      animProgress: 0
     };
 
     this._boundHandlers = {};
@@ -77,26 +49,35 @@ export default class ReflexDuelGame extends MultiplayerGameBase {
       this.gameState.bgFlash = null;
       this.gameState.lastResult = null;
       this.gameState.falseStart = null;
+      this.gameState.animProgress = 0;
       this._pressed = false;
     });
 
     bind('reflex:stimulus', ({ type, value }) => {
       this.gameState.stimulus = { type, value };
       this.gameState.phase = 'stimulus';
-      this.gameState.bgFlash = { color: type === 'color' ? value : '#ffffff', alpha: 1.0 };
+      // Stimulus flash background color
+      const flashColor = type === 'color' ? value : '#00b894';
+      this.gameState.bgFlash = { color: flashColor, alpha: 1.0 };
       this._pressed = false;
       if (this.container) {
-        this.container.audio.play('score');
+        this.container.audio.play('hit');
       }
     });
 
-    bind('reflex:result', ({ round, winner, reactionTimes, scores }) => {
+    bind('reflex:result', ({ round, winner, reactionTimes, scores, roundHistory }) => {
       const oppId = this.opponent?.socketId;
       this.gameState.myScore = scores[this.mySocketId] || 0;
       this.gameState.oppScore = scores[oppId] || 0;
       this.gameState.lastResult = { winner, reactionTimes };
-      this.gameState.phase = 'result';
+      
+      // Keep state as false-start if one occurred, else show result
+      if (this.gameState.phase !== 'false-start') {
+        this.gameState.phase = 'result';
+      }
+      this.gameState.animProgress = 0;
 
+      // Update dots and scores in container
       if (this.container) {
         this.container.updateScore(this.gameState.myScore);
         this.container.updateOpponentScore(this.gameState.oppScore);
@@ -106,6 +87,7 @@ export default class ReflexDuelGame extends MultiplayerGameBase {
     bind('reflex:false-start', ({ socketId }) => {
       this.gameState.falseStart = socketId;
       this.gameState.phase = 'false-start';
+      this._pressed = true;
       if (this.container) {
         this.container.audio.play('damage');
       }
@@ -135,153 +117,174 @@ export default class ReflexDuelGame extends MultiplayerGameBase {
   }
 
   update(dt) {
-    // Increment dots animation timer
+    // wait dots animation
     this._dotsTimer += dt;
-    if (this._dotsTimer > 0.4) {
+    if (this._dotsTimer > 0.3) {
       this.gameState.waitDots = (this.gameState.waitDots + 1) % 4;
       this._dotsTimer = 0;
     }
 
     // Fade background stimulus flash
     if (this.gameState.bgFlash && this.gameState.bgFlash.alpha > 0) {
-      this.gameState.bgFlash.alpha = Math.max(0, this.gameState.bgFlash.alpha - 2.0 * dt);
+      this.gameState.bgFlash.alpha = Math.max(0, this.gameState.bgFlash.alpha - 3.5 * dt); // fade out over ~280ms
+    }
+
+    // Progress slide anims
+    if (this.gameState.phase === 'result' || this.gameState.phase === 'false-start') {
+      this.gameState.animProgress = Math.min(1.0, this.gameState.animProgress + 3.0 * dt);
     }
   }
 
   render(ctx) {
     const cw = ReflexDuelGame.logicalWidth;
     const ch = ReflexDuelGame.logicalHeight;
+    const midX = cw / 2;
 
-    // Background color
-    ctx.fillStyle = '#060810';
+    // Default dark split background
+    ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, cw, ch);
 
-    // Render flash
-    if (this.gameState.bgFlash && this.gameState.bgFlash.alpha > 0) {
-      ctx.save();
-      ctx.globalAlpha = this.gameState.bgFlash.alpha * 0.25;
-      ctx.fillStyle = this.gameState.bgFlash.color;
-      ctx.fillRect(0, 0, cw, ch);
-      ctx.restore();
-    }
-
-    // Centered vertical dotted divider
+    // Dotted vertical divider
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(cw / 2, 0);
-    ctx.lineTo(cw / 2, ch);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.moveTo(midX, 0);
+    ctx.lineTo(midX, ch);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 6]);
     ctx.stroke();
     ctx.restore();
 
-    // Render local player and opponent split HUD halves
-    this._renderHalf(ctx, 0, ch, 'YOU', this.gameState.myScore, true);
-    this._renderHalf(ctx, cw / 2, ch, this.getOpponentName().toUpperCase(), this.gameState.oppScore, false);
-
-    // Stimulus Drawing
-    if (this.gameState.phase === 'stimulus' && this.gameState.stimulus) {
-      this._renderStimulus(ctx, cw, ch);
+    // Render stimulus flash over the entire canvas
+    if (this.gameState.phase === 'stimulus' || (this.gameState.bgFlash && this.gameState.bgFlash.alpha > 0)) {
+      ctx.save();
+      ctx.globalAlpha = this.gameState.bgFlash ? this.gameState.bgFlash.alpha * 0.70 : 0.70;
+      ctx.fillStyle = this.gameState.bgFlash ? this.gameState.bgFlash.color : '#00b894';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.restore();
     }
 
-    // Overlay phase notifications
-    if (this.gameState.phase === 'ready') {
-      this._renderReady(ctx, cw, ch);
-    } else if (this.gameState.phase === 'result' && this.gameState.lastResult) {
-      this._renderResult(ctx, cw, ch);
-    } else if (this.gameState.phase === 'false-start') {
-      this._renderFalseStart(ctx, cw, ch);
-    }
-
-    // Footer reaction hint
-    if (this.gameState.phase === 'stimulus' || this.gameState.phase === 'ready') {
-      ctx.font = '700 11px "DM Sans", sans-serif';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.textAlign = 'center';
-      ctx.fillText('PRESS SPACE OR TAP CANVAS TO REACT', cw / 2, ch - 30);
-    }
-  }
-
-  _renderHalf(ctx, x, ch, label, score, isMe) {
-    const hw = ReflexDuelGame.logicalWidth / 2;
-    const midX = x + hw / 2;
-
-    ctx.font = 'bold 36px "Press Start 2P", monospace';
+    // Names and scores displays on each side
+    ctx.font = 'bold 32px "Press Start 2P", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = isMe ? '#6c63ff' : '#ff6b6b';
-    ctx.fillText(score, midX, 100);
+    ctx.fillStyle = '#00b894'; // My Score Accent
+    ctx.fillText(this.gameState.myScore, midX / 2, 70);
 
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.fillText(label, midX, 140);
-  }
+    ctx.fillStyle = '#ff7675'; // Opponent Score Muted Red
+    ctx.fillText(this.gameState.oppScore, midX + midX / 2, 70);
 
-  _renderStimulus(ctx, cw, ch) {
-    const s = this.gameState.stimulus;
-    const midX = cw / 2, midY = ch / 2 + 30;
+    ctx.font = "bold 12px 'DM Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillText('YOU', midX / 2, 115);
+    ctx.fillText(this.getOpponentName().toUpperCase(), midX + midX / 2, 115);
 
-    if (s.type === 'color') {
-      ctx.fillStyle = s.value;
-      SHAPES.circle(ctx, midX, midY, 50);
-    } else if (s.type === 'shape') {
-      ctx.fillStyle = '#ffffff';
-      const draw = SHAPES[s.value] || SHAPES.circle;
-      draw(ctx, midX, midY, 50);
-    } else {
-      ctx.font = 'bold 24px "Press Start 2P", monospace';
-      ctx.fillStyle = '#ffffff';
+    // Key hints
+    ctx.font = "bold 11px 'DM Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.textAlign = 'left';
+    ctx.fillText('HINT: PRESS SPACEBAR', 24, ch - 35);
+    
+    ctx.textAlign = 'right';
+    ctx.fillText('HINT: PRESS SPACEBAR', cw - 24, ch - 35);
+
+    // Get Ready / Stimulus drawing
+    if (this.gameState.phase === 'ready') {
+      const dots = '.'.repeat(this.gameState.waitDots);
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillStyle = '#00b894';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('NOW!', midX, midY);
+      ctx.fillText(`GET READY${dots}`, midX, ch / 2 + 10);
     }
 
-    // Outer glow ring
-    ctx.beginPath();
-    ctx.arc(midX, midY, 68, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
+    // FALSE START overlay
+    if (this.gameState.phase === 'false-start' && this.gameState.falseStart) {
+      const isMe = this.gameState.falseStart === this.mySocketId;
+      ctx.save();
+      ctx.font = "bold 20px 'Press Start 2P', monospace";
+      ctx.fillStyle = '#ff7675';
+      ctx.textAlign = 'center';
+      
+      // Draw "TOO EARLY" over false starter's half
+      const textX = isMe ? midX / 2 : midX + midX / 2;
+      ctx.fillText('TOO EARLY', textX, ch / 2 + 20);
+      ctx.restore();
+    }
+
+    // Reaction times slides in centered from the bottom
+    if ((this.gameState.phase === 'result' || this.gameState.phase === 'false-start') && this.gameState.lastResult) {
+      this._renderSlideResult(ctx, cw, ch);
+    }
+
+    // History dots
+    this._renderHistoryDots(ctx, cw, ch);
   }
 
-  _renderReady(ctx, cw, ch) {
-    const dots = '.'.repeat(this.gameState.waitDots);
-    ctx.font = '700 14px "DM Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.textAlign = 'center';
-    ctx.fillText(`GET READY${dots}`, cw / 2, ch / 2 + 30);
-  }
+  _renderSlideResult(ctx, cw, ch) {
+    const p = this.gameState.animProgress;
+    const easeOut = 1 - Math.pow(1 - p, 4);
 
-  _renderResult(ctx, cw, ch) {
     const r = this.gameState.lastResult;
     const oppId = this.opponent?.socketId;
     const myTime = r.reactionTimes?.[this.mySocketId];
     const oppTime = r.reactionTimes?.[oppId];
+
     const iWon = r.winner === this.mySocketId;
     const isDraw = r.winner === null;
 
-    const text = isDraw ? 'DRAW' : iWon ? 'YOU WINS!' : 'THEY WIN';
-    const color = isDraw ? '#F59E0B' : iWon ? '#10b981' : '#EF4444';
+    // Slide up parameters
+    const targetY = ch / 2 + 15;
+    const startY = ch + 50;
+    const y = startY + (targetY - startY) * easeOut;
 
-    ctx.font = 'bold 16px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
+    ctx.save();
+    
+    // Label WIN / LOSE
+    const text = isDraw ? 'DRAW' : iWon ? 'YOU WIN' : 'THEM WIN';
+    const color = isDraw ? '#ffffff' : iWon ? '#00b894' : '#ff7675';
+    
+    ctx.font = "bold 22px 'Press Start 2P', monospace";
     ctx.fillStyle = color;
-    ctx.fillText(text, cw / 2, ch / 2 + 20);
+    ctx.textAlign = 'center';
+    ctx.fillText(text, cw / 2, y);
 
-    if (myTime && myTime > 0) {
-      ctx.font = 'bold 11px "JetBrains Mono", monospace';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.fillText(`YOU: ${myTime}ms  •  THEM: ${oppTime || '—'}ms`, cw / 2, ch / 2 + 50);
-    }
+    // Timings
+    ctx.font = "bold 12px 'JetBrains Mono', monospace";
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    const myLabel = myTime === -1 ? 'EARLY' : myTime ? `${Math.round(myTime)}ms` : 'MISS';
+    const oppLabel = oppTime === -1 ? 'EARLY' : oppTime ? `${Math.round(oppTime)}ms` : 'MISS';
+    ctx.fillText(`YOU: ${myLabel}  •  THEM: ${oppLabel}`, cw / 2, y + 30);
+    ctx.restore();
   }
 
-  _renderFalseStart(ctx, cw, ch) {
-    const isMe = this.gameState.falseStart === this.mySocketId;
-    ctx.font = 'bold 12px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#EF4444';
-    ctx.fillText(isMe ? 'FALSE START - YOU FORFEIT!' : 'FALSE START - THEY FORFEIT!', cw / 2, ch / 2 + 20);
+  _renderHistoryDots(ctx, cw, ch) {
+    // Draw 10 round indicator dots at the bottom
+    const history = this.gameState.lastResult?.roundHistory || [];
+    const maxRounds = 10;
+    
+    const dotW = 12;
+    const spacing = 12;
+    const totalW = maxRounds * dotW + (maxRounds - 1) * spacing;
+    const startX = cw / 2 - totalW / 2;
+    const dotY = ch - 20;
+
+    for (let i = 0; i < maxRounds; i++) {
+      const dx = startX + i * (dotW + spacing) + dotW / 2;
+      
+      ctx.beginPath();
+      ctx.arc(dx, dotY, 4, 0, Math.PI * 2);
+      
+      const rResult = history[i];
+      if (rResult) {
+        const isWinner = rResult.winner === this.mySocketId;
+        ctx.fillStyle = isWinner ? '#00b894' : '#ff7675'; // Filled accent for win, filled red for lose
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; // Outline muted for upcoming
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
   }
 
   destroy() {

@@ -82,6 +82,7 @@ function endRound(io, room, state, winnerId, reactionTimes) {
     winner: winnerId,
     reactionTimes,
     scores: { ...state.scores },
+    roundHistory: state.roundHistory
   });
 
   if (state.round >= state.totalRounds) {

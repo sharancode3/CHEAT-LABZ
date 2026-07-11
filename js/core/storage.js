@@ -238,15 +238,6 @@ export function checkStreak() {
 }
 
 export function isGameLocked(gameId) {
-  const LOCKED_GAMES = {
-    'beat-drop': 200,
-    'pixel-dodge': 150,
-    'astro-strider': 300
-  };
-  if (LOCKED_GAMES[gameId] !== undefined) {
-    const unlocked = Storage.get(`unlocked_${gameId}`);
-    return unlocked !== true;
-  }
   return false;
 }
 

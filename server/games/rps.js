@@ -105,14 +105,14 @@ export function registerRPSEvents(io, socket, rooms) {
 
     io.to(room.code).emit('rps:result', resultPayload);
 
-    // Start next round after 2.5s
+    // Start next round after 2s
     state.round++;
     state.choices = {};
     setTimeout(() => {
       if (rpsState.has(room.code)) {
         io.to(room.code).emit('rps:next-round', { round: state.round });
       }
-    }, 2500);
+    }, 2000);
   });
 
   socket.on('disconnect', () => {

@@ -1,12 +1,11 @@
 import { MultiplayerGameBase } from '../../core/multiplayer-game-base.js';
 
 const CHOICES = ['rock', 'paper', 'scissors'];
-const EMOJIS  = { rock: '✊', paper: '🖐', scissors: '✌️' };
-const COLORS  = { rock: '#EF4444', paper: '#6c63ff', scissors: '#00d4aa' };
+const COLORS  = { rock: '#ff6b6b', paper: '#ff6b6b', scissors: '#ff6b6b' }; // Accent color #ff6b6b
 
 export default class RPSGame extends MultiplayerGameBase {
   static logicalWidth = 600;
-  static logicalHeight = 600;
+  static logicalHeight = 400;
 
   constructor(canvas, room, mySocketId, socket) {
     super(canvas, room, mySocketId, socket);
@@ -20,6 +19,7 @@ export default class RPSGame extends MultiplayerGameBase {
       oppScore: 0,
       roundWinner: null,
       animProgress: 0,
+      roundHistory: []
     };
 
     this._btnHover = null;
@@ -44,7 +44,7 @@ export default class RPSGame extends MultiplayerGameBase {
       this.gameState.phase = 'waiting';
     });
 
-    bind('rps:result', ({ round, choices, roundWinner, scores }) => {
+    bind('rps:result', ({ round, choices, roundWinner, scores, roundHistory }) => {
       const oppId = this.opponent?.socketId;
       this.gameState.oppChoice  = choices[oppId]  || null;
       this.gameState.myChoice   = choices[this.mySocketId] || null;
@@ -52,6 +52,7 @@ export default class RPSGame extends MultiplayerGameBase {
 
       this.gameState.myScore  = scores[this.mySocketId]  || 0;
       this.gameState.oppScore = scores[oppId] || 0;
+      this.gameState.roundHistory = roundHistory || [];
 
       // Update scores in container
       if (this.container) {
@@ -116,7 +117,7 @@ export default class RPSGame extends MultiplayerGameBase {
 
   update(dt) {
     if (this.gameState.phase === 'revealing') {
-      this.gameState.animProgress = Math.min(1, this.gameState.animProgress + 2.5 * dt);
+      this.gameState.animProgress = Math.min(1, this.gameState.animProgress + 3.33 * dt); // slide in 300ms (1 / 0.3 = 3.33)
     }
   }
 
@@ -135,6 +136,9 @@ export default class RPSGame extends MultiplayerGameBase {
     } else if (this.gameState.phase === 'revealing') {
       this._renderRevealing(ctx, cw, ch);
     }
+
+    // Render round history dots at the bottom
+    this._renderHistoryDots(ctx, cw, ch);
   }
 
   _renderChoosing(ctx, cw, ch) {
@@ -144,38 +148,73 @@ export default class RPSGame extends MultiplayerGameBase {
       const isHover = this._btnHover === choice;
       const x = idx * zoneW;
       
-      ctx.fillStyle = isHover ? 'rgba(255, 255, 255, 0.04)' : '#111118';
-      ctx.fillRect(x + 4, 100, zoneW - 8, 400);
+      ctx.save();
+      // Hover background slightly brightens
+      ctx.fillStyle = isHover ? 'rgba(255, 107, 107, 0.08)' : '#111118';
       
-      ctx.strokeStyle = isHover ? COLORS[choice] : 'rgba(255,255,255,0.06)';
+      // Draw rounded rectangle
+      this._drawRoundedRect(ctx, x + 8, 40, zoneW - 16, 280, 12);
+      ctx.fill();
+      
+      ctx.strokeStyle = isHover ? '#ff6b6b' : 'rgba(255,255,255,0.06)';
       ctx.lineWidth = isHover ? 2.5 : 1;
-      ctx.strokeRect(x + 4, 100, zoneW - 8, 400);
+      ctx.stroke();
 
-      // Emoji
-      ctx.font = '72px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(EMOJIS[choice], x + zoneW / 2, 300);
+      // Render shape
+      ctx.strokeStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.3)';
+      ctx.fillStyle = isHover ? '#ff6b6b' : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 3;
+      this._drawChoiceShape(ctx, choice, x + zoneW / 2, 170);
 
       // Label
-      ctx.font = '12px JetBrains Mono';
+      ctx.font = "bold 13px 'DM Sans', sans-serif";
       ctx.fillStyle = isHover ? '#ffffff' : 'rgba(255,255,255,0.4)';
-      ctx.fillText(choice.toUpperCase(), x + zoneW / 2, 450);
+      ctx.textAlign = 'center';
+      ctx.fillText(choice.toUpperCase(), x + zoneW / 2, 270);
+      ctx.restore();
     });
   }
 
   _renderWaiting(ctx, cw, ch) {
-    // Grey out the canvas
-    ctx.fillStyle = 'rgba(10, 10, 15, 0.8)';
+    const zoneW = cw / 3;
+
+    CHOICES.forEach((choice, idx) => {
+      const isChosen = this.gameState.myChoice === choice;
+      const x = idx * zoneW;
+      
+      ctx.save();
+      // Chosen highlights in accent, others dim to 20% opacity
+      ctx.globalAlpha = isChosen ? 1.0 : 0.2;
+      ctx.fillStyle = isChosen ? 'rgba(255, 107, 107, 0.12)' : '#111118';
+      this._drawRoundedRect(ctx, x + 8, 40, zoneW - 16, 280, 12);
+      ctx.fill();
+      ctx.strokeStyle = isChosen ? '#ff6b6b' : 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = isChosen ? 2.5 : 1;
+      ctx.stroke();
+
+      ctx.strokeStyle = isChosen ? '#ffffff' : 'rgba(255,255,255,0.3)';
+      ctx.fillStyle = isChosen ? '#ff6b6b' : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 3;
+      this._drawChoiceShape(ctx, choice, x + zoneW / 2, 170);
+
+      ctx.font = "bold 13px 'DM Sans', sans-serif";
+      ctx.fillStyle = isChosen ? '#ffffff' : 'rgba(255,255,255,0.4)';
+      ctx.textAlign = 'center';
+      ctx.fillText(choice.toUpperCase(), x + zoneW / 2, 270);
+      ctx.restore();
+    });
+
+    // "Waiting for opponent..." text center canvas after selection
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.85)';
     ctx.fillRect(0, 0, cw, ch);
 
-    // Waiting dot animation
     const dotCount = Math.floor(Date.now() / 300) % 4;
     const dots = '.'.repeat(dotCount);
     
-    ctx.font = '14px DM Sans';
-    ctx.fillStyle = '#ffffff';
+    ctx.font = "bold 14px 'Press Start 2P', monospace";
+    ctx.fillStyle = '#ff6b6b';
     ctx.textAlign = 'center';
-    ctx.fillText(`WAITING FOR OPPONENT${dots}`, cw / 2, ch / 2);
+    ctx.fillText(`WAITING FOR OPPONENT${dots}`, cw / 2, ch / 2 - 10);
   }
 
   _renderRevealing(ctx, cw, ch) {
@@ -186,43 +225,140 @@ export default class RPSGame extends MultiplayerGameBase {
     const oppChoice = this.gameState.oppChoice;
     if (!myChoice || !oppChoice) return;
 
-    const bw = 140, bh = 140;
+    const bw = 150, bh = 180;
     const cy = ch * 0.45;
 
+    // Slide in from edges
     const myX = -bw + easeOut * (cw / 2 - bw - 20 + bw);
     const oppX = cw - easeOut * (cw / 2 - bw - 20 + bw);
 
     this._drawRevealCard(ctx, myChoice, myX, cy - bh / 2, bw, bh, 'YOU');
     this._drawRevealCard(ctx, oppChoice, oppX, cy - bh / 2, bw, bh, this.getOpponentName().toUpperCase());
 
-    if (p > 0.85) {
+    if (p >= 1.0) {
       const rw = this.gameState.roundWinner;
       const isDraw = rw === null;
       const isMe = rw === this.mySocketId;
       
-      const text = isDraw ? 'DRAW' : isMe ? 'YOU WIN' : 'THEY WIN';
-      const col  = isDraw ? '#F59E0B' : isMe ? '#10b981' : '#EF4444';
+      const text = isDraw ? 'DRAW' : isMe ? 'YOU WIN' : 'YOU LOSE';
+      const col  = isDraw ? '#ffffff' : isMe ? '#ff6b6b' : '#ff7675';
 
-      ctx.font = 'bold 24px "Press Start 2P", monospace';
+      ctx.font = 'bold 26px "Press Start 2P", monospace';
       ctx.fillStyle = col;
-      ctx.fillText(text, cw / 2, cy - bh / 2 - 35);
+      ctx.textAlign = 'center';
+      ctx.fillText(text, cw / 2, cy - bh / 2 - 25);
     }
   }
 
   _drawRevealCard(ctx, choice, x, y, w, h, label) {
-    const color = COLORS[choice];
+    ctx.save();
     ctx.fillStyle = '#111118';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
+    this._drawRoundedRect(ctx, x, y, w, h, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
 
-    ctx.font = '54px sans-serif';
-    ctx.fillText(EMOJIS[choice], x + w / 2, y + h / 2 - 10);
+    // Choice Shape inside reveal cards
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    this._drawChoiceShape(ctx, choice, x + w / 2, y + h / 2 - 15);
 
-    ctx.font = '10px JetBrains Mono';
+    ctx.font = "bold 11px 'DM Sans', sans-serif";
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText(label, x + w / 2, y + h - 18);
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + w / 2, y + h - 20);
+    ctx.restore();
+  }
+
+  _drawChoiceShape(ctx, choice, x, y) {
+    if (choice === 'rock') {
+      // Rock closed fist silhouette
+      ctx.beginPath();
+      ctx.moveTo(x - 22, y + 22);
+      ctx.lineTo(x - 22, y - 6);
+      ctx.bezierCurveTo(x - 22, y - 18, x - 12, y - 22, x - 4, y - 18);
+      ctx.bezierCurveTo(x + 2, y - 22, x + 12, y - 22, x + 18, y - 16);
+      ctx.lineTo(x + 22, y - 4);
+      ctx.lineTo(x + 22, y + 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (choice === 'paper') {
+      // Paper flat hand with 5 finger lines
+      ctx.beginPath();
+      ctx.arc(x, y + 8, 20, 0, Math.PI, false);
+      ctx.lineTo(x - 20, y + 24);
+      ctx.lineTo(x + 20, y + 24);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      for (let i = -2; i <= 2; i++) {
+        const fx = x + i * 8;
+        const fy = y - 26 + Math.abs(i) * 3;
+        ctx.beginPath();
+        ctx.moveTo(fx, y + 8);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+      }
+    } else if (choice === 'scissors') {
+      // Scissors V shape formed by two elongated ovals
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-Math.PI / 6);
+      ctx.beginPath();
+      ctx.ellipse(-10, -5, 6, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.PI / 6);
+      ctx.beginPath();
+      ctx.ellipse(10, -5, 6, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // rivet
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y + 4, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  _drawRoundedRect(ctx, x, y, w, h, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  _renderHistoryDots(ctx, cw, ch) {
+    const history = this.gameState.roundHistory;
+    const startX = cw / 2 - (history.length * 16) / 2;
+    const dotY = ch - 30;
+
+    history.forEach((h, idx) => {
+      const isWinner = h.winner === this.mySocketId;
+      const isOppWinner = h.winner && h.winner !== this.mySocketId;
+
+      ctx.fillStyle = isWinner ? '#ff6b6b' : isOppWinner ? 'rgba(255, 255, 255, 0.15)' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(startX + idx * 16 + 8, dotY, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   destroy() {

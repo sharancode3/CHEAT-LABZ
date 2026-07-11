@@ -20,10 +20,12 @@ const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 const PLAYER_COLORS = ['#8B5CF6', '#00d4aa', '#EF4444', '#F59E0B'];
 
-function randCell() {
+function randCell(shrinkLevel = 0) {
+  const minCoord = shrinkLevel;
+  const range = Math.max(4, GRID_SIZE - 2 * shrinkLevel);
   return [
-    Math.floor(Math.random() * GRID_SIZE),
-    Math.floor(Math.random() * GRID_SIZE),
+    minCoord + Math.floor(Math.random() * range),
+    minCoord + Math.floor(Math.random() * range),
   ];
 }
 
@@ -54,14 +56,36 @@ function isOccupied(state, [x, y]) {
     if (snake.body.some(([sx, sy]) => sx === x && sy === y)) return true;
   }
   if (state.food.some(([fx, fy]) => fx === x && fy === y)) return true;
+  if (state.obstacles && state.obstacles.some(([ox, oy]) => ox === x && oy === y)) return true;
   return false;
 }
 
 function spawnFood(state) {
   let pos;
   let tries = 0;
-  do { pos = randCell(); tries++; } while (isOccupied(state, pos) && tries < 100);
+  const shrink = state?.gridShrinkLevel || 0;
+  do { pos = randCell(shrink); tries++; } while (isOccupied(state, pos) && tries < 100);
   return pos;
+}
+
+function setupRound(state) {
+  state.gridShrinkLevel = state.round === 3 ? 2 : 0;
+  
+  if (state.round === 2) {
+    // Two permanent wall obstacles (horizontal lines)
+    state.obstacles = [];
+    for (let x = 7; x <= 11; x++) state.obstacles.push([x, 14]);
+    for (let x = 18; x <= 22; x++) state.obstacles.push([x, 14]);
+  } else {
+    state.obstacles = [];
+  }
+
+  // Food counts: Round 1: sparse food (2), Round 2: 4, Round 3: 3
+  const foodCount = state.round === 1 ? 2 : state.round === 2 ? 4 : 3;
+  state.food = [];
+  for (let i = 0; i < foodCount; i++) {
+    state.food.push(spawnFood(state));
+  }
 }
 
 function createState(players) {
@@ -75,9 +99,11 @@ function createState(players) {
     food: [],
     goldFood: null,
     powerups: [],
+    obstacles: [],
     tick: 0,
     round: 1,
     roundWinsNeeded: 3,
+    gridShrinkLevel: 0,
     players: players.map((p, i) => ({
       socketId: p.socketId,
       displayName: p.displayName,
@@ -87,8 +113,7 @@ function createState(players) {
     goldFoodTimeout: null,
   };
 
-  // Spawn initial food
-  for (let i = 0; i < FOOD_COUNT; i++) state.food.push(spawnFood(state));
+  setupRound(state);
 
   return state;
 }
@@ -96,6 +121,12 @@ function createState(players) {
 function processTick(io, room, state) {
   const now = Date.now();
   state.tick++;
+
+  // Increment grid shrink level every 30s (300 ticks of 100ms)
+  if (state.tick > 0 && state.tick % 300 === 0) {
+    state.gridShrinkLevel = Math.min(10, state.gridShrinkLevel + 1);
+    io.to(room.code).emit('snake:grid-shrink', { level: state.gridShrinkLevel });
+  }
 
   // Collect head positions to detect simultaneous collisions
   const nextHeads = {};
@@ -119,10 +150,19 @@ function processTick(io, room, state) {
     const head = nextHeads[sid];
     const [hx, hy] = head;
 
-    // Wall collision
-    if (hx < 0 || hx >= GRID_SIZE || hy < 0 || hy >= GRID_SIZE) {
+    // Wall collision (using gridShrinkLevel bounds)
+    const minCoord = state.gridShrinkLevel || 0;
+    const maxCoord = GRID_SIZE - 1 - minCoord;
+    if (hx < minCoord || hx > maxCoord || hy < minCoord || hy > maxCoord) {
       snake.alive = false;
       io.to(room.code).emit('snake:died', { socketId: sid, reason: 'wall' });
+      continue;
+    }
+
+    // Obstacle collision
+    if (state.obstacles && state.obstacles.some(([ox, oy]) => ox === hx && oy === hy)) {
+      snake.alive = false;
+      io.to(room.code).emit('snake:died', { socketId: sid, reason: 'obstacle' });
       continue;
     }
 
@@ -209,7 +249,6 @@ function processTick(io, room, state) {
     state.powerups.push({ type, pos: spawnFood(state) });
   }
 
-  // Broadcast game tick
   const tickData = {
     snakes: Object.fromEntries(Object.entries(state.snakes).map(([id, s]) => [id, {
       body: s.body,
@@ -222,9 +261,40 @@ function processTick(io, room, state) {
     food: state.food,
     goldFood: state.goldFood,
     powerups: state.powerups,
-    tick: state.tick,
   };
-  io.to(room.code).emit('game:tick', tickData);
+
+  // Broadcast game tick with Delta State Synchronization Engine
+  const last = state.lastTickData || {};
+  const deltaSnakes = {};
+  
+  for (const [id, s] of Object.entries(tickData.snakes)) {
+    const prev = last.snakes?.[id];
+    if (!prev || JSON.stringify(prev) !== JSON.stringify(s)) {
+      deltaSnakes[id] = s;
+    }
+  }
+
+  const deltaData = {
+    tick: state.tick,
+    t: now,
+    gridShrinkLevel: state.gridShrinkLevel
+  };
+
+  if (Object.keys(deltaSnakes).length > 0) {
+    deltaData.snakes = deltaSnakes;
+  }
+  if (!last.food || JSON.stringify(last.food) !== JSON.stringify(tickData.food)) {
+    deltaData.food = tickData.food;
+  }
+  if (last.goldFood !== tickData.goldFood && JSON.stringify(last.goldFood) !== JSON.stringify(tickData.goldFood)) {
+    deltaData.goldFood = tickData.goldFood;
+  }
+  if (!last.powerups || JSON.stringify(last.powerups) !== JSON.stringify(tickData.powerups)) {
+    deltaData.powerups = tickData.powerups;
+  }
+
+  state.lastTickData = tickData;
+  io.to(room.code).emit('game:tick', deltaData);
 
   // Check alive count
   const alive = Object.entries(state.snakes).filter(([,s]) => s.alive);
@@ -263,13 +333,20 @@ function processTick(io, room, state) {
         const s = spawnSnake(i);
         state.snakes[p.socketId] = { ...state.snakes[p.socketId], ...s };
       });
-      state.food = [];
-      for (let i = 0; i < FOOD_COUNT; i++) state.food.push(spawnFood(state));
+      
+      setupRound(state);
+      
       state.powerups = [];
       state.goldFood = null;
       state.tick = 0;
 
-      io.to(room.code).emit('snake:new-round', { round: state.round, roundWins: wins });
+      io.to(room.code).emit('snake:new-round', { 
+        round: state.round, 
+        roundWins: wins,
+        obstacles: state.obstacles,
+        gridShrinkLevel: state.gridShrinkLevel,
+        food: state.food
+      });
 
       state.tickInterval = setInterval(() => processTick(io, room, state), TICK_MS);
     }, 3000);
@@ -305,6 +382,8 @@ export function registerSnakeEvents(io, socket, rooms) {
         food: state.food,
         players: state.players,
         gridSize: GRID_SIZE,
+        obstacles: state.obstacles,
+        gridShrinkLevel: state.gridShrinkLevel,
       });
 
       state.tickInterval = setInterval(() => processTick(io, room, state), TICK_MS);
