@@ -112,4 +112,9 @@ export default class TestGame extends GameBase {
     ctx.font = '20px sans-serif';
     ctx.fillText(`Score: ${Math.floor(this.score)} | Level: ${this.level} | Time: ${this.timeInLevel.toFixed(1)}s`, 10, 30);
   }
+
+  destroy() {
+    super.destroy();
+    this.ball = null;
+  }
 }

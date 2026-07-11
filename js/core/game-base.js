@@ -1,175 +1,137 @@
 /**
  * js/core/game-base.js
- * The standard base class for all games.
- * Games must extend this and implement init, update, render, destroy, and getStats.
+ * Base class all games extend.
  */
 
-import { InputManager } from './input-manager.js';
+import { Input } from './input.js';
 
 export class GameBase {
-  constructor(canvas) {
-    if (!canvas) {
-      throw new Error("[GameBase] Canvas element is required");
-    }
-    
+  constructor(canvas, config = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     
-    this.W = this.constructor.logicalWidth || 800;
-    this.H = this.constructor.logicalHeight || 600;
-    
-    this.canvas.logicalWidth = this.W;
-    this.canvas.logicalHeight = this.H;
+    // logicalW / logicalH can be static properties on the subclass, or defaults
+    const logicalW = this.constructor.logicalWidth || 800;
+    const logicalH = this.constructor.logicalHeight || 600;
 
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = logicalW * dpr;
+    canvas.height = logicalH * dpr;
+    this.ctx.scale(dpr, dpr);
+    canvas.style.width = logicalW + 'px';
+    canvas.style.height = logicalH + 'px';
+
+    this.W = logicalW;
+    this.H = logicalH;
+    this.level = config.level || 1;
     this._score = 0;
     this._lives = 3;
-    this._level = 1;
-
     this.isPaused = false;
     this.isOver = false;
-
-    this.input = InputManager;
+    
+    this.input = Input; // uses Input singleton
   }
-
-  // --- Properties with Reactive Setters ---
 
   get score() {
     return this._score;
   }
 
-  set score(value) {
-    const delta = value - this._score;
-    this._score = Math.max(0, value);
-    if (typeof this.onScoreChange === 'function') {
-      this.onScoreChange(this._score, delta);
-    }
+  set score(v) {
+    this._score = v;
+    this.onScoreChange(v);
   }
 
   get lives() {
     return this._lives;
   }
 
-  set lives(value) {
-    this._lives = Math.max(0, value);
-    if (typeof this.onLivesChange === 'function') {
-      this.onLivesChange(this._lives);
-    }
-    
-    if (this._lives === 0 && !this.isOver) {
+  set lives(v) {
+    this._lives = Math.max(0, v);
+    this.onLivesChange(this._lives);
+    if (this._lives === 0) {
       this.triggerGameOver();
     }
   }
 
-  get level() {
-    return this._level;
+  triggerGameOver() {
+    this.isOver = true;
+    this.onGameOver(this._score);
   }
 
-  // Called by external UI / shell after level complete overlay finishes
-  setLevel(newLevel) {
-    this._level = newLevel;
-    if (typeof this.onLevelChange === 'function') {
-      this.onLevelChange(this._level);
-    }
+  levelComplete() {
+    this.onLevelComplete(this.level, this._score);
   }
 
-  // --- Core Lifecycle Hooks (Must be overridden) ---
-  
+  // Methods games MUST override
   init() {
-    throw new Error("Subclass must implement init()");
+    // Subclass implementation
   }
 
   update(delta) {
-    throw new Error("Subclass must implement update(delta)");
+    // Subclass implementation
   }
 
-  render() {
-    throw new Error("Subclass must implement render()");
+  render(ctx) {
+    // Subclass implementation
+  }
+
+  // Methods games MAY override
+  onScoreChange(score) {
+    document.dispatchEvent(new CustomEvent('game:scoreChange', { detail: score }));
+  }
+
+  onLivesChange(lives) {
+    document.dispatchEvent(new CustomEvent('game:livesChange', { detail: lives }));
+  }
+
+  onGameOver(score) {
+    document.dispatchEvent(new CustomEvent('game:gameOver', { detail: { score } }));
+  }
+
+  onLevelComplete(level, score) {
+    document.dispatchEvent(new CustomEvent('game:levelComplete', { detail: { level, score } }));
   }
 
   destroy() {
-    // Default empty implementation to prevent crashes when calling super.destroy()
+    this.canvas = null;
+    this.ctx = null;
+    this.input = null;
   }
 
-  getStats() {
-    return []; // Return empty array by default if subclass doesn't implement
-  }
-
-  // --- Flow Control ---
-
-  levelComplete() {
-    // Dispatch a custom event so the UI shell knows the level was completed
-    const event = new CustomEvent('game:levelComplete', { detail: { game: this, level: this.level } });
-    document.dispatchEvent(event);
-  }
-
-  triggerGameOver() {
-    this.isOver = true;
-    const event = new CustomEvent('game:gameOver', { detail: { game: this, score: this.score } });
-    document.dispatchEvent(event);
-  }
-
-  // --- Optional Hooks ---
-
-  onScoreChange(newScore, delta) {}
-  onLivesChange(newLives) {}
-  onLevelChange(newLevel) {}
-  onPause() {}
-  onResume() {}
-
-  // --- High-Frequency Utilities ---
-
-  clearCanvas(color = '#0a0a0f') {
-    this.ctx.fillStyle = color;
+  // Utility methods available to all games
+  clear() {
+    this.ctx.fillStyle = '#0a0a0f';
     this.ctx.fillRect(0, 0, this.W, this.H);
-  }
-
-  drawText(text, x, y, options = {}) {
-    this.ctx.save();
-    this.ctx.fillStyle = options.color || '#ffffff';
-    this.ctx.font = `${options.size || 20}px ${options.font || 'Press Start 2P, monospace'}`;
-    this.ctx.textAlign = options.align || 'left';
-    this.ctx.textBaseline = options.baseline || 'top';
-    
-    if (options.shadow) {
-      this.ctx.shadowColor = options.shadow;
-      this.ctx.shadowBlur = options.blur || 10;
-    }
-    
-    this.ctx.fillText(text, x, y);
-    this.ctx.restore();
   }
 
   lerp(a, b, t) {
     return a + (b - a) * t;
   }
 
-  clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
+  clamp(v, min, max) {
+    return Math.min(Math.max(v, min), max);
   }
 
-  distance(x1, y1, x2, y2) {
+  rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  dist(x1, y1, x2, y2) {
     return Math.hypot(x2 - x1, y2 - y1);
   }
 
   circleHit(a, b) {
-    const dist = this.distance(a.x || 0, a.y || 0, b.x || 0, b.y || 0);
-    return dist < ((a.radius || 0) + (b.radius || 0));
+    return this.dist(a.x, a.y, b.x, b.y) < (a.r + b.r);
   }
 
   rectHit(a, b) {
     return (
-      (a.x || 0) < (b.x || 0) + (b.w || 0) &&
-      (a.x || 0) + (a.w || 0) > (b.x || 0) &&
-      (a.y || 0) < (b.y || 0) + (b.h || 0) &&
-      (a.y || 0) + (a.h || 0) > (b.y || 0)
+      a.x < b.x + b.w &&
+      a.x + a.w > b.x &&
+      a.y < b.y + b.h &&
+      a.y + a.h > b.y
     );
   }
-
-  randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  randomChoice(array) {
-    return array[Math.floor(Math.random() * array.length)];
-  }
 }
+
+export default GameBase;

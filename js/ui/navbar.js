@@ -1,6 +1,7 @@
 import { checkStreak, getStreak, getCoins, formatCoins, awardCoins } from '../core/storage.js';
 import { Identity } from '../core/identity.js';
 import { checkIdentitySetup } from './identity-modal.js';
+import { showToast } from '../core/notifications.js';
 
 export function initNavbar() {
   checkIdentitySetup();
@@ -21,48 +22,50 @@ export function initNavbar() {
   mount.innerHTML = `
     <nav class="navbar">
       <div class="nav-container container">
-        <a href="index.html" class="nav-logo font-display">CHEAT LABZ</a>
+        <a href="index.html" class="nav-logo">CHEAT LABZ</a>
         <div class="nav-links">
           <a href="games.html" class="${currentPath === 'games.html' ? 'active' : ''}">GAMES</a>
           <a href="arena.html" class="${currentPath === 'arena.html' ? 'active' : ''}">ARENA</a>
-          <a href="challenge/index.html" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;gap:6px;color:${inChallenge ? 'var(--neon)' : '#00d4aa'};">
-            <span class="nav-challenge-dot" style="width:7px;height:7px;border-radius:50%;background:#00d4aa;animation:navChallengePulse 2s ease-in-out infinite;flex-shrink:0;"></span>
+          <a href="challenge/index.html" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;position:relative;padding-left:14px;color:${inChallenge ? 'var(--text-primary)' : 'var(--text-secondary)'};">
+            <span class="nav-challenge-dot" style="position:absolute;left:0;top:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:#00d4aa;animation:navChallengePulse 2s ease-in-out infinite;flex-shrink:0;"></span>
             CHALLENGE
           </a>
           <a href="leaderboard.html" class="${currentPath === 'leaderboard.html' ? 'active' : ''}">LEADERBOARD</a>
         </div>
         
-        <div style="display: flex; gap: 16px; align-items: center;">
+        <div style="display: flex; align-items: center;">
           <div class="navbar-stats">
             <div class="streak-display" title="Daily streak">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-flame"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"></path></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-flame"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"></path></svg>
               <span id="streak-count">0</span>
             </div>
             <div class="coin-display" title="Arena Points">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-hexagon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-hexagon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
               <span id="coin-count">0</span>
             </div>
           </div>
 
-          <div id="player-profile-indicator" style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); padding:6px 12px; border-radius:6px; cursor:pointer;" title="Click to edit profile">
-            <span style="color:#00d4aa;">●</span>
-            <span id="nav-player-name" style="color:#fff; font-weight:bold;">${Identity.getDisplayName()}</span>
-            <span style="color:rgba(255,255,255,0.35);">#${Identity.getUID() ? Identity.getUID().slice(0, 4) : '0000'}</span>
-          </div>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div id="player-profile-indicator" title="Click to edit profile">
+              <span class="username-dot"></span>
+              <span id="nav-player-name">${Identity.getDisplayName()}</span>
+              <span class="user-hash">#${Identity.getUID() ? Identity.getUID().slice(0, 4) : '0000'}</span>
+            </div>
 
-          <button id="settings-toggle" class="btn-icon" aria-label="Settings">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-          </button>
-          <button id="sound-toggle" class="btn-icon" aria-label="Toggle Sound">
-            ${soundEnabled ? 
-              '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' : 
-              '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>'
-            }
-          </button>
-          
-          <button id="mobile-menu-btn" class="btn-icon mobile-only" aria-label="Menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          </button>
+            <button id="settings-toggle" class="btn-icon" aria-label="Settings">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+            <button id="sound-toggle" class="btn-icon" aria-label="Toggle Sound">
+              ${soundEnabled ? 
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' : 
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>'
+              }
+            </button>
+            
+            <button id="mobile-menu-btn" class="btn-icon mobile-only" aria-label="Menu">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -308,16 +311,81 @@ export function initNavbar() {
   // Profile Indicator Rename Action
   const profileIndicator = document.getElementById('player-profile-indicator');
   profileIndicator?.addEventListener('click', () => {
-    const newName = prompt('Enter new display name:', Identity.getDisplayName());
-    if (newName && newName.trim().length >= 3) {
-      const cleaned = newName.trim().replace(/[^a-zA-Z0-9_\-\s]/g, '');
-      const uid = Identity.getUID();
-      Identity.setIdentity(uid, cleaned);
-      Identity.registerWithSupabase(uid, cleaned);
-      const nameEl = document.getElementById('nav-player-name');
-      if (nameEl) nameEl.textContent = cleaned;
-    }
+    showNameEditModal();
   });
+}
+
+function showNameEditModal() {
+  const currentName = Identity.getDisplayName();
+  
+  const backdrop = document.createElement('div');
+  backdrop.id = 'name-edit-modal-backdrop';
+  backdrop.style.cssText = `
+    position: fixed; inset: 0; z-index: 100000;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+  `;
+  
+  backdrop.innerHTML = `
+    <div class="name-edit-card" style="background: #16161f; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 28px; width: 340px; text-align: left; color: #fff;">
+      <h3 style="font-size: 16px; margin: 0 0 16px 0; font-family: 'DM Sans', sans-serif; font-weight: 600; color: #fff;">Edit Display Name</h3>
+      
+      <input type="text" id="name-edit-input" maxlength="16" value="${currentName}" style="width: 100%; box-sizing: border-box; background: #0a0a0f; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 12px 16px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: #fff; margin-bottom: 20px; outline: none; transition: border-color 0.18s ease;">
+      
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="name-edit-cancel" style="padding: 10px 18px; background: transparent; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.18s ease;">CANCEL</button>
+        <button id="name-edit-save" style="padding: 10px 18px; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.18s ease;">SAVE</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  
+  const input = backdrop.querySelector('#name-edit-input');
+  input.focus();
+  
+  // Input focus border highlight
+  input.addEventListener('focus', () => {
+    input.style.borderColor = 'rgba(255,255,255,0.35)';
+  });
+  input.addEventListener('blur', () => {
+    input.style.borderColor = 'rgba(255,255,255,0.15)';
+  });
+
+  const close = () => {
+    document.removeEventListener('keydown', onEsc);
+    backdrop.remove();
+  };
+
+  const onEsc = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', onEsc);
+
+  backdrop.onclick = (e) => {
+    if (e.target === backdrop) close();
+  };
+
+  backdrop.querySelector('#name-edit-cancel').onclick = close;
+
+  backdrop.querySelector('#name-edit-save').onclick = () => {
+    const raw = input.value.trim();
+    if (raw.length < 3) {
+      showToast('Name must be at least 3 characters.', 'error');
+      return;
+    }
+    const cleaned = raw.replace(/[^a-zA-Z0-9_\-\s]/g, '');
+    const uid = Identity.getUID();
+    Identity.setIdentity(uid, cleaned);
+    Identity.registerWithSupabase(uid, cleaned);
+    
+    const nameEl = document.getElementById('nav-player-name');
+    if (nameEl) nameEl.textContent = cleaned;
+    
+    showToast('Name updated successfully!', 'success');
+    close();
+  };
 }
 
 // Auto-init on load if mount exists

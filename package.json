@@ -4,8 +4,8 @@
   "description": "Backend server for Game Portal with user auth and progress tracking",
   "main": "server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "concurrently \"node server/server.js\" \"npx serve . -p 3000\""
+    "start": "node generate-config.js && node server/server.js",
+    "dev": "node generate-config.js && concurrently \"node server/server.js\" \"npx serve . -p 3000\""
   },
   "keywords": [
     "game",

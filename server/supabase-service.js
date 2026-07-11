@@ -65,13 +65,34 @@ export async function registerPlayer(uid, displayName) {
 }
 
 export async function fetchPlayer(uid) {
-  const { data, error } = await supabase
-    .from('players')
-    .select('uid, display_name, coins, streak, last_seen')
-    .eq('uid', uid)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('players')
+      .select('uid, display_name, coins, streak, last_seen')
+      .eq('uid', uid)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    if (err.code === '42703') { // Column does not exist
+      const { data, error } = await supabase
+        .from('players')
+        .select('uid, display_name')
+        .eq('uid', uid)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        return {
+          ...data,
+          coins: 0,
+          streak: 0,
+          last_seen: new Date().toISOString()
+        };
+      }
+      return null;
+    }
+    throw err;
+  }
 }
 
 // ── Game Stats (Runs, Levels, Best Scores) ───────────────────────────────
@@ -125,13 +146,28 @@ export async function fetchUserStats(uid) {
 
     if (statsErr) throw statsErr;
 
-    const { data: player, error: playerErr } = await supabase
+    let player;
+    const res = await supabase
       .from('players')
       .select('display_name, coins, streak')
       .eq('uid', uid)
       .maybeSingle();
 
-    if (playerErr) throw playerErr;
+    if (res.error) {
+      if (res.error.code === '42703') {
+        const resFallback = await supabase
+          .from('players')
+          .select('display_name')
+          .eq('uid', uid)
+          .maybeSingle();
+        if (resFallback.error) throw resFallback.error;
+        player = resFallback.data ? { ...resFallback.data, coins: 0, streak: 0 } : null;
+      } else {
+        throw res.error;
+      }
+    } else {
+      player = res.data;
+    }
 
     return {
       stats: stats || [],

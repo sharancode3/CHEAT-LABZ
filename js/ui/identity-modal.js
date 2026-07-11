@@ -1,4 +1,5 @@
 import { Identity } from '../core/identity.js';
+import { showToast } from '../core/notifications.js';
 
 export function checkIdentitySetup() {
   if (Identity.getUID()) {
@@ -67,7 +68,7 @@ function showIdentityModal() {
   submitBtn.onclick = async () => {
     const rawName = input.value.trim();
     if (rawName.length < 3) {
-      alert('Name must be at least 3 characters.');
+      showToast('Name must be at least 3 characters.', 'error');
       return;
     }
     const cleaned = rawName.replace(/[^a-zA-Z0-9_\-\s]/g, '');
@@ -86,7 +87,7 @@ function showIdentityModal() {
       window.location.reload();
     } catch (e) {
       console.error('[Identity] Registration failed:', e);
-      alert('Network issue. Retrying connection...');
+      showToast('Network issue. Retrying connection...', 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = 'SAVE PROFILE';
       input.disabled = false;

@@ -499,7 +499,7 @@ export const GAMES = [
     scoringExplanation: "Score increases as you eat. Last surviving snake wins.",
     estimatedDuration: 120,
     tags: ['HOT'],
-    accentColor: '#10b981',
+    accentColor: '#00d4aa',
     minPlayers: 2,
     maxPlayers: 2,
     file: '/js/games/multi/multiplayer-snake.js',
@@ -526,7 +526,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/battleship.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'physics-soccer',
@@ -548,7 +548,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/physics-soccer.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'ludo',
@@ -570,7 +570,7 @@ export const GAMES = [
     maxPlayers: 4,
     file: '/js/games/multi/ludo.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'bomberman-arena',
@@ -593,7 +593,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/bomberman-arena.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'tank-battle',
@@ -616,7 +616,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/tank-battle.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'king-of-the-hill',
@@ -638,7 +638,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/king-of-the-hill.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'color-flood-duel',
@@ -660,7 +660,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/color-flood-duel.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'top-down-racer',
@@ -684,7 +684,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/top-down-racer.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'zombie-survival',
@@ -707,7 +707,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/zombie-survival.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'mini-party-pack',
@@ -729,7 +729,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/mini-party-pack.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'pixel-gunfight',
@@ -752,7 +752,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/pixel-gunfight.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'capture-the-flag',
@@ -774,7 +774,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/capture-the-flag.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'mini-clash',
@@ -796,7 +796,7 @@ export const GAMES = [
     maxPlayers: 2,
     file: '/js/games/multi/mini-clash.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   },
   {
     id: 'rock-paper-scissors-tournament',
@@ -818,7 +818,7 @@ export const GAMES = [
     maxPlayers: 4,
     file: '/js/games/multi/rock-paper-scissors-tournament.js',
     version: '1.0.0',
-    status: 'coming-soon'
+    status: 'live'
   }
 ];
 // ---- Manifest validation ---------------------------------------------------

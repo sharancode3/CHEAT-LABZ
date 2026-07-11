@@ -1,8 +1,8 @@
 import { MultiplayerGameBase } from '../../core/multiplayer-game-base.js';
 
 export default class WordDuelGame extends MultiplayerGameBase {
-  static logicalWidth = 600;
-  static logicalHeight = 600;
+  static logicalWidth = 680;
+  static logicalHeight = 440;
 
   constructor(canvas, room, mySocketId, socket) {
     super(canvas, room, mySocketId, socket);
@@ -22,6 +22,8 @@ export default class WordDuelGame extends MultiplayerGameBase {
       myTimeTaken: null,
     };
 
+    this.shakeTimer = 0;
+    this.flashRedTimer = 0;
     this._boundHandlers = {};
   }
 
@@ -50,6 +52,8 @@ export default class WordDuelGame extends MultiplayerGameBase {
       this.gameState.phase       = 'typing';
       this.gameState.lastResult  = null;
       this.gameState.myTimeTaken = null;
+      this.shakeTimer = 0;
+      this.flashRedTimer = 0;
     });
 
     bind('word:opponent-progress', ({ lettersTyped }) => {
@@ -77,8 +81,8 @@ export default class WordDuelGame extends MultiplayerGameBase {
   bindInput() {
     this._onKey = (e) => {
       if (this.gameState.phase !== 'typing') return;
-      if (e.key.length !== 1) return; // ignore helper keys
-      if (this.gameState.myTimeTaken !== null) return; // already complete
+      if (e.key.length !== 1) return; // ignore control keys
+      if (this.gameState.myTimeTaken !== null) return; // already done
 
       const targetChar = this.gameState.word[this.gameState.typed.length];
       if (e.key.toLowerCase() === targetChar.toLowerCase()) {
@@ -86,7 +90,7 @@ export default class WordDuelGame extends MultiplayerGameBase {
         this.gameState.myProgress = this.gameState.typed.length;
 
         if (this.container) {
-          this.container.audio.play('score');
+          this.container.audio.play('hit');
         }
 
         this.socket.emit('word:progress', { code: this.room.code, lettersTyped: this.gameState.myProgress });
@@ -95,6 +99,9 @@ export default class WordDuelGame extends MultiplayerGameBase {
           this.socket.emit('word:complete', { code: this.room.code });
         }
       } else {
+        // wrong letter: shake and flash red
+        this.shakeTimer = 150;
+        this.flashRedTimer = 150;
         if (this.container) {
           this.container.audio.play('damage');
         }
@@ -104,108 +111,129 @@ export default class WordDuelGame extends MultiplayerGameBase {
   }
 
   update(dt) {
-    // Word Duel logic runs reactively to keyboard inputs
+    if (this.shakeTimer > 0) this.shakeTimer = Math.max(0, this.shakeTimer - dt * 1000);
+    if (this.flashRedTimer > 0) this.flashRedTimer = Math.max(0, this.flashRedTimer - dt * 1000);
   }
 
   render(ctx) {
     const cw = WordDuelGame.logicalWidth;
     const ch = WordDuelGame.logicalHeight;
 
-    // Background gradient
-    const grad = ctx.createRadialGradient(cw / 2, ch / 2, 50, cw / 2, ch / 2, cw / 1.5);
-    grad.addColorStop(0, '#0d0d18');
-    grad.addColorStop(1, '#05050a');
-    ctx.fillStyle = grad;
+    // Dark layout backdrop
+    ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, cw, ch);
 
-    // Progress Bars
-    this._renderProgress(ctx, cw, ch);
-
-    if (this.gameState.phase === 'typing') {
-      this._renderTypingArea(ctx, cw, ch);
-    } else if (this.gameState.phase === 'result') {
-      this._renderResult(ctx, cw, ch);
-    } else if (this.gameState.phase === 'ready') {
-      ctx.font = '700 15px "DM Sans", sans-serif';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    if (this.gameState.phase === 'ready') {
+      ctx.font = "bold 16px 'Press Start 2P', monospace";
+      ctx.fillStyle = '#fd79a8'; // Accent
       ctx.textAlign = 'center';
       ctx.fillText('GET READY...', cw / 2, ch / 2);
+    } else if (this.gameState.phase === 'typing') {
+      this._renderTypingArea(ctx, cw, ch);
+      this._renderOpponentProgress(ctx, cw, ch);
+    } else if (this.gameState.phase === 'result') {
+      this._renderResult(ctx, cw, ch);
     }
-  }
-
-  _renderProgress(ctx, cw, ch) {
-    if (!this.gameState.word) return;
-
-    const wordLen = this.gameState.word.length;
-    const myPct   = wordLen ? this.gameState.myProgress / wordLen : 0;
-    const oppPct  = wordLen ? this.gameState.oppProgress / wordLen : 0;
-
-    const barW = cw - 120;
-    const barH = 10;
-    const startX = 60;
-
-    // My progress bar (top)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-    ctx.beginPath();
-    ctx.roundRect(startX, 100, barW, barH, 5);
-    ctx.fill();
-
-    ctx.fillStyle = '#6c63ff';
-    ctx.beginPath();
-    ctx.roundRect(startX, 100, barW * myPct, barH, 5);
-    ctx.fill();
-
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#6c63ff';
-    ctx.fillText('YOU', startX, 90);
-
-    // Opp progress bar (bottom)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-    ctx.beginPath();
-    ctx.roundRect(startX, ch - 120, barW, barH, 5);
-    ctx.fill();
-
-    ctx.fillStyle = '#ff6b6b';
-    ctx.beginPath();
-    ctx.roundRect(startX, ch - 120, barW * oppPct, barH, 5);
-    ctx.fill();
-
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#ff6b6b';
-    ctx.fillText(this.getOpponentName().toUpperCase(), startX + barW, ch - 130);
   }
 
   _renderTypingArea(ctx, cw, ch) {
     const word = this.gameState.word;
     const typed = this.gameState.typed;
+    const isDone = this.gameState.myTimeTaken !== null;
 
-    ctx.font = 'bold 36px "JetBrains Mono", monospace';
+    if (isDone) {
+      // Completed -> fill green overlay top area
+      ctx.fillStyle = 'rgba(0, 212, 170, 0.08)';
+      ctx.fillRect(20, 40, cw - 40, 200);
+      ctx.strokeStyle = '#00d4aa';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(20, 40, cw - 40, 200);
+
+      ctx.font = "bold 14px 'Press Start 2P', monospace";
+      ctx.fillStyle = '#00d4aa';
+      ctx.textAlign = 'center';
+      ctx.fillText(`FINISHED: ${(this.gameState.myTimeTaken / 1000).toFixed(2)}s`, cw / 2, 140);
+      return;
+    }
+
+    ctx.save();
+    
+    // Apply Shake transformations
+    let dx = 0;
+    if (this.shakeTimer > 0) {
+      dx = (Math.random() - 0.5) * 8;
+    }
+    ctx.translate(dx, 0);
+
+    // Render word center
+    ctx.font = "bold 44px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const letterWidth = ctx.measureText('W').width; // Mono padding base width
-    const totalWidth = letterWidth * word.length;
-    const startX = cw / 2 - totalWidth / 2;
+    const letterWidth = ctx.measureText('W').width;
+    const totalW = letterWidth * word.length;
+    const startX = cw / 2 - totalW / 2;
 
     for (let i = 0; i < word.length; i++) {
       const char = word[i];
-      const isTyped = i < typed.length;
+      const isCorrect = i < typed.length;
+      const isCurrent = i === typed.length;
 
-      const x = startX + i * letterWidth + letterWidth / 2;
-      const y = ch / 2;
+      const lx = startX + i * letterWidth + letterWidth / 2;
+      const ly = 130;
 
-      // Active cursor underline
-      if (i === typed.length) {
-        ctx.fillStyle = 'rgba(108, 99, 255, 0.15)';
-        ctx.fillRect(x - letterWidth / 2, y - 24, letterWidth, 48);
-        ctx.fillStyle = '#6c63ff';
-        ctx.fillRect(x - letterWidth / 2, y + 20, letterWidth, 4);
+      // Draw character
+      if (isCorrect) {
+        ctx.fillStyle = '#fd79a8'; // Accent color
+      } else if (isCurrent && this.flashRedTimer > 0) {
+        ctx.fillStyle = '#ff7675'; // Flashing red
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
       }
+      ctx.fillText(char, lx, ly);
 
-      ctx.fillStyle = isTyped ? '#6c63ff' : 'rgba(255, 255, 255, 0.25)';
-      ctx.fillText(char, x, y);
+      // Blinking Underscore cursor on current position
+      if (isCurrent) {
+        const blink = Math.floor(Date.now() / 400) % 2 === 0;
+        if (blink) {
+          ctx.fillStyle = '#fd79a8';
+          ctx.fillRect(lx - letterWidth / 2.5, ly + 25, letterWidth * 0.8, 4);
+        }
+      }
     }
+    ctx.restore();
+  }
+
+  _renderOpponentProgress(ctx, cw, ch) {
+    if (!this.gameState.word) return;
+
+    const wordLen = this.gameState.word.length;
+    const oppPct = wordLen ? this.gameState.oppProgress / wordLen : 0;
+
+    const barW = cw - 120;
+    const barH = 12;
+    const startX = 60;
+    const startY = ch - 120;
+
+    ctx.save();
+    // Opponent text header
+    ctx.font = "bold 13px 'DM Sans', sans-serif";
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ff7675';
+    ctx.fillText(`Opponent: ${Math.round(oppPct * 100)}%`, startX, startY - 14);
+
+    // Progress bar bg
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.beginPath();
+    ctx.roundRect(startX, startY, barW, barH, 6);
+    ctx.fill();
+
+    // Progress bar fill
+    ctx.fillStyle = '#ff7675'; // Opponent color
+    ctx.beginPath();
+    ctx.roundRect(startX, startY, barW * oppPct, barH, 6);
+    ctx.fill();
+    ctx.restore();
   }
 
   _renderResult(ctx, cw, ch) {
@@ -220,21 +248,20 @@ export default class WordDuelGame extends MultiplayerGameBase {
     const isDraw = res.winner === null;
 
     const text = isDraw ? 'DRAW' : iWon ? 'YOU WON!' : 'THEY WIN';
-    const color = isDraw ? '#F59E0B' : iWon ? '#10b981' : '#EF4444';
+    const color = isDraw ? '#ffffff' : iWon ? '#fd79a8' : '#ff7675';
 
     ctx.font = 'bold 20px "Press Start 2P", monospace';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     ctx.fillStyle = color;
-    ctx.fillText(text, cw / 2, ch / 2 - 15);
+    ctx.fillText(text, cw / 2, ch / 2 - 20);
 
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
+    ctx.font = "bold 13px 'JetBrains Mono', monospace";
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.fillText(`YOU: ${myTime ? (myTime / 1000).toFixed(2) + 's' : 'DNF'}  •  THEM: ${oppTime ? (oppTime / 1000).toFixed(2) + 's' : 'DNF'}`, cw / 2, ch / 2 + 25);
 
     const bonus = res.bonuses[this.mySocketId] || 0;
     if (bonus > 0) {
-      ctx.fillStyle = '#ffd700';
+      ctx.fillStyle = '#ffd93d';
       ctx.fillText(`+${bonus} PTS SPEED BONUS`, cw / 2, ch / 2 + 55);
     }
   }

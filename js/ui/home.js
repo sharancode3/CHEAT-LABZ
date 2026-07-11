@@ -170,29 +170,47 @@ class HomeUI {
         }
       } catch(e) {}
 
-      let badgeHtml = '<span style="background: rgba(239, 68, 68, 0.2); color: var(--danger); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">+500 AP</span>';
-      let btnHtml = `<button class="btn-play-hidden" onclick="window.acceptBounty('${g.id}', ${target})" style="width: 100%; font-size: 12px; cursor: pointer; border-radius: 4px;">ACCEPT BOUNTY</button>`;
+      let badgeHtml = '<span class="mission-card-ap">+500 AP</span>';
+      let btnHtml = `<button class="btn-mission-accept" onclick="window.acceptBounty('${g.id}', ${target})">Accept Bounty</button>`;
       let statusText = `Achieve a score of ${target} or higher in ${g.name} to complete this bounty.`;
+      let isAccepted = false;
 
       if (bounty) {
         if (bounty.completed) {
-          badgeHtml = '<span style="background: rgba(0, 212, 170, 0.2); color: var(--accent-4); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">COMPLETED</span>';
-          btnHtml = `<button class="btn-play-hidden" disabled style="width: 100%; font-size: 12px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); cursor: default; border-radius: 4px;">COMPLETED</button>`;
+          isAccepted = true;
           statusText = `You successfully completed this bounty and earned 500 AP!`;
+          btnHtml = `
+            <div class="mission-card-accepted-row">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Bounty Completed</span>
+            </div>
+          `;
         } else if (bounty.accepted) {
-          badgeHtml = '<span style="background: rgba(108, 99, 255, 0.2); color: var(--accent-2); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">ACTIVE</span>';
-          btnHtml = `<button class="btn-play-hidden" onclick="window.launchGameModal('${g.id}')" style="width: 100%; font-size: 12px; cursor: pointer; background: transparent; border: 1px solid var(--accent-1); color: #fff; border-radius: 4px;">PLAY NOW</button>`;
+          isAccepted = true;
           statusText = `Active bounty! Target score: ${target} or higher.`;
+          btnHtml = `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="mission-card-accepted-row">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Bounty Accepted</span>
+              </div>
+              <button class="btn-mission-accept" onclick="window.launchGameModal('${g.id}')" style="background: var(--accent); border: none; color: white;">Play Now</button>
+            </div>
+          `;
         }
       }
 
       return `
-        <div class="mission-card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-            <h3 style="font-size: 14px; margin: 0; color: var(--cyan); font-family: 'Press Start 2P', monospace; line-height: 1.4;">${g.name}</h3>
+        <div class="mission-card ${isAccepted ? 'accepted-state' : ''}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 class="mission-card-title">${g.name}</h3>
             ${badgeHtml}
           </div>
-          <p style="font-size: 12px; color: var(--muted); margin-bottom: 24px; line-height: 1.5;">${statusText}</p>
+          <p class="mission-card-desc">${statusText}</p>
           ${btnHtml}
         </div>
       `;
@@ -207,37 +225,51 @@ class HomeUI {
     
     carousel.innerHTML = hotGames.map(g => {
       const icon = getGameIcon(g.id);
-      // Fake deep metrics
-      const topScore = Math.floor(Math.random() * 90000) + 10000;
-      const completion = Math.floor(Math.random() * 40) + 10;
-      const online = Math.floor(Math.random() * 500) + 50;
+      
+      let highScore = 0;
+      try {
+        const saved = localStorage.getItem('cheatLabz_' + g.id);
+        if (saved) {
+          const obj = JSON.parse(saved);
+          highScore = obj?.score || 0;
+        }
+      } catch (e) {}
 
       return `
-        <div class="carousel-item">
-          <div class="hot-card">
-            <div class="game-icon" style="margin: 0 auto 24px auto;">${icon}</div>
+        <div class="carousel-item" style="position: relative;">
+          <div class="hot-card" style="--card-accent: ${g.accent || '#6c63ff'}; position: relative;" onclick="window.launchGameModal('${g.id}')">
+            <div class="hot-card-icon">${icon}</div>
             <div class="hot-card-title">${g.name}</div>
             
-            <div class="hot-card-metrics">
-              <div class="metric-row"><span>PERSONAL BEST</span><span style="color: #fff;">0</span></div>
-              <div class="metric-row"><span>GLOBAL TOP</span><span style="color: var(--neon);">${topScore}</span></div>
-              <div class="metric-row"><span>AVG. CLEAR</span><span style="color: #fff;">${completion}%</span></div>
-              <div class="metric-row"><span>ACTIVE NOW</span><span style="color: var(--cyan);">${online}</span></div>
-            </div>
-            
-            <div class="hot-card-footer">
-              <button class="btn-play-hidden" onclick="window.launchGameModal('${g.id}')">PLAY NOW</button>
-              <div class="btn-question">
-                ?
-                <div class="premium-tooltip">
-                  <h4 style="margin: 0 0 8px 0; color: var(--neon); font-family: 'Press Start 2P', monospace; font-size: 10px; line-height: 1.4;">${g.name}</h4>
-                  <p style="margin: 0 0 12px 0; font-size: 11px; color: var(--muted); line-height: 1.5;">${g.description || 'Survive the grid.'}</p>
-                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px;">
-                    <div style="margin-bottom: 4px;"><span style="color: var(--cyan);">CTRL:</span> Mouse / KB</div>
-                    <div style="margin-bottom: 4px;"><span style="color: var(--cyan);">TIME:</span> ~3 Mins</div>
-                    <div><span style="color: var(--danger);">DIFF:</span> ${g.difficulty || 'MEDIUM'}</div>
-                  </div>
+            <div class="hot-card-popup" onclick="event.stopPropagation();">
+              <div class="popup-title">${g.name}</div>
+              <div class="popup-stats-list">
+                <div class="popup-stat-row">
+                  <span class="popup-stat-label">CATEGORY</span>
+                  <span class="popup-stat-value">${(g.category || 'ARCADE').toUpperCase()}</span>
                 </div>
+                <div class="popup-stat-row">
+                  <span class="popup-stat-label">DIFFICULTY</span>
+                  <span class="popup-stat-value">${(g.difficulty || 'MEDIUM').toUpperCase()}</span>
+                </div>
+                <div class="popup-stat-row">
+                  <span class="popup-stat-label">PLAYERS</span>
+                  <span class="popup-stat-value">${g.maxPlayers || 1}P</span>
+                </div>
+                <div class="popup-stat-row">
+                  <span class="popup-stat-label">HIGH SCORE</span>
+                  <span class="popup-stat-value">${highScore}</span>
+                </div>
+              </div>
+              <div class="popup-actions" style="display: flex; gap: 8px; width: 100%;">
+                <button class="popup-play-btn" onclick="event.stopPropagation(); window.launchGameModal('${g.id}')">Play Now</button>
+                <button class="popup-info-btn" onclick="event.stopPropagation(); window.location.href='games.html?id=${g.id}'" title="Game details">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
