@@ -93,10 +93,11 @@ export function initNavbar() {
         
         <div style="margin-bottom: 24px;">
           <label style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 8px;">THEME</label>
-          <select id="theme-select" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); color: #fff; border-radius: 8px; font-family: 'Inter', sans-serif;">
-            <option value="default">Default Dark</option>
-            <option value="neon">Neon Pink</option>
-            <option value="matrix">Matrix Green</option>
+          <select id="theme-select" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-bright); color: var(--text-primary); border-radius: 8px; font-family: 'Inter', sans-serif;">
+            <option value="default" style="background: var(--bg-card); color: var(--text-primary);">Default Dark</option>
+            <option value="neon" style="background: var(--bg-card); color: var(--text-primary);">Neon Pink</option>
+            <option value="matrix" style="background: var(--bg-card); color: var(--text-primary);">Matrix Green</option>
+            <option value="light" style="background: var(--bg-card); color: var(--text-primary);">Light Contrast</option>
           </select>
         </div>
 
