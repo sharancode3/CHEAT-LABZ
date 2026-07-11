@@ -5,7 +5,7 @@
  * Must be in sync with js/core/game-manifest.js.
  */
 
-const GAMES = [
+var GAMES = [
   // ==================== SOLO GAMES ====================
   {
     id: 'neon-serpent',

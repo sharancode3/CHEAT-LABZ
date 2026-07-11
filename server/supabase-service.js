@@ -74,7 +74,7 @@ export async function fetchPlayer(uid) {
     if (error) throw error;
     return data;
   } catch (err) {
-    if (err.code === '42703') { // Column does not exist
+    try {
       const { data, error } = await supabase
         .from('players')
         .select('uid, display_name')
@@ -90,8 +90,10 @@ export async function fetchPlayer(uid) {
         };
       }
       return null;
+    } catch (fallbackErr) {
+      console.error('[Supabase] Both primary fetch and fallback player fetch failed:', fallbackErr);
+      throw err;
     }
-    throw err;
   }
 }
 
