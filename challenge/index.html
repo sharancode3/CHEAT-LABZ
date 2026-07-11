@@ -50,19 +50,12 @@
 </div>
 
 <!-- ── Navbar ────────────────────────────────────────────────── -->
-<nav class="challenge-nav" role="navigation" aria-label="Main navigation">
-  <a href="../index.html" class="nav-logo" aria-label="CHEAT LABZ home">CHEAT LABZ</a>
 
-  <div class="nav-links">
-    <a href="../games.html"       class="nav-link">GAMES</a>
-    <a href="../arena.html"       class="nav-link">ARENA</a>
-    <a href="index.html"          class="nav-link challenge-tab active" aria-current="page">
-      <span class="nav-live-dot" aria-hidden="true"></span>
-      CHALLENGE
-    </a>
-    <a href="../leaderboard.html" class="nav-link">LEADERBOARD</a>
-  </div>
-</nav>
+<nav id="navbar-mount"></nav>
+<script src="/js/navbar-loader.js"></script>
+<!-- Identity Bar Mount -->
+<div id="identity-bar-mount"></div>
+<script type="module" src="/challenge/js/identity.js"></script>
 
 <!-- ── Presence Bar ──────────────────────────────────────────── -->
 <div class="presence-bar" role="status" aria-live="polite" aria-label="Online player count">
@@ -753,7 +746,7 @@ window.showToast = showToast;
 initPresence();
 initTeamcodeInput();
 buildGameGrids();
-loadIdentity();
+initIdentity();
 renderOpponents();
 
 // Listen to presence update for scrolling stats ticker
