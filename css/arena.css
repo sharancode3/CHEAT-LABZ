@@ -1,0 +1,464 @@
+body { background-color: var(--bg-primary); color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+    /* SECTION 1 — ARENA HERO */
+    .arena-hero {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(239,68,68,0.2);
+    }
+    .arena-hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .arena-hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 24px;
+    }
+    .arena-hero-content svg {
+      color: var(--danger);
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 15px rgba(239,68,68,0.5));
+    }
+    .arena-hero-content h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 36px;
+      color: #fff;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px rgba(239,68,68,0.5);
+    }
+    .arena-hero-content p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .arena-stats-row {
+      display: flex;
+      gap: 40px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px 40px;
+      backdrop-filter: blur(10px);
+    }
+    .arena-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .arena-stat span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+    .arena-stat strong {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: var(--neon);
+    }
+
+    /* DAILY ARENA CHALLENGE */
+    .daily-arena-wrapper {
+      max-width: 900px;
+      margin: -30px auto 40px;
+      position: relative;
+      z-index: 10;
+      padding: 0 24px;
+    }
+    .daily-arena-card {
+      background: rgba(22,22,31,0.95);
+      border: 1px solid var(--danger);
+      border-radius: 16px;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(239,68,68,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .dac-badge {
+      position: absolute;
+      top: 0;
+      left: 32px;
+      background: var(--danger);
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      padding: 4px 12px;
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+    .dac-content h3 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      color: #fff;
+      margin-bottom: 8px;
+      margin-top: 12px;
+    }
+    .dac-content p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .dac-games {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .dac-game-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-1);
+    }
+    .dac-arrow {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .btn-daily-arena {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-daily-arena:hover {
+      background: #fff;
+      color: var(--danger);
+      box-shadow: 0 0 20px rgba(239,68,68,0.4);
+    }
+
+    /* SECTION 2 — CATEGORY SELECTOR */
+    .arena-container {
+      max-width: 1200px;
+      margin: 0 auto 120px;
+      padding: 0 24px;
+    }
+    .arena-category-selector {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    .arena-category-selector h2 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 24px;
+    }
+    .arena-cat-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .arena-cat-tab {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .arena-cat-tab:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .arena-cat-tab.active {
+      background: rgba(108,99,255,0.2);
+      border-color: var(--neon);
+      color: var(--neon);
+      font-weight: bold;
+    }
+
+    /* SECTION 3 — GAME SELECTION GRID */
+    .arena-grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+    }
+    .arena-tile {
+      background: #16161f;
+      border: 2px solid #2a2a3a;
+      border-radius: 12px;
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: all 200ms ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-height: 120px;
+    }
+    .arena-tile:hover {
+      border-color: #6c63ff;
+      background: #1e1e2a;
+      transform: translateY(-2px);
+    }
+    .arena-tile.selected {
+      border-color: #6c63ff;
+      background: rgba(108,99,255,0.12);
+      box-shadow: 0 0 0 1px #6c63ff;
+    }
+    .arena-tile .tile-icon {
+      width: 40px;
+      height: 40px;
+      color: #8888a8;
+      transition: color 200ms;
+    }
+    .arena-tile.selected .tile-icon {
+      color: #6c63ff;
+    }
+    .arena-tile .tile-name {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      color: #f0f0f8;
+    }
+    .arena-tile .tile-diff {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #8888a8;
+      text-transform: uppercase;
+    }
+
+    /* SECTION 4 — ARENA LAUNCH PANEL */
+    .arena-launch-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(22,22,31,0.98);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid #3d3d55;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transform: translateY(100%);
+      transition: transform 300ms cubic-bezier(0.4,0,0.2,1);
+      z-index: 500;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+    .arena-launch-panel.visible {
+      transform: translateY(0);
+    }
+    .launch-game-preview {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      width: 30%;
+    }
+    .launch-game-preview svg {
+      width: 48px;
+      height: 48px;
+      color: var(--neon);
+    }
+    .launch-game-name {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .launch-game-desc {
+      font-size: 12px;
+      color: var(--muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .launch-round-info {
+      display: flex;
+      gap: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #fff;
+    }
+    .launch-round-info div {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+    .launch-round-info div span {
+      color: var(--danger);
+      font-size: 10px;
+    }
+    .btn-arena-start {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-arena-start:hover {
+      background: #fff;
+      color: var(--danger);
+      box-shadow: 0 0 20px rgba(239,68,68,0.4);
+    }
+
+    /* ROUND COMPLETE OVERLAY */
+    .round-complete-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    .round-complete-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .rc-round {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 32px;
+      color: #fff;
+      margin-bottom: 40px;
+      letter-spacing: 4px;
+    }
+    .rc-score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 64px;
+      font-weight: bold;
+      color: var(--neon);
+      margin-bottom: 60px;
+      text-shadow: 0 0 20px rgba(139,92,246,0.5);
+    }
+    .rc-next {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+    .rc-countdown {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 48px;
+      color: var(--danger);
+    }
+
+    /* ARENA RESULTS SCREEN */
+    .arena-results {
+      position: fixed;
+      inset: 0;
+      background: rgba(9,9,11,0.95);
+      backdrop-filter: blur(20px);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    .arena-results.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .arena-results h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 40px;
+      color: var(--danger);
+      margin-bottom: 40px;
+      text-shadow: 0 0 30px rgba(239,68,68,0.4);
+    }
+    .results-breakdown {
+      width: 100%;
+      max-width: 600px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .result-row span:first-child { color: var(--muted); font-size: 14px; }
+    .r-score { color: #fff; font-size: 18px; font-weight: bold; flex-grow: 1; text-align: right; margin-right: 24px; }
+    .r-diff { color: var(--danger); font-size: 12px; width: 100px; text-align: right; }
+    
+    .result-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 24px;
+      margin-top: 8px;
+      font-family: 'Press Start 2P', monospace;
+    }
+    .result-total span:first-child { color: #fff; font-size: 18px; }
+    .r-total { color: var(--neon); font-size: 24px; }
+    
+    .results-actions {
+      display: flex;
+      gap: 16px;
+    }
+    .results-actions button {
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .btn-re {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-re:hover {
+      background: #fff;
+      color: var(--danger);
+    }
+    .btn-se {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.2) !important;
+      color: #fff;
+    }
+    .btn-se:hover {
+      background: rgba(255,255,255,0.1);
+    }

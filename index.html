@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="games-data.js"></script>
+  <script src="/games-data.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHEAT LABZ | Underground Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <link rel="stylesheet" href="css/global.css">
-  <link rel="stylesheet" href="css/home.css">
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/challenge.css">
+  <link rel="stylesheet" href="/css/lobby.css">
+  <link rel="stylesheet" href="/css/game.css">
+  <link rel="stylesheet" href="/css/results.css">
+  <link rel="stylesheet" href="/css/matchmaking.css">
+  <link rel="stylesheet" href="/css/arena.css">
+  <link rel="stylesheet" href="/css/leaderboard.css">
+  <link rel="stylesheet" href="/css/game-shell.css">
   <style>
     /* Premium Homepage Overrides */
     body { background-color: var(--bg-base); color: var(--text-primary); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
@@ -479,60 +488,7 @@
 
   <div id="navbar-mount"></div>
 
-  <!-- Hero Section -->
-  <section class="hero-cyber">
-    <div class="hero-bg-parallax" id="hero-bg"></div>
-    <canvas id="pixel-dust-canvas"></canvas>
-    
-    <div class="hero-content">
-      <h1 class="glitch-title">CHEAT LABZ</h1>
-      <p class="hero-subtitle">The underground arcade. 19 games. No rules. Just pure skill.</p>
-      
-      <div class="cta-row">
-        <a href="games.html" class="btn-enter-grid">Enter the Grid</a>
-        <a href="arena.html" class="btn-survive-arena">Survive Arena</a>
-      </div>
-
-      <div class="scroll-hint-chevron">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- Collectible Missions Section -->
-  <section class="home-section">
-    <div class="section-header-row">
-      <div class="section-header-bar"></div>
-      <h2 class="section-header-title">Active Missions</h2>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px;" id="missions-grid">
-      <!-- Injected via JS -->
-    </div>
-  </section>
-
-  <!-- Hot Games Momentum Carousel -->
-  <section class="home-section" style="overflow: hidden; max-width: none; padding-left: 0; padding-right: 0;">
-    <div class="section-header-wrapper">
-      <div class="section-header-row">
-        <div class="section-header-bar"></div>
-        <h2 class="section-header-title">Trending Uplinks</h2>
-        <span class="section-header-badge">8 games</span>
-      </div>
-    </div>
-    
-    <div class="carousel-wrapper">
-      <div class="carousel-container" id="hot-carousel">
-        <!-- Injected via JS -->
-      </div>
-    </div>
-    
-    <div style="text-align: center; margin-top: 56px; position: relative; z-index: 10;">
-      <a href="ideas.html" class="btn-survive-arena" style="text-decoration: none; display: inline-block;">Submit your game idea</a>
-    </div>
-  </section>
+  <div id="app"></div>
 
   <!-- Global Game Modal (Includes Phase 1 Refactor) -->
   <div id="game-modal" class="hidden" style="position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column;">
@@ -546,13 +502,36 @@
     </div>
   </div>
 
-  <script type="module" src="js/ui/navbar.js"></script>
-<script type="module">
-  import router from './js/core/router.js';
-  router.startRouter();
-</script>
-<script type="module" src="js/ui/home.js"></script>
-<script type="module" src="js/ui/modal.js"></script>
+  <!-- SPA Error Overlay: shows any uncaught JS errors on screen -->
+  <script>
+    window.__errors = [];
+    window.addEventListener('error', e => {
+      window.__errors.push(e.message + ' @ ' + e.filename?.split('/').pop() + ':' + e.lineno);
+      showErrorOverlay();
+    });
+    window.addEventListener('unhandledrejection', e => {
+      window.__errors.push('Promise: ' + (e.reason?.message || e.reason));
+      showErrorOverlay();
+    });
+    function showErrorOverlay() {
+      let el = document.getElementById('__err_overlay');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = '__err_overlay';
+        el.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;max-height:200px;overflow-y:auto;background:#1a0000;border:2px solid #ff4444;border-radius:8px;padding:12px;z-index:999999;font-family:monospace;font-size:12px;color:#ff8888;';
+        document.body.appendChild(el);
+      }
+      el.innerHTML = '<b style="color:#ff4444">⚠ JS ERRORS:</b><br>' + window.__errors.map(e => '• ' + e).join('<br>');
+    }
+  </script>
+
+  <!-- SPA Scripts -->
+  <script type="module">
+    import { initNavbar } from '/js/ui/navbar.js';
+    initNavbar();
+  </script>
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/ui/modal.js"></script>
 <script>
   window.addEventListener('load', () => {
     const loader = document.getElementById('global-loader');

@@ -571,6 +571,7 @@ class ArenaProtocol {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initArena() {
   new ArenaProtocol();
-});
+}
+

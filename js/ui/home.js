@@ -306,9 +306,10 @@ class HomeUI {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initHome() {
   new HomeUI();
-});
+}
+
 
 window.acceptBounty = (gameId, target) => {
   const now = new Date();

@@ -22,15 +22,15 @@ export function initNavbar() {
   mount.innerHTML = `
     <nav class="navbar">
       <div class="nav-container container">
-        <a href="index.html" class="nav-logo">CHEAT LABZ</a>
+        <a href="/" class="nav-logo" data-link>CHEAT LABZ</a>
         <div class="nav-links">
-          <a href="games.html" class="${currentPath === 'games.html' ? 'active' : ''}">GAMES</a>
-          <a href="arena.html" class="${currentPath === 'arena.html' ? 'active' : ''}">ARENA</a>
-          <a href="challenge/index.html" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;position:relative;padding-left:14px;color:${inChallenge ? 'var(--text-primary)' : 'var(--text-secondary)'};">
+          <a href="/games" class="${window.location.pathname === '/games' ? 'active' : ''}" data-link>GAMES</a>
+          <a href="/arena" class="${window.location.pathname === '/arena' ? 'active' : ''}" data-link>ARENA</a>
+          <a href="/challenge" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;position:relative;padding-left:14px;color:${inChallenge ? 'var(--text-primary)' : 'var(--text-secondary)'}" data-link>
             <span class="nav-challenge-dot" style="position:absolute;left:0;top:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:#00d4aa;animation:navChallengePulse 2s ease-in-out infinite;flex-shrink:0;"></span>
             CHALLENGE
           </a>
-          <a href="leaderboard.html" class="${currentPath === 'leaderboard.html' ? 'active' : ''}">LEADERBOARD</a>
+          <a href="/leaderboard" class="${window.location.pathname === '/leaderboard' ? 'active' : ''}" data-link>LEADERBOARD</a>
         </div>
         
         <div style="display: flex; align-items: center;">
@@ -75,11 +75,11 @@ export function initNavbar() {
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
       <div class="mobile-nav-links font-display">
-        <a href="index.html">HOME</a>
-        <a href="games.html">GAMES</a>
-        <a href="arena.html">ARENA</a>
-        <a href="challenge/index.html" style="color:#00d4aa;">⚡ CHALLENGE</a>
-        <a href="leaderboard.html">LEADERBOARD</a>
+        <a href="/" data-link>HOME</a>
+        <a href="/games" data-link>GAMES</a>
+        <a href="/arena" data-link>ARENA</a>
+        <a href="/challenge" style="color:#00d4aa;" data-link>⚡ CHALLENGE</a>
+        <a href="/leaderboard" data-link>LEADERBOARD</a>
       </div>
     </div>
 
@@ -178,19 +178,25 @@ export function initNavbar() {
     mobileMenu.style.display = 'none';
   });
 
-  // Page Transitions
-  document.querySelectorAll('a').forEach(anchor => {
+  // SPA Navigation — intercept [data-link] clicks and use the router
+  document.querySelectorAll('a[data-link]').forEach(anchor => {
     anchor.addEventListener('click', (e) => {
       const href = anchor.getAttribute('href');
-      if (href && !href.startsWith('http') && !href.startsWith('#') && !anchor.hasAttribute('target')) {
+      if (href && !href.startsWith('http') && !href.startsWith('#')) {
         e.preventDefault();
-        document.body.style.animation = 'none';
-        document.body.style.transition = 'opacity 150ms ease, transform 150ms ease';
+        // Fade out animation
+        document.body.style.transition = 'opacity 150ms ease';
         document.body.style.opacity = '0';
-        document.body.style.transform = 'translateY(8px)';
         setTimeout(() => {
-          window.location.href = href;
-        }, 150);
+          document.body.style.opacity = '1';
+          // Use the global router instance if available, otherwise fall back to history API
+          if (window._router) {
+            window._router.navigate(href);
+          } else {
+            history.pushState({}, '', href);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        }, 120);
       }
     });
   });
