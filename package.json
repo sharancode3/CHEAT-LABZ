@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node generate-config.js && node server/server.js",
-    "dev": "node generate-config.js && concurrently \"node server/server.js\" \"npx serve . -p 3000\""
+    "dev": "node generate-config.js && concurrently \"node server/server.js\" \"npx serve . --single -p 3000\""
   },
   "keywords": [
     "game",

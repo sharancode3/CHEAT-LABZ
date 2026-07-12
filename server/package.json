@@ -1,5 +1,5 @@
 {
-  "name": "cheat-labz-multiplayer-server",
+  "name": "cheat-labz-server",
   "version": "1.0.0",
   "description": "Real-time multiplayer server for CHEAT LABZ — Socket.IO + Express",
   "type": "module",
@@ -12,6 +12,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "socket.io": "^4.7.5"
   },
@@ -19,6 +21,6 @@
     "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }

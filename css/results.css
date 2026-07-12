@@ -1,0 +1,217 @@
+/* css/results.css */
+
+#results-page {
+  position: relative;
+  min-height: 100vh;
+  padding-top: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+}
+
+/* Background Particle Canvas */
+#results-particles {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.results-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 0 24px;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Winner Announcement */
+.announcement-wrap {
+  margin-bottom: 40px;
+  height: 80px; /* fixed height to avoid layout shift */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.announcement-winner {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 28px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.4);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.announcement-loser {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Score Breakdown */
+.stats-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+
+.stats-headers {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+.stat-header {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex: 1;
+}
+.stat-header.left { text-align: left; }
+.stat-header.right { text-align: right; }
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  flex: 1;
+}
+.stat-val.left { text-align: left; }
+.stat-val.right { text-align: right; }
+
+.stat-val.winner { color: #fff; }
+.stat-val.loser { color: var(--text-muted); }
+.stat-val.neutral { color: var(--text-secondary); }
+
+.stat-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  flex: 2;
+  text-align: center;
+}
+
+/* Coins Earned */
+.rewards-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.rewards-section.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.coin-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 215, 61, 0.15);
+  border: 1px solid rgba(255, 215, 61, 0.3);
+  padding: 8px 16px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+.coin-pill svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gold);
+}
+.coin-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.reward-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Action Buttons */
+.actions-row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.btn-action {
+  flex: 1;
+  height: 48px;
+  border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn-primary:disabled {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+}
+.btn-secondary:hover {
+  background: var(--bg-elevated);
+  color: #fff;
+  border-color: var(--border-bright);
+}
+
+@media (max-width: 600px) {
+  .actions-row {
+    flex-direction: column;
+  }
+  .announcement-winner {
+    font-size: 20px;
+  }
+}

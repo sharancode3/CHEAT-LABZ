@@ -439,9 +439,14 @@ class GamesGrid {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initGames() {
+  // Always create a fresh instance (called after GamesPage mounts the HTML)
   window.gamesInstance = new GamesGrid();
-});
+}
+
+export function cleanupGames() {
+  window.gamesInstance = null;
+}
 
 window.tryUnlockGame = (gameId, cost) => {
   const coinsData = getCoins();

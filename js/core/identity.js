@@ -1,17 +1,16 @@
-const API_URL = import.meta.env?.VITE_SOCKET_URL || 'http://localhost:4000';
+import { CONFIG } from './config.js';
 
-async function fetchWithRetry(url, options = {}, retries = 5, delay = 1000) {
+async function tryFetch(url, options = {}) {
   try {
-    const res = await fetch(url, options);
-    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    return await res.json();
+    const res = await fetch(url, { ...options, signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    const text = await res.text();
+    // Guard: server might return HTML (index.html fallback) instead of JSON
+    if (text.trim().startsWith('<')) return null;
+    return JSON.parse(text);
   } catch (e) {
-    if (retries > 0) {
-      console.warn(`[Identity] Fetch failed. Retrying in ${delay}ms... (${retries} left)`, e);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchWithRetry(url, options, retries - 1, delay * 1.5);
-    }
-    throw e;
+    // Silently fail — backend identity APIs are optional
+    return null;
   }
 }
 
@@ -41,17 +40,11 @@ export const Identity = {
   },
 
   async registerWithBackend(uid, name) {
-    try {
-      const data = await fetchWithRetry(`${API_URL}/api/identity/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, displayName: name })
-      });
-      return data;
-    } catch (e) {
-      console.error('[Identity] Register to backend failed:', e);
-      throw e;
-    }
+    return await tryFetch(`${CONFIG.SOCKET_URL}/api/identity/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, displayName: name })
+    });
   },
 
   async validateOrRecreate() {
@@ -59,35 +52,32 @@ export const Identity = {
     const name = this.getDisplayName();
     if (!uid) return false;
 
-    try {
-      const data = await fetchWithRetry(`${API_URL}/api/identity/validate?uid=${encodeURIComponent(uid)}`);
-      if (!data.exists) {
-        // Recreate missing record
-        await this.registerWithBackend(uid, name);
-      } else {
-        if (data.displayName !== name) {
-          // Sync name if changed out of band
-          localStorage.setItem('cheatLabz_displayName', data.displayName);
-        }
+    const data = await tryFetch(`${CONFIG.SOCKET_URL}/api/identity/validate?uid=${encodeURIComponent(uid)}`);
+    if (!data) return true; // Backend unavailable — let the player play locally
 
-        // Sync coins and streak from Supabase if present
-        if (typeof data.coins === 'number') {
-          const coinsObj = localStorage.getItem('cheatLabz_coins') ? JSON.parse(localStorage.getItem('cheatLabz_coins')) : { total: 0, allTimeEarned: 0, history: [] };
-          coinsObj.total = data.coins;
-          localStorage.setItem('cheatLabz_coins', JSON.stringify(coinsObj));
-          const coinEl = document.getElementById('coin-count');
-          if (coinEl) coinEl.textContent = data.coins;
-        }
-        if (typeof data.streak === 'number') {
-          const streakObj = localStorage.getItem('cheatLabz_streak') ? JSON.parse(localStorage.getItem('cheatLabz_streak')) : { current: 0, longest: 0, lastVisit: '', totalDays: 0 };
-          streakObj.current = data.streak;
-          localStorage.setItem('cheatLabz_streak', JSON.stringify(streakObj));
-        }
+    if (!data.exists) {
+      await this.registerWithBackend(uid, name);
+    } else {
+      if (data.displayName !== name) {
+        localStorage.setItem('cheatLabz_displayName', data.displayName);
       }
-      return true;
-    } catch (e) {
-      console.error('[Identity] Validate exception:', e);
-      return true; // Fallback to let player play offline/locally if connection fails
+      if (typeof data.coins === 'number') {
+        const coinsObj = localStorage.getItem('cheatLabz_coins')
+          ? JSON.parse(localStorage.getItem('cheatLabz_coins'))
+          : { total: 0, allTimeEarned: 0, history: [] };
+        coinsObj.total = data.coins;
+        localStorage.setItem('cheatLabz_coins', JSON.stringify(coinsObj));
+        const coinEl = document.getElementById('coin-count');
+        if (coinEl) coinEl.textContent = data.coins;
+      }
+      if (typeof data.streak === 'number') {
+        const streakObj = localStorage.getItem('cheatLabz_streak')
+          ? JSON.parse(localStorage.getItem('cheatLabz_streak'))
+          : { current: 0, longest: 0, lastVisit: '', totalDays: 0 };
+        streakObj.current = data.streak;
+        localStorage.setItem('cheatLabz_streak', JSON.stringify(streakObj));
+      }
     }
+    return true;
   }
 };

@@ -681,6 +681,7 @@ class LeaderboardUI {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initLeaderboard() {
   new LeaderboardUI();
-});
+}
+
