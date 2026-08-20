@@ -54,9 +54,9 @@ export default class NeonSerpent extends GameBase {
   }
 
   get currentTickInterval() {
-    if (this.isBoosting) return 30; // Very fast when boosting
-    // Speed escalation curve: Interval(ms) = max(45, 150 * e^(-0.015 * score/10))
-    return Math.max(45, 150 * Math.exp(-0.015 * (this.score / 10)));
+    if (this.isBoosting) return 0.030; // 30ms in seconds = 0.030s
+    // Speed escalation curve: Interval(s) = max(0.045, 0.150 * e^(-0.015 * score/10))
+    return Math.max(0.045, 0.150 * Math.exp(-0.015 * (this.score / 10)));
   }
 
   spawnFood() {
