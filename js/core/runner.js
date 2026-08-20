@@ -27,7 +27,7 @@ class GameRunner {
     this.lastTime = performance.now();
 
     const loop = (currentTime) => {
-      const delta = Math.min(currentTime - this.lastTime, 50);
+      const delta = Math.min((currentTime - this.lastTime) / 1000, 0.05); // seconds, capped at 50ms
       this.lastTime = currentTime;
 
       if (this.game && !this.game.isPaused && !this.game.isOver) {
