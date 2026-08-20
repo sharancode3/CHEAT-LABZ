@@ -11,8 +11,8 @@ export default class HomePage {
           <p class="hero-subtitle">The underground arcade. 19 games. No rules. Just pure skill.</p>
           
           <div class="cta-row">
-            <a href="/games" class="btn-enter-grid">Enter the Grid</a>
-            <a href="/arena" class="btn-survive-arena">Survive Arena</a>
+            <a href="games.html" class="btn-enter-grid">Enter the Grid</a>
+            <a href="arena.html" class="btn-survive-arena">Survive Arena</a>
           </div>
 
           <div class="scroll-hint-chevron">

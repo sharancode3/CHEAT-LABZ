@@ -49,8 +49,9 @@ export async function loadGame(gameId) {
   });
 
   try {
-    // Determine dynamic path relative to root
-    const resolvedPath = new URL(file, window.location.origin).href;
+    // Determine dynamic path relative to the core folder
+    // E.g., "/js/games/solo/flappy-bird.js" -> "../games/solo/flappy-bird.js"
+    const resolvedPath = file.replace(/^\/js\//, '../');
     const module = await Promise.race([
       import(resolvedPath),
       timeoutPromise
