@@ -22,15 +22,15 @@ export function initNavbar() {
   mount.innerHTML = `
     <nav class="navbar">
       <div class="nav-container container">
-        <a href="/" class="nav-logo" data-link>CHEAT LABZ</a>
+        <a href="index.html" class="nav-logo" data-link>CHEAT LABZ</a>
         <div class="nav-links">
-          <a href="/games" class="${window.location.pathname === '/games' ? 'active' : ''}" data-link>GAMES</a>
-          <a href="/arena" class="${window.location.pathname === '/arena' ? 'active' : ''}" data-link>ARENA</a>
-          <a href="/challenge" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;position:relative;padding-left:14px;color:${inChallenge ? 'var(--text-primary)' : 'var(--text-secondary)'}" data-link>
+          <a href="games.html" class="${window.location.pathname.includes('games') ? 'active' : ''}" data-link>GAMES</a>
+          <a href="arena.html" class="${window.location.pathname.includes('arena') ? 'active' : ''}" data-link>ARENA</a>
+          <a href="challenge.html" class="challenge-nav-link ${inChallenge ? 'active' : ''}" style="display:flex;align-items:center;position:relative;padding-left:14px;color:${inChallenge ? 'var(--text-primary)' : 'var(--text-secondary)'}" data-link>
             <span class="nav-challenge-dot" style="position:absolute;left:0;top:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:#00d4aa;animation:navChallengePulse 2s ease-in-out infinite;flex-shrink:0;"></span>
             CHALLENGE
           </a>
-          <a href="/leaderboard" class="${window.location.pathname === '/leaderboard' ? 'active' : ''}" data-link>LEADERBOARD</a>
+          <a href="leaderboard.html" class="${window.location.pathname.includes('leaderboard') ? 'active' : ''}" data-link>LEADERBOARD</a>
         </div>
         
         <div style="display: flex; align-items: center;">
@@ -75,11 +75,11 @@ export function initNavbar() {
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
       <div class="mobile-nav-links font-display">
-        <a href="/" data-link>HOME</a>
-        <a href="/games" data-link>GAMES</a>
-        <a href="/arena" data-link>ARENA</a>
-        <a href="/challenge" style="color:#00d4aa;" data-link>⚡ CHALLENGE</a>
-        <a href="/leaderboard" data-link>LEADERBOARD</a>
+        <a href="index.html" data-link>HOME</a>
+        <a href="games.html" data-link>GAMES</a>
+        <a href="arena.html" data-link>ARENA</a>
+        <a href="challenge.html" style="color:#00d4aa;" data-link>⚡ CHALLENGE</a>
+        <a href="leaderboard.html" data-link>LEADERBOARD</a>
       </div>
     </div>
 

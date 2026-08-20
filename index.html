@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="/games-data.js"></script>
+  <script src="./games-data.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHEAT LABZ | Underground Arcade</title>
@@ -10,16 +10,16 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-  <link rel="stylesheet" href="/css/global.css">
-  <link rel="stylesheet" href="/css/home.css">
-  <link rel="stylesheet" href="/css/challenge.css">
-  <link rel="stylesheet" href="/css/lobby.css">
-  <link rel="stylesheet" href="/css/game.css">
-  <link rel="stylesheet" href="/css/results.css">
-  <link rel="stylesheet" href="/css/matchmaking.css">
-  <link rel="stylesheet" href="/css/arena.css">
-  <link rel="stylesheet" href="/css/leaderboard.css">
-  <link rel="stylesheet" href="/css/game-shell.css">
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/home.css">
+  <link rel="stylesheet" href="./css/challenge.css">
+  <link rel="stylesheet" href="./css/lobby.css">
+  <link rel="stylesheet" href="./css/game.css">
+  <link rel="stylesheet" href="./css/results.css">
+  <link rel="stylesheet" href="./css/matchmaking.css">
+  <link rel="stylesheet" href="./css/arena.css">
+  <link rel="stylesheet" href="./css/leaderboard.css">
+  <link rel="stylesheet" href="./css/game-shell.css">
   <style>
     /* Premium Homepage Overrides */
     body { background-color: var(--bg-base); color: var(--text-primary); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
@@ -518,11 +518,11 @@
 
   <!-- SPA Scripts -->
   <script type="module">
-    import { initNavbar } from '/js/ui/navbar.js';
+    import { initNavbar } from './js/ui/navbar.js';
     initNavbar();
   </script>
-  <script type="module" src="/js/main.js"></script>
-  <script type="module" src="/js/ui/modal.js"></script>
+  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/ui/modal.js"></script>
 <script>
   window.addEventListener('load', () => {
     const loader = document.getElementById('global-loader');
