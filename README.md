@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.png" alt="Cheat Labz Logo" width="200" height="auto" />
-  <h1>🎮 CHEAT LABZ 🎮</h1>
+  <h1>CHEAT LABZ</h1>
   <p><strong>The Universal Browser Gaming Engine</strong></p>
 
   [![Vanilla JS](https://img.shields.io/badge/Vanilla_JS-ES6%2B-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
