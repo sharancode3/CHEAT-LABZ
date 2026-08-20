@@ -246,3 +246,5 @@ export class FlappyBird extends GameBase {
     }
   }
 }
+
+export default FlappyBird;

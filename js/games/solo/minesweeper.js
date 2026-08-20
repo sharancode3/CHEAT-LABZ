@@ -259,3 +259,5 @@ export class Minesweeper extends GameBase {
     }
   }
 }
+
+export default Minesweeper;

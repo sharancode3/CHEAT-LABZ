@@ -364,3 +364,5 @@ export class Asteroids extends GameBase {
     }
   }
 }
+
+export default Asteroids;

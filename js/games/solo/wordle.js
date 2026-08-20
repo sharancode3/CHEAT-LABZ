@@ -206,3 +206,5 @@ export class Wordle extends GameBase {
     }
   }
 }
+
+export default Wordle;

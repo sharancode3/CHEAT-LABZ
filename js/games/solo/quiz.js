@@ -286,3 +286,5 @@ export class Quiz extends GameBase {
     }
   }
 }
+
+export default Quiz;

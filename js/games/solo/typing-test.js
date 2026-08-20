@@ -257,3 +257,5 @@ export class TypingTest extends GameBase {
     }
   }
 }
+
+export default TypingTest;

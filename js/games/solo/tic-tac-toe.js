@@ -317,3 +317,5 @@ export class TicTacToe extends GameBase {
     }
   }
 }
+
+export default TicTacToe;

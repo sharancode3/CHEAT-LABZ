@@ -195,3 +195,5 @@ export class Hangman extends GameBase {
     }
   }
 }
+
+export default Hangman;

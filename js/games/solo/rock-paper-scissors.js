@@ -261,3 +261,5 @@ export class RockPaperScissors extends GameBase {
     }
   }
 }
+
+export default RockPaperScissors;

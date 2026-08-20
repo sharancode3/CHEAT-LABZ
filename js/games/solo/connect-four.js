@@ -340,3 +340,5 @@ export class ConnectFour extends GameBase {
     }
   }
 }
+
+export default ConnectFour;

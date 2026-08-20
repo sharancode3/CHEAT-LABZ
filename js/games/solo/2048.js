@@ -235,3 +235,5 @@ export class Game2048 extends GameBase {
     }
   }
 }
+
+export default Game2048;

@@ -281,3 +281,5 @@ export class Pong extends GameBase {
     }
   }
 }
+
+export default Pong;

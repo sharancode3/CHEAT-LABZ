@@ -180,3 +180,5 @@ export class CatchObjects extends GameBase {
     }
   }
 }
+
+export default CatchObjects;

@@ -299,3 +299,5 @@ export class MemoryMatch extends GameBase {
     }
   }
 }
+
+export default MemoryMatch;

@@ -374,3 +374,5 @@ export class Frogger extends GameBase {
     // }
   }
 }
+
+export default Frogger;
