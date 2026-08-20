@@ -12,10 +12,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="./challenge/css/challenge.css">
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="./css/challenge.css">
 
   <!-- Config variables -->
-  <script src="./config.js"></script>
+  <script src="../config.js"></script>
 
   <!-- Socket.IO Client -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -55,10 +56,13 @@
 <!-- ── Navbar ────────────────────────────────────────────────── -->
 
 <nav id="navbar-mount"></nav>
-<script src="./js/navbar-loader.js"></script>
+<script type="module">
+  import { initNavbar } from '../js/ui/navbar.js';
+  initNavbar();
+</script>
 <!-- Identity Bar Mount -->
 <div id="identity-bar-mount"></div>
-<script type="module" src="./challenge/js/identity.js"></script>
+<script type="module" src="./js/identity.js"></script>
 
 <!-- ── Presence Bar ──────────────────────────────────────────── -->
 <div class="presence-bar" role="status" aria-live="polite" aria-label="Online player count">
@@ -237,9 +241,9 @@
 <div class="challenge-toast-container" id="toast-container" aria-live="polite"></div>
 
 <script type="module">
-import SocketClient   from '/challenge/js/socket-client.js';
-import { initPresence } from '/challenge/js/presence.js';
-import { initTeamcodeInput, createRoom, joinMatchmaking, cancelMatchmaking } from '/challenge/js/room-manager.js';
+import SocketClient   from './js/socket-client.js';
+import { initPresence } from './js/presence.js';
+import { initTeamcodeInput, createRoom, joinMatchmaking, cancelMatchmaking } from './js/room-manager.js';
 
 import { getChallengeIcon } from '../assets/icons/challenge-icons.js';
 
