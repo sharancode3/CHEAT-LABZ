@@ -32,11 +32,15 @@ class GameRunner {
 
       if (this.game && !this.game.isPaused && !this.game.isOver) {
         this.game.update(delta);
-        this.game.render(this.game.ctx);
+        if (this.game) {
+          this.game.render(this.game.ctx);
+        }
       }
 
       Input.endFrame();
-      this.rafId = requestAnimationFrame(loop);
+      if (this.rafId) {
+        this.rafId = requestAnimationFrame(loop);
+      }
     };
 
     this.rafId = requestAnimationFrame(loop);
