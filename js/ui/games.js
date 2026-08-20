@@ -260,7 +260,7 @@ class GamesGrid {
                   <span class="badge-tag badge-diff">${g.difficulty || 'MEDIUM'}</span>
                 </div>
               </div>
-              <h3 class="card-title-text">${g.name}</h3>
+              <h3 class="card-title-text">\</h3>
               <p class="card-desc-text">${g.description || 'Survive the grid and set a new high score in this challenging module.'}</p>
             </div>
             
@@ -286,7 +286,7 @@ class GamesGrid {
               </div>
             </div>
             
-            <h3 class="card-title-text">${g.name}</h3>
+            <h3 class="card-title-text">\</h3>
             <p class="card-desc-text">${g.description || 'Survive the grid and set a new high score in this challenging module.'}</p>
             
             <div class="card-divider"></div>
@@ -310,7 +310,7 @@ class GamesGrid {
             </div>
           </div>
           
-          <h3 class="card-title-text">${g.name}</h3>
+          <h3 class="card-title-text">\</h3>
           <p class="card-desc-text">${g.description || 'Survive the grid and set a new high score in this challenging module.'}</p>
           
           <div class="card-divider"></div>
@@ -332,7 +332,7 @@ class GamesGrid {
             <button class="overlay-close" data-id="${g.id}">×</button>
             <div class="overlay-header">
               <div class="icon-24" style="color: var(--accent-1);">${icon}</div>
-              <div class="overlay-title">${g.name}</div>
+              <div class="overlay-title">\</div>
             </div>
             <div class="overlay-desc">${g.description || 'No detailed intelligence report available.'}</div>
             
@@ -505,3 +505,15 @@ window.tryUnlockGame = (gameId, cost) => {
     }
   }
 };
+
+
+
+
+// Auto-init for standalone HTML pages
+if (document.getElementById('games-grid') || window.location.pathname.includes('games')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGames);
+  } else {
+    initGames();
+  }
+}

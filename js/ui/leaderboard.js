@@ -395,7 +395,7 @@ class LeaderboardUI {
             <td class="lb-game">
               <div class="lb-game-icon">${this.icons[g.id] || ''}</div>
               <div>
-                <div class="lb-game-name">${g.name}</div>
+                <div class="lb-game-name">\</div>
                 <div class="lb-game-cat">${g.category || 'ARCADE'}</div>
               </div>
             </td>
@@ -464,7 +464,7 @@ class LeaderboardUI {
         <div class="lb-game-card ${isPlayed ? '' : 'never-played'}">
           <div class="card-header-row" style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
             <div class="lgc-icon" style="width: 32px; height: 32px; color: var(--accent-1); margin: 0;">${this.icons[g.id] || ''}</div>
-            <div style="font-family: 'Press Start 2P', monospace; font-size: 10px; color: #fff;">${g.name}</div>
+            <div style="font-family: 'Press Start 2P', monospace; font-size: 10px; color: #fff;">\</div>
           </div>
           <div class="lgc-stat-group">
             <div class="lgc-stat-item">
@@ -685,3 +685,15 @@ export function initLeaderboard() {
   new LeaderboardUI();
 }
 
+
+
+
+
+// Auto-init for standalone HTML pages
+if (document.getElementById('rankings-container') || window.location.pathname.includes('leaderboard')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLeaderboard);
+  } else {
+    initLeaderboard();
+  }
+}
