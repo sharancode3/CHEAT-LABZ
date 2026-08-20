@@ -8,7 +8,7 @@ export default class HomePage {
         
         <div class="hero-content">
           <h1 class="glitch-title">CHEAT LABZ</h1>
-          <p class="hero-subtitle">The underground arcade. 19 games. No rules. Just pure skill.</p>
+          <p class="hero-subtitle">The underground arcade. 35 games. No rules. Just pure skill.</p>
           
           <div class="cta-row">
             <a href="games.html" class="btn-enter-grid">Enter the Grid</a>

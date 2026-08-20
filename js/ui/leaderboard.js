@@ -261,7 +261,7 @@ class LeaderboardUI {
       { id: 'week-warrior', name: 'Week Warrior', desc: '7 day streak', earned: streak >= 7 },
       { id: 'arena-initiate', name: 'Arena Initiate', desc: 'Completed first arena', earned: arenaHistoryCount >= 1 },
       { id: 'high-roller', name: 'High Roller', desc: 'Scored 1000+ in any game', earned: scores.some(s => s.best >= 1000) },
-      { id: 'completionist', name: 'Completionist', desc: 'Played all 19 games', earned: scores.length === 19 },
+      { id: 'completionist', name: 'Completionist', desc: 'Played all 35 games', earned: scores.length === 35 },
       { id: 'speed-demon', name: 'Speed Demon', desc: 'Under 15s in any timed game', earned: localStorage.getItem('cheatLabz_badge_speed_demon') === 'true' || localStorage.getItem('cheatLabz_reflex-rush_runs') > 0 },
       { id: 'perfect-stack', name: 'Perfect Stack', desc: 'Perfect drop in Stack Blitz', earned: localStorage.getItem('cheatLabz_badge_perfect_stack') === 'true' || localStorage.getItem('cheatLabz_stack-blitz_runs') > 0 },
       { id: 'pixel-ghost', name: 'Pixel Ghost', desc: 'Survived 30s in Pixel Dodge', earned: localStorage.getItem('cheatLabz_badge_pixel_ghost') === 'true' || localStorage.getItem('cheatLabz_pixel-dodge_runs') > 0 }
