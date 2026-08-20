@@ -11,846 +11,721 @@ export const GAMES = [
     name: 'Neon Serpent',
     type: 'solo',
     category: 'ARCADE',
-    difficulty: 'MEDIUM',
+    difficulty: 'HARD',
     players: '1',
-    description: "Classic snake turbo-charged with speed ramps and combos.",
-    howToPlay: "Eat green energy orbs to grow longer. Avoid colliding with walls and your own tail. Fast eating creates combo multipliers.",
+    description: "Snake (Overdrive Protocol). Variable speed grid with drift mechanics and Boost Gauge.",
+    howToPlay: "Eat neon pellets to fill your Boost Gauge. Activating Boost allows you to dash through your own tail once per gauge without dying.",
     controls: [
       { key: 'WASD / ARROWS', action: 'Move / Turn' },
+      { key: 'SPACE', action: 'Activate Boost' },
       { key: 'P', action: 'Pause Game' }
     ],
-    scoringExplanation: "10 points per food orb. Quick consecutive eats trigger combo multipliers.",
+    scoringExplanation: "Speed increases dynamically. Earn points by eating. Second Chance Shield earned every 5000 points.",
     estimatedDuration: 120,
-    tags: ['TRENDING', 'RETRO'],
+    tags: ['HOT', 'ARCADE'],
     accentColor: '#00f0ff',
     file: '/js/games/solo/neon-serpent.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'loop-rally',
-    name: 'Loop Rally',
-    type: 'solo',
-    category: 'ARCADE',
-    difficulty: 'HARD',
-    players: '1',
-    description: "Classic paddle rally against an adaptive AI.",
-    howToPlay: "Keep the ball in play by deflecting it back to the AI. Manage your lives and survive spike hazards.",
-    controls: [
-      { key: '← A / → D', action: 'Move Paddle Left/Right' },
-      { key: 'MOUSE', action: 'Steer Paddle' }
-    ],
-    scoringExplanation: "+1 point per successful rally. The ball speeds up every 5 rallies.",
-    estimatedDuration: 90,
-    tags: ['TRENDING'],
-    accentColor: '#ff6b6b',
-    file: '/js/games/solo/loop-rally.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'turbo-drift',
-    name: 'Turbo Drift',
-    type: 'solo',
-    category: 'RACING',
-    difficulty: 'HARD',
-    players: '1',
-    description: "Top-down racing with drift scoring and boost pads.",
-    howToPlay: "Complete 3 laps as fast as possible. Hold controlled drifts around corners and hit neon boost pads.",
-    controls: [
-      { key: '↑ W', action: 'Accelerate' },
-      { key: '↓ S', action: 'Reverse' },
-      { key: '← A / → D', action: 'Steer Car' }
-    ],
-    scoringExplanation: "Base score starts high and counts down, boosted by drift scoring.",
-    estimatedDuration: 60,
-    tags: ['TRENDING', 'HOT'],
-    accentColor: '#ef4444',
-    file: '/js/games/solo/turbo-drift.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'key-frenzy',
-    name: 'Key Frenzy',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'HARD',
-    players: '1',
-    description: "Typing gauntlet with shrinking windows and blind rounds.",
-    howToPlay: "Press the matching keyboard key shown on screen before the outer circle collapses. Watch out for blind rounds where you must remember the key.",
-    controls: [
-      { key: 'A-Z', action: 'Press Matching Key' }
-    ],
-    scoringExplanation: "+10 points per key + time bonus. -10 points on misses.",
-    estimatedDuration: 45,
-    tags: ['NEW'],
-    accentColor: '#fbbf24',
-    file: '/js/games/solo/key-frenzy.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'astro-strider',
-    name: 'Astro Strider',
-    type: 'solo',
-    category: 'ARCADE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Side-scrolling space shooter with enemy waves.",
-    howToPlay: "Navigate your spaceship through the asteroid field. Destroy incoming enemy ships, dodge bullets, and collect power-ups.",
-    controls: [
-      { key: '↑ W / ↓ S', action: 'Move Up/Down' },
-      { key: 'SPACE', action: 'Fire Laser Canon' }
-    ],
-    scoringExplanation: "+5 points for asteroids, +15 points for enemy fighters. Power-up multipliers apply.",
-    estimatedDuration: 120,
-    tags: [],
-    accentColor: '#818cf8',
-    file: '/js/games/solo/astro-strider.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'cipher-quest',
-    name: 'Cipher Quest',
-    type: 'solo',
-    category: 'PUZZLE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Decode Caesar-cipher words under a time limit.",
-    howToPlay: "Read the Caesar-shifted cipher word, decode it using the offset shift, and type the correct English word.",
-    controls: [
-      { key: 'A-Z', action: 'Type Word' },
-      { key: 'ENTER', action: 'Submit Answer' }
-    ],
-    scoringExplanation: "+100 points per word + time bonus. Hints cost 20 points.",
-    estimatedDuration: 100,
-    tags: [],
-    accentColor: '#a855f7',
-    file: '/js/games/solo/cipher-quest.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'phantom-calc',
-    name: 'Phantom Calc',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'HARD',
-    players: '1',
-    description: "Mental math with disappearing equations.",
-    howToPlay: "Memorize the mathematical equation before it fades away, calculate the result, and type it in.",
-    controls: [
-      { key: '0-9 / -', action: 'Type Digit / Minus' },
-      { key: 'ENTER', action: 'Submit Answer' }
-    ],
-    scoringExplanation: "+50 points for correct calculations, -10 points for errors, +20 speed bonus.",
-    estimatedDuration: 60,
-    tags: [],
-    accentColor: '#f472b6',
-    file: '/js/games/solo/phantom-calc.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'word-pulse',
-    name: 'Word Pulse',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Type each letter on the beat to keep the rhythm going.",
-    howToPlay: "Watch the beat pulses and type the letters of the words exactly when the pulse aligns. Rhythm is critical.",
-    controls: [
-      { key: 'A-Z', action: 'Type Letter' }
-    ],
-    scoringExplanation: "+10 points for on-beat letters. Multipliers for continuous streaks.",
-    estimatedDuration: 80,
-    tags: [],
-    accentColor: '#fb7185',
-    file: '/js/games/solo/word-pulse.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'pixel-dodge',
-    name: 'Pixel Dodge',
-    type: 'solo',
-    category: 'ARCADE',
-    difficulty: 'HARD',
-    players: '1',
-    description: "Fast bullet hell. Survive as long as you can.",
-    howToPlay: "Navigate the player pixel around the canvas. Dodge incoming projectiles coming from all four directions. One hit is fatal.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Move Pixel' }
-    ],
-    scoringExplanation: "Score increases based on survival duration (milliseconds survived).",
-    estimatedDuration: 45,
-    tags: ['HOT'],
-    accentColor: '#f97316',
-    file: '/js/games/solo/pixel-dodge.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'stack-blitz',
-    name: 'Stack Blitz',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Drop platforms to build the tallest tower possible.",
-    howToPlay: "Press SPACE or click to drop the moving platform. Try to align it perfectly with the tower. Misaligned parts are chopped off.",
-    controls: [
-      { key: 'SPACE / CLICK', action: 'Drop Block' }
-    ],
-    scoringExplanation: "+10 points per layer. +150 points for a perfect alignment.",
-    estimatedDuration: 60,
-    tags: [],
-    accentColor: '#22d3ee',
-    file: '/js/games/solo/stack-blitz.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'memory-grid',
-    name: 'Memory Grid',
-    type: 'solo',
-    category: 'PUZZLE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Repeat the lighting sequence on the grid.",
-    howToPlay: "Watch the grid sequence light up. Repeat the pattern back in the exact order. The length increases every round.",
-    controls: [
-      { key: 'CLICK', action: 'Select Tile' }
-    ],
-    scoringExplanation: "+100 points per sequence round. Round multipliers apply.",
-    estimatedDuration: 90,
-    tags: [],
-    accentColor: '#c084fc',
-    file: '/js/games/solo/memory-grid.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'hyper-tap',
-    name: 'Hyper Tap',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'EASY',
-    players: '1',
-    description: "Precision tapping game when the indicator aligns.",
-    howToPlay: "Click or press SPACE when the moving dot falls precisely into the center of the static target ring.",
-    controls: [
-      { key: 'SPACE / CLICK', action: 'Tap Indicator' }
-    ],
-    scoringExplanation: "Up to 100 points per tap depending on proximity to the absolute center.",
-    estimatedDuration: 50,
-    tags: ['CHILL'],
-    accentColor: '#34d399',
-    file: '/js/games/solo/hyper-tap.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'gravity-flip',
-    name: 'Gravity Flip',
-    type: 'solo',
-    category: 'ARCADE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Invert gravity to run around spikes and collect coins.",
-    howToPlay: "Press SPACE to flip gravity. Run through the endless corridor, avoid spike blocks, and collect gold coins.",
-    controls: [
-      { key: 'SPACE / CLICK', action: 'Invert Gravity' }
-    ],
-    scoringExplanation: "Calculated based on distance run + 10 points per coin collected.",
-    estimatedDuration: 75,
-    tags: ['TRENDING'],
-    accentColor: '#2dd4bf',
-    file: '/js/games/solo/gravity-flip.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'chain-burst',
-    name: 'Chain Burst',
-    type: 'solo',
-    category: 'PUZZLE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Connect matching orbs to pop them.",
-    howToPlay: "Click and drag your mouse/finger across same-colored adjacent orbs to link them into chains and pop them.",
-    controls: [
-      { key: 'DRAG MOUSE', action: 'Connect Orbs' }
-    ],
-    scoringExplanation: "Calculated as: Chain Length² × 10 points. 90-second limit.",
-    estimatedDuration: 90,
-    tags: [],
-    accentColor: '#e879f9',
-    file: '/js/games/solo/chain-burst.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'reflex-rush',
-    name: 'Reflex Rush',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'EASY',
-    players: '1',
-    description: "React to matching direction prompts immediately.",
-    howToPlay: "Press the arrow key matching the flashing direction indicator as fast as possible. 10 rounds.",
-    controls: [
-      { key: 'ARROW KEYS', action: 'Match Arrow direction' }
-    ],
-    scoringExplanation: "100 minus reaction time in milliseconds per round.",
-    estimatedDuration: 40,
-    tags: [],
-    accentColor: '#facc15',
-    file: '/js/games/solo/reflex-rush.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'tile-runner',
-    name: 'Tile Runner',
-    type: 'solo',
-    category: 'ARCADE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Tap descending dark tiles without missing.",
-    howToPlay: "Tap/Click on the dark tiles as they scroll down the screen. Do not click light tiles, and don't miss any dark tiles.",
-    controls: [
-      { key: 'CLICK', action: 'Click Tile' }
-    ],
-    scoringExplanation: "+1 point per dark tile successfully clicked. Speed increases with score.",
-    estimatedDuration: 80,
-    tags: [],
-    accentColor: '#38bdf8',
-    file: '/js/games/solo/tile-runner.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'beat-drop',
-    name: 'Beat Drop',
-    type: 'solo',
-    category: 'SKILL',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Rhythm game. Match keys on the beat bar.",
-    howToPlay: "Press D, F, J, or K keys when the descending rhythm notes overlap with the bottom target indicators.",
-    controls: [
-      { key: 'D F J K', action: 'Hit Beat Lane' }
-    ],
-    scoringExplanation: "PERFECT=100, GOOD=50, MISS=0 points depending on alignment accuracy.",
-    estimatedDuration: 100,
-    tags: [],
-    accentColor: '#a78bfa',
-    file: '/js/games/solo/beat-drop.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'slide-forge',
-    name: 'Slide Forge',
-    type: 'solo',
-    category: 'PUZZLE',
-    difficulty: 'MEDIUM',
-    players: '1',
-    description: "Merge identical numbers to reach the 2048 block.",
-    howToPlay: "Slide the tiles inside the 4x4 grid. When two tiles with the same number touch, they merge into one with double value.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Slide Grid' }
-    ],
-    scoringExplanation: "Total score is the sum of all merged tile combinations.",
-    estimatedDuration: 150,
-    tags: [],
-    accentColor: '#4ade80',
-    file: '/js/games/solo/slide-forge.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'orb-pop-deluxe',
-    name: 'Orb Pop Deluxe',
-    type: 'solo',
-    category: 'PUZZLE',
-    difficulty: 'EASY',
-    players: '1',
-    description: "Match and pop colored bubbles.",
-    howToPlay: "Aim the launcher using the mouse and click to fire. Match 3 or more bubbles of the same color to pop them before they reach the bottom.",
-    controls: [
-      { key: 'MOUSE', action: 'Aim' },
-      { key: 'CLICK', action: 'Shoot' }
-    ],
-    scoringExplanation: "+10 points per bubble popped, with additional bonuses for drop chains.",
-    estimatedDuration: 120,
-    tags: ['CHILL'],
-    accentColor: '#67e8f9',
-    file: '/js/games/solo/orb-pop-deluxe.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-
-  // ==================== MULTIPLAYER GAMES ====================
-  {
-    id: 'rock-paper-scissors',
-    name: 'Rock Paper Scissors',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'EASY',
-    players: '2',
-    description: "Classic rock-paper-scissors duel.",
-    howToPlay: "Choose Rock, Paper, or Scissors simultaneously with your opponent. Play matches and win rounds.",
-    controls: [
-      { key: 'CLICK', action: 'Select RPS button' }
-    ],
-    scoringExplanation: "First player to win 3 rounds wins the match.",
-    estimatedDuration: 60,
-    tags: ['TRENDING'],
-    accentColor: '#EF4444',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/rock-paper-scissors.js',
-    version: '1.0.0',
+    version: '2.0.0',
     status: 'live'
   },
   {
     id: 'tic-tac-toe',
-    name: 'Tic Toe',
-    type: 'multi',
-    category: 'PUZZLE',
+    name: 'Tic-Tac-Toe',
+    type: 'solo',
+    category: 'CLASSIC',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Pro Engine. Unbeatable AI with mistake heuristics. 5-second Blitz Timer per turn.",
+    howToPlay: "Click on an empty cell to place your X. Get 3 in a row to win the round. You have 3 Hearts. Failing to act within 5 seconds loses a heart.",
+    controls: [
+      { key: 'MOUSE', action: 'Place Token' }
+    ],
+    scoringExplanation: "Win rounds to earn points. Higher levels reduce AI mistake probability.",
+    estimatedDuration: 60,
+    tags: ['CLASSIC', 'LOGIC'],
+    accentColor: '#ff0055',
+    file: '/js/games/solo/tic-tac-toe.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'rock-paper-scissors',
+    name: 'RPS (Predictive Arena)',
+    type: 'solo',
+    category: 'CLASSIC',
     difficulty: 'EASY',
-    players: '2',
-    description: "Classic 3x3 tic tac toe game.",
-    howToPlay: "Take turns placing X or O on the 3x3 grid. Form a horizontal, vertical, or diagonal line of three.",
+    players: '1',
+    description: "Predictive Arena. AI uses a 1st-order Markov Chain to predict and counter your moves.",
+    howToPlay: "Press the corresponding key to select Rock, Paper, or Scissors. Best of 5 Rounds.",
     controls: [
-      { key: 'CLICK', action: 'Place Symbol' }
+      { key: 'A / 1', action: 'Rock' },
+      { key: 'S / 2', action: 'Paper' },
+      { key: 'D / 3', action: 'Scissors' }
     ],
-    scoringExplanation: "Win 2 out of 3 games to win the match.",
+    scoringExplanation: "Win rounds to earn points. AI learns from your patterns.",
+    estimatedDuration: 45,
+    tags: ['CLASSIC', 'MIND'],
+    accentColor: '#facc15',
+    file: '/js/games/solo/rock-paper-scissors.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'pong',
+    name: 'Pong (Dynamic Velocity)',
+    type: 'solo',
+    category: 'ARCADE',
+    difficulty: 'HARD',
+    players: '1',
+    description: "Dynamic angular deflection. Face off against an adaptive AI in a high-speed match to 7 points.",
+    howToPlay: "Use W/S or Up/Down arrows to move your paddle. Return the ball to the opponent.",
+    controls: [
+      { key: 'W/S or UP/DOWN', action: 'Move Paddle' }
+    ],
+    scoringExplanation: "First to 7 points wins.",
+    estimatedDuration: 180,
+    tags: ['ARCADE', 'CLASSIC'],
+    accentColor: '#38bdf8',
+    file: '/js/games/solo/pong.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'memory-match',
+    name: 'Memory Match',
+    type: 'solo',
+    category: 'PUZZLE',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Temporal Decay. Your focus drains over time. Mismatches hurt, matches heal. Survive the board.",
+    howToPlay: "Click to flip a card. Flip another to find its pair.",
+    controls: [
+      { key: 'MOUSE', action: 'Flip Card' }
+    ],
+    scoringExplanation: "Clear the board before Focus runs out.",
     estimatedDuration: 90,
-    tags: [],
-    accentColor: '#6c63ff',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/tic-tac-toe.js',
+    tags: ['PUZZLE', 'MEMORY'],
+    accentColor: '#c084fc',
+    file: '/js/games/solo/memory-match.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'reflex-duel',
-    name: 'Reflex Duel',
-    type: 'multi',
-    category: 'SKILL',
+    id: 'connect-four',
+    name: 'Connect Four',
+    type: 'solo',
+    category: 'LOGIC',
     difficulty: 'MEDIUM',
-    players: '2',
-    description: "Speed duel. Click first when signal fires.",
-    howToPlay: "Wait for the center trigger. The moment the signal flashes, click your trigger before your opponent does.",
+    players: '1',
+    description: "Gravity Matrix. Outsmart the AI by aligning 4 tokens across any axis.",
+    howToPlay: "Click a column to drop your token. Connect 4 horizontally, vertically, or diagonally.",
     controls: [
-      { key: 'CLICK / SPACE', action: 'Trigger Reaction' }
+      { key: 'MOUSE', action: 'Drop Token' }
     ],
-    scoringExplanation: "Fastest reaction time wins the round. Best of 5.",
-    estimatedDuration: 50,
-    tags: [],
-    accentColor: '#fd79a8',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/reflex-duel.js',
+    scoringExplanation: "First to connect 4 wins the match.",
+    estimatedDuration: 180,
+    tags: ['LOGIC', 'CLASSIC'],
+    accentColor: '#facc15',
+    file: '/js/games/solo/connect-four.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'word-duel',
-    name: 'Word Duel',
-    type: 'multi',
-    category: 'SKILL',
-    difficulty: 'MEDIUM',
-    players: '2',
-    description: "Type words faster than your opponent.",
-    howToPlay: "Type the target words displayed as quickly and accurately as possible. The faster player scores more.",
-    controls: [
-      { key: 'A-Z', action: 'Type Word' }
-    ],
-    scoringExplanation: "Fast typing awards points. High score wins.",
-    estimatedDuration: 75,
-    tags: [],
-    accentColor: '#e056fd',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/word-duel.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'multiplayer-snake',
-    name: 'Multiplayer Snake',
-    type: 'multi',
+    id: 'whack-a-mole',
+    name: 'Data Breach (Whack)',
+    type: 'solo',
     category: 'ARCADE',
     difficulty: 'MEDIUM',
-    players: '2',
-    description: "Snake fight. Dominate the grid.",
-    howToPlay: "Navigate your snake to eat food while cutting off your opponent. Crashing into the opponent's snake body is fatal.",
+    players: '1',
+    description: "Cyber Data Breach. Strike nodes before they expire, but avoid the Glitch Bombs!",
+    howToPlay: "Click on nodes to earn points. Golden nodes give extra time. Hitting Glitch Bombs loses a life.",
     controls: [
-      { key: 'WASD / ARROWS', action: 'Turn Snake' }
+      { key: 'MOUSE', action: 'Strike Node' }
     ],
-    scoringExplanation: "Score increases as you eat. Last surviving snake wins.",
-    estimatedDuration: 120,
-    tags: ['HOT'],
-    accentColor: '#00d4aa',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/multiplayer-snake.js',
+    scoringExplanation: "Standard: +100pts. Golden: +300pts.",
+    estimatedDuration: 60,
+    tags: ['ARCADE', 'REACTION'],
+    accentColor: '#10b981',
+    file: '/js/games/solo/whack-a-mole.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'battleship',
-    name: 'Battleship',
-    type: 'multi',
+    id: 'clicker',
+    name: 'Quantum Clicker',
+    type: 'solo',
+    category: 'IDLE',
+    difficulty: 'EASY',
+    players: '1',
+    description: "Quantum Core Accelerator. Upgrade generators to maximize CPS without melting down the core.",
+    howToPlay: "Click the core to generate energy. Buy upgrades. Don't let core heat reach 100 degrees.",
+    controls: [
+      { key: 'MOUSE', action: 'Click Core / Buy Upgrades' }
+    ],
+    scoringExplanation: "Survive and accumulate as much Energy as possible before quitting.",
+    estimatedDuration: 300,
+    tags: ['IDLE', 'STRATEGY'],
+    accentColor: '#f97316',
+    file: '/js/games/solo/clicker.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'balloon-pop',
+    name: 'Balloon Pop (Vector)',
+    type: 'solo',
+    category: 'ARCADE',
+    difficulty: 'HARD',
+    players: '1',
+    description: "Chain Reaction Vector. Pop floating balloons and trigger massive chain reaction explosions.",
+    howToPlay: "Click to pop balloons. Bomb balloons trigger area explosions.",
+    controls: [
+      { key: 'MOUSE', action: 'Pop Balloon' }
+    ],
+    scoringExplanation: "Chain reactions multiply score. Game Over if 5 balloons escape.",
+    estimatedDuration: 120,
+    tags: ['ARCADE', 'PHYSICS'],
+    accentColor: '#ec4899',
+    file: '/js/games/solo/balloon-pop.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'simon-says',
+    name: 'Simon Says (Synesthesia)',
+    type: 'solo',
     category: 'PUZZLE',
     difficulty: 'MEDIUM',
-    players: '2',
-    description: "Deploy your fleet and blast the enemy.",
-    howToPlay: "Place your ships on your secret grid, then take turns calling shots on the enemy grid to sink their fleet.",
+    players: '1',
+    description: "Simon Says (Synesthesia Matrix). Memorize the expanding tonal sequence before the input timeout.",
+    howToPlay: "Click the colored quadrants in the exact sequence they flashed.",
     controls: [
-      { key: 'CLICK', action: 'Deploy / Fire' }
+      { key: 'MOUSE', action: 'Select Quadrant' }
     ],
-    scoringExplanation: "Sink all 5 enemy ships to win the battle.",
-    estimatedDuration: 200,
-    tags: [],
+    scoringExplanation: "Longer sequences earn more points. 3 strikes and you're out.",
+    estimatedDuration: 120,
+    tags: ['PUZZLE', 'MEMORY'],
+    accentColor: '#10b981',
+    file: '/js/games/solo/simon-says.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'catch-objects',
+    name: 'Catch the Falling Objects',
+    type: 'solo',
+    category: 'ARCADE',
+    difficulty: 'EASY',
+    players: '1',
+    description: "Vortex Basket. Gather resources while dodging lethal hazards dropping at terminal velocity.",
+    howToPlay: "Move the basket to catch fruits. Avoid hazards. Letting fruits hit the floor loses a life.",
+    controls: [
+      { key: 'A/D or ARROWS', action: 'Move Basket' }
+    ],
+    scoringExplanation: "Earn points per fruit caught.",
+    estimatedDuration: 180,
+    tags: ['ARCADE', 'REACTION'],
     accentColor: '#3b82f6',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/battleship.js',
+    file: '/js/games/solo/catch-objects.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'physics-soccer',
-    name: 'Physics Soccer',
-    type: 'multi',
+    id: 'flappy-bird',
+    name: 'Flappy Bird (Vector Flight)',
+    type: 'solo',
     category: 'ARCADE',
     difficulty: 'HARD',
-    players: '2',
-    description: "Bouncy soccer. Kick the ball into the net.",
-    howToPlay: "Bounce and kick the soccer ball using physical acceleration. Guide the ball into the opponent's goal.",
+    players: '1',
+    description: "Vector Flight. Absolute precision platforming with strict 1-hit knockout rules.",
+    howToPlay: "Flap to gain altitude. Do not touch the pipes or the ground.",
     controls: [
-      { key: 'WASD / ARROWS', action: 'Control Player Movement' }
+      { key: 'SPACE or MOUSE', action: 'Flap' }
     ],
-    scoringExplanation: "Most goals scored when the match timer runs out wins.",
-    estimatedDuration: 150,
-    tags: [],
-    accentColor: '#f59e0b',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/physics-soccer.js',
+    scoringExplanation: "1 point per pipe cleared. 1-Hit Game Over.",
+    estimatedDuration: 60,
+    tags: ['ARCADE', 'HARDCORE'],
+    accentColor: '#facc15',
+    file: '/js/games/solo/flappy-bird.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'ludo',
-    name: 'Ludo',
-    type: 'multi',
+    id: 'brick-breaker',
+    name: 'Brick Breaker (Shatter Space)',
+    type: 'solo',
+    category: 'ARCADE',
+    difficulty: 'EASY',
+    players: '1',
+    description: "Shatter Space. Clear the 5x10 matrix using precise normal inversions.",
+    howToPlay: "Move the paddle to bounce the ball. Destroy all bricks to advance.",
+    controls: [
+      { key: 'A/D or MOUSE', action: 'Move Paddle' }
+    ],
+    scoringExplanation: "Standard: 10pts. Reinforced: 30pts. Don't let the ball drop.",
+    estimatedDuration: 180,
+    tags: ['ARCADE', 'CLASSIC'],
+    accentColor: '#3b82f6',
+    file: '/js/games/solo/brick-breaker.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'asteroids',
+    name: 'Asteroids (Inertia Drive)',
+    type: 'solo',
+    category: 'ARCADE',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Inertia Drive. Survive in a toroidal space using Newtonian thrust and fragmentation weaponry.",
+    howToPlay: "Rotate and thrust to move. Shoot asteroids to break them into smaller pieces.",
+    controls: [
+      { key: 'W/A/D or ARROWS', action: 'Move/Rotate' },
+      { key: 'SPACE or MOUSE', action: 'Shoot' }
+    ],
+    scoringExplanation: "Large: 20pts. Medium: 50pts. Small: 100pts.",
+    estimatedDuration: 120,
+    tags: ['ARCADE', 'SHOOTER'],
+    accentColor: '#ef4444',
+    file: '/js/games/solo/asteroids.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'frogger',
+    name: 'Frogger (Traffic Rush)',
+    type: 'solo',
+    category: 'ARCADE',
+    difficulty: 'HARD',
+    players: '1',
+    description: "Traffic Rush. Navigate the hazard grid and attach to moving platforms to reach the safety bays.",
+    howToPlay: "Hop across the road dodging cars. Hop on logs to cross the river.",
+    controls: [
+      { key: 'WASD or ARROWS', action: 'Hop' }
+    ],
+    scoringExplanation: "Reach a bay to score. Clear all 5 to advance.",
+    estimatedDuration: 180,
+    tags: ['ARCADE', 'REACTION'],
+    accentColor: '#10b981',
+    file: '/js/games/solo/frogger.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'number-guessing',
+    name: 'Number Guessing (Binary Radar)',
+    type: 'solo',
     category: 'PUZZLE',
     difficulty: 'EASY',
-    players: '2-4',
-    description: "Classic board game of strategy and luck.",
-    howToPlay: "Roll the dice, move your tokens out of base, and travel around the board to reach the home triangle first.",
+    players: '1',
+    description: "Binary Search Radar. Use heat proximity clues to triangulate the target number.",
+    howToPlay: "Type a number between 1 and 100. Use Higher/Lower clues to narrow it down in 7 tries.",
     controls: [
-      { key: 'CLICK', action: 'Roll Dice / Move Token' }
+      { key: 'KEYBOARD', action: 'Type Guess' },
+      { key: 'ENTER', action: 'Submit' }
     ],
-    scoringExplanation: "First player to move all tokens to the center wins.",
+    scoringExplanation: "Fewer attempts = higher score. Score decays by 150 per attempt.",
+    estimatedDuration: 60,
+    tags: ['PUZZLE', 'LOGIC'],
+    accentColor: '#f97316',
+    file: '/js/games/solo/number-guessing.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'typing-test',
+    name: 'Typing Speed Test (Velocity)',
+    type: 'solo',
+    category: 'WORD',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Velocity Engine. Push your Gross and Net WPM to the limits in this raw typing speed test.",
+    howToPlay: "Type the displayed text as fast and accurately as possible. Fix errors with Backspace.",
+    controls: [
+      { key: 'KEYBOARD', action: 'Type Text' }
+    ],
+    scoringExplanation: "Score is based on Net WPM and Accuracy.",
+    estimatedDuration: 60,
+    tags: ['WORD', 'REACTION'],
+    accentColor: '#3b82f6',
+    file: '/js/games/solo/typing-test.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'hangman',
+    name: 'Hangman (Cyber Deconstruct)',
+    type: 'solo',
+    category: 'WORD',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Cyber Deconstruction. Decrypt the word before 6 strikes shatter your system.",
+    howToPlay: "Type letters to guess the word. 6 wrong guesses ends the game.",
+    controls: [
+      { key: 'KEYBOARD', action: 'Guess Letter' }
+    ],
+    scoringExplanation: "100 pts per correct letter. 500 pt completion bonus.",
+    estimatedDuration: 120,
+    tags: ['WORD', 'PUZZLE'],
+    accentColor: '#ef4444',
+    file: '/js/games/solo/hangman.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'word-scramble',
+    name: 'Word Scramble (Anagram)',
+    type: 'solo',
+    category: 'WORD',
+    difficulty: 'HARD',
+    players: '1',
+    description: "Anagram Time-Attack. Unscramble the anagrams quickly to add time back to the clock.",
+    howToPlay: "Type the unscrambled word and press Enter. Wrong guesses deduct time.",
+    controls: [
+      { key: 'KEYBOARD', action: 'Type Word' },
+      { key: 'ENTER', action: 'Submit' }
+    ],
+    scoringExplanation: "Points scale with word length squared. Streaks increase multipliers.",
+    estimatedDuration: 60,
+    tags: ['WORD', 'PUZZLE'],
+    accentColor: '#8b5cf6',
+    file: '/js/games/solo/word-scramble.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'wordle',
+    name: 'Wordle (Frequency Matrix)',
+    type: 'solo',
+    category: 'WORD',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Wordle Clone (Frequency Matrix). Deduce the secret 5-letter password in 6 attempts.",
+    howToPlay: "Type a 5-letter word and press Enter. Green means correct, Yellow means wrong spot.",
+    controls: [
+      { key: 'KEYBOARD', action: 'Type Guess' },
+      { key: 'ENTER', action: 'Submit' }
+    ],
+    scoringExplanation: "Score scales based on remaining attempts and win streak.",
+    estimatedDuration: 180,
+    tags: ['WORD', 'PUZZLE'],
+    accentColor: '#10b981',
+    file: '/js/games/solo/wordle.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: '2048',
+    name: '2048 (Kinetic Merge)',
+    type: 'solo',
+    category: 'PUZZLE',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "2048 (Kinetic Merge). Slide and compress tiles to reach the ultimate value.",
+    howToPlay: "Use arrow keys to slide all tiles. Matching values merge into higher numbers.",
+    controls: [
+      { key: 'WASD / ARROWS', action: 'Slide Grid' }
+    ],
+    scoringExplanation: "Each merge adds the new tile's value to your score.",
+    estimatedDuration: 300,
+    tags: ['PUZZLE', 'LOGIC'],
+    accentColor: '#eab308',
+    file: '/js/games/solo/2048.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'sudoku',
+    name: 'Sudoku (Logic Engine)',
+    type: 'solo',
+    category: 'PUZZLE',
+    difficulty: 'HARD',
+    players: '1',
+    description: "Sudoku (Logic Engine). A mathematically generated grid with a single unique solution.",
+    howToPlay: "Fill the grid so every row, column, and 3x3 box contains digits 1-9.",
+    controls: [
+      { key: 'MOUSE', action: 'Select Cell' },
+      { key: 'NUMBERS 1-9', action: 'Fill Digit' }
+    ],
+    scoringExplanation: "3 strikes ends the game. Faster completion = higher score.",
+    estimatedDuration: 600,
+    tags: ['PUZZLE', 'LOGIC'],
+    accentColor: '#3b82f6',
+    file: '/js/games/solo/sudoku.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'sliding-puzzle',
+    name: 'Sliding Puzzle (Parallax)',
+    type: 'solo',
+    category: 'PUZZLE',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Sliding Puzzle. Shift the scrambled matrix back into numerical order.",
+    howToPlay: "Click adjacent tiles to move them into the empty space.",
+    controls: [
+      { key: 'MOUSE', action: 'Move Tile' }
+    ],
+    scoringExplanation: "Fewer moves = higher score.",
     estimatedDuration: 240,
-    tags: [],
-    accentColor: '#00d4aa',
-    minPlayers: 2,
-    maxPlayers: 4,
-    file: '/js/games/multi/ludo.js',
+    tags: ['PUZZLE', 'LOGIC'],
+    accentColor: '#f97316',
+    file: '/js/games/solo/sliding-puzzle.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'bomberman-arena',
-    name: 'Bomberman Arena',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'MEDIUM',
-    players: '2',
-    description: "Place bombs to blast blocks and opponents.",
-    howToPlay: "Navigate the maze grid. Drop bombs to break destructible crates and catch the opponent in the fire blast.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Move' },
-      { key: 'SPACE / ENTER', action: 'Drop Bomb' }
-    ],
-    scoringExplanation: "Last player standing after block clearances wins.",
-    estimatedDuration: 180,
-    tags: [],
-    accentColor: '#f0932b',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/bomberman-arena.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'tank-battle',
-    name: 'Tank Battle',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'MEDIUM',
-    players: '2',
-    description: "Drive tanks and fire artillery shells.",
-    howToPlay: "Steer your combat tank around obstacles. Fire armor-piercing shells at the opponent's tank.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Steer / Move Tank' },
-      { key: 'SPACE / CLICK', action: 'Fire Shell' }
-    ],
-    scoringExplanation: "Each direct shell hit awards points. High score wins.",
-    estimatedDuration: 120,
-    tags: [],
-    accentColor: '#20bf6b',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/tank-battle.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'king-of-the-hill',
-    name: 'King of the Hill',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'MEDIUM',
-    players: '2',
-    description: "Control and hold the central hill zone.",
-    howToPlay: "Stay inside the highlighted central zone to capture it and accumulate time. Push the opponent out of the zone.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Move Character' }
-    ],
-    scoringExplanation: "1 point per second spent inside the hill. Highest score wins.",
-    estimatedDuration: 120,
-    tags: [],
-    accentColor: '#eb3b5a',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/king-of-the-hill.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'color-flood-duel',
-    name: 'Color Flood Duel',
-    type: 'multi',
+    id: 'minesweeper',
+    name: 'Minesweeper (Radar)',
+    type: 'solo',
     category: 'PUZZLE',
     difficulty: 'MEDIUM',
-    players: '2',
-    description: "Capture the grid by flooding colors.",
-    howToPlay: "Choose adjacent colors on your board to flood-fill and capture neighboring tiles. Grow your territory bigger than the opponent's.",
+    players: '1',
+    description: "Minesweeper (Radar Clear). Safely navigate the minefield using numerical proximity logic.",
+    howToPlay: "Left click to reveal a tile. Right click to flag a mine.",
     controls: [
-      { key: 'CLICK', action: 'Select Flood Color' }
+      { key: 'L-CLICK', action: 'Reveal' },
+      { key: 'R-CLICK', action: 'Flag' }
     ],
-    scoringExplanation: "Most tiles occupied when the grid is completely flooded wins.",
-    estimatedDuration: 90,
-    tags: [],
-    accentColor: '#a55eea',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/color-flood-duel.js',
+    scoringExplanation: "Clear the board without detonating any mines.",
+    estimatedDuration: 300,
+    tags: ['PUZZLE', 'LOGIC'],
+    accentColor: '#ef4444',
+    file: '/js/games/solo/minesweeper.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'top-down-racer',
-    name: 'Top Down Racer',
-    type: 'multi',
-    category: 'RACING',
-    difficulty: 'HARD',
-    players: '2',
-    description: "Race head-to-head on the micro track.",
-    howToPlay: "Control your sports car and race 3 laps. Drift around bends and beat the opponent to the finish line.",
+    id: 'quiz',
+    name: 'Trivia (Streak Matrix)',
+    type: 'solo',
+    category: 'TRIVIA',
+    difficulty: 'MEDIUM',
+    players: '1',
+    description: "Trivia Game (Streak Matrix). Answer rapidly to compound your score multiplier.",
+    howToPlay: "Click the correct answer before time runs out. 3 lives.",
     controls: [
-      { key: '↑ W', action: 'Accelerate' },
-      { key: '↓ S', action: 'Reverse' },
-      { key: '← A / → D', action: 'Steer Left/Right' }
+      { key: 'MOUSE', action: 'Select Answer' }
     ],
-    scoringExplanation: "First player to complete 3 full laps is the winner.",
-    estimatedDuration: 100,
-    tags: [],
-    accentColor: '#45aaf2',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/top-down-racer.js',
+    scoringExplanation: "Score decays over time. Streaks increase your multiplier up to 4x.",
+    estimatedDuration: 180,
+    tags: ['TRIVIA', 'REACTION'],
+    accentColor: '#8b5cf6',
+    file: '/js/games/solo/quiz.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'zombie-survival',
-    name: 'Zombie Survival',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'HARD',
-    players: '2',
-    description: "Co-op survival. Shoot zombies and stay alive.",
-    howToPlay: "Work with your teammate. Shoot incoming waves of undead zombies. Collect ammo power-ups.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Move' },
-      { key: 'SPACE / CLICK', action: 'Aim and Shoot' }
-    ],
-    scoringExplanation: "Total kills accumulated by the team. Survive as long as possible.",
-    estimatedDuration: 150,
-    tags: [],
-    accentColor: '#2bcbba',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/zombie-survival.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'mini-party-pack',
-    name: 'Mini Party Pack',
-    type: 'multi',
-    category: 'SKILL',
+    id: 'mp-tic-tac-toe',
+    name: 'Tic-Tac-Toe (Duel)',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
     difficulty: 'EASY',
     players: '2',
-    description: "A compilation of fast mini-challenges.",
-    howToPlay: "Compete in random quick mini-games. Follow instructions shown on screen for each round.",
+    description: "Tic-Tac-Toe (2-Player Duel). Alternating turns with a chess clock.",
+    howToPlay: "Click to place your mark. Win 3 rounds to take the match.",
     controls: [
-      { key: 'CLICK / SPACE', action: 'Perform Action' }
+      { key: 'MOUSE', action: 'Place Mark' }
     ],
-    scoringExplanation: "Points awarded per mini-game won. High score wins.",
+    scoringExplanation: "First to 3 round wins is the victor.",
     estimatedDuration: 120,
-    tags: [],
-    accentColor: '#fa8231',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/mini-party-pack.js',
+    tags: ['MULTIPLAYER', 'CLASSIC'],
+    accentColor: '#3b82f6',
+    file: '/js/games/multiplayer/tic-tac-toe.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'pixel-gunfight',
-    name: 'Pixel Gunfight',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'HARD',
-    players: '2',
-    description: "Shoot the opponent. Dodge behind walls.",
-    howToPlay: "Move around the arena, take cover behind barricades, and fire bullets at the opponent. Watch your ammo.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Move Player' },
-      { key: 'SPACE / ENTER', action: 'Shoot' }
-    ],
-    scoringExplanation: "Match won by the player with the most kills in the time limit.",
-    estimatedDuration: 100,
-    tags: [],
-    accentColor: '#ff5252',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/pixel-gunfight.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'capture-the-flag',
-    name: 'Capture The Flag',
-    type: 'multi',
-    category: 'ARCADE',
-    difficulty: 'HARD',
-    players: '2',
-    description: "Steal the enemy flag and return it to base.",
-    howToPlay: "Navigate into the enemy side, grab their flag, and bring it back to your base. Tag opponents on your side to freeze them.",
-    controls: [
-      { key: 'WASD / ARROWS', action: 'Move Character' }
-    ],
-    scoringExplanation: "First player to capture 3 flags wins the match.",
-    estimatedDuration: 180,
-    tags: [],
-    accentColor: '#00d2d3',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/capture-the-flag.js',
-    version: '1.0.0',
-    status: 'live'
-  },
-  {
-    id: 'mini-clash',
-    name: 'Mini Clash',
-    type: 'multi',
-    category: 'ARCADE',
+    id: 'mp-pong',
+    name: 'Pong (Hyper-Rally)',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
     difficulty: 'MEDIUM',
     players: '2',
-    description: "Sumo style grid battle. Push the opponent.",
-    howToPlay: "Collide with the opponent to push them. Earn power-ups and run them off the edge of the circular grid.",
+    description: "Pong (2-Player Hyper-Rally). Paddle smash modifiers and intense volleys.",
+    howToPlay: "P1: W/S. P2: Up/Down. Move while hitting the ball to add smash velocity.",
     controls: [
-      { key: 'WASD / ARROWS', action: 'Steer Player' }
+      { key: 'W / S', action: 'P1 Move' },
+      { key: 'UP / DOWN', action: 'P2 Move' }
     ],
-    scoringExplanation: "Score increases each time you push the opponent off. First to 5 wins.",
-    estimatedDuration: 110,
-    tags: [],
-    accentColor: '#ff9ff3',
-    minPlayers: 2,
-    maxPlayers: 2,
-    file: '/js/games/multi/mini-clash.js',
+    scoringExplanation: "First to 10 points wins. 5-point lead triggers mercy rule.",
+    estimatedDuration: 180,
+    tags: ['MULTIPLAYER', 'ARCADE'],
+    accentColor: '#10b981',
+    file: '/js/games/multiplayer/pong.js',
     version: '1.0.0',
     status: 'live'
   },
   {
-    id: 'rock-paper-scissors-tournament',
-    name: 'RPS Tournament',
-    type: 'multi',
-    category: 'ARCADE',
+    id: 'mp-rps',
+    name: 'RPS (Blind Clash)',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
     difficulty: 'EASY',
-    players: '2-4',
-    description: "Multi-round knockout bracket for Rock Paper Scissors.",
-    howToPlay: "Win consecutive rounds of Rock-Paper-Scissors in a knockout bracket to reach the finals and win.",
+    players: '2',
+    description: "Rock, Paper, Scissors (Blind Clash). Masked inputs and tie-damage multipliers.",
+    howToPlay: "P1: A/S/D. P2: J/K/L. Both select blindly, then clash.",
     controls: [
-      { key: 'CLICK', action: 'Select Choice' }
+      { key: 'A / S / D', action: 'P1 Select' },
+      { key: 'J / K / L', action: 'P2 Select' }
     ],
-    scoringExplanation: "Round-robin bracket points determine the champion.",
+    scoringExplanation: "Ties increase the damage pot. First to 0 HP loses.",
+    estimatedDuration: 90,
+    tags: ['MULTIPLAYER', 'CLASSIC'],
+    accentColor: '#ef4444',
+    file: '/js/games/multiplayer/rock-paper-scissors.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-snake',
+    name: 'Snake vs Snake',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'MEDIUM',
+    players: '2',
+    description: "Snake vs Snake. Avoid bodies and head-on collisions in a Tron-style grid.",
+    howToPlay: "P1: WASD. P2: Arrows. Trap your opponent.",
+    controls: [
+      { key: 'WASD', action: 'P1 Steer' },
+      { key: 'ARROWS', action: 'P2 Steer' }
+    ],
+    scoringExplanation: "First to 3 round wins takes the match.",
     estimatedDuration: 180,
-    tags: [],
-    accentColor: '#ee5253',
-    minPlayers: 2,
-    maxPlayers: 4,
-    file: '/js/games/multi/rock-paper-scissors-tournament.js',
+    tags: ['MULTIPLAYER', 'ARCADE'],
+    accentColor: '#14b8a6',
+    file: '/js/games/multiplayer/snake.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-connect-four',
+    name: 'Connect 4 (Duel)',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'MEDIUM',
+    players: '2',
+    description: "Connect Four (2-Player Duel). Split controls for real-time dropping.",
+    howToPlay: "P1: A/D/Space. P2: Left/Right/Enter. First to connect 4 wins.",
+    controls: [
+      { key: 'A / D / SPACE', action: 'P1 Play' },
+      { key: 'L / R / ENTER', action: 'P2 Play' }
+    ],
+    scoringExplanation: "Best 2 out of 3 match.",
+    estimatedDuration: 240,
+    tags: ['MULTIPLAYER', 'LOGIC'],
+    accentColor: '#eab308',
+    file: '/js/games/multiplayer/connect-four.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-memory',
+    name: 'Memory (Point Steal)',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'MEDIUM',
+    players: '2',
+    description: "Memory Match Race. Avoid traps to steal points and keep your turn.",
+    howToPlay: "Alternating clicks. Matches give +100pts and an extra turn.",
+    controls: [
+      { key: 'MOUSE', action: 'Flip Card' }
+    ],
+    scoringExplanation: "Traps steal 150pts. Highest score at the end wins.",
+    estimatedDuration: 300,
+    tags: ['MULTIPLAYER', 'PUZZLE'],
+    accentColor: '#a855f7',
+    file: '/js/games/multiplayer/memory.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-tug-of-war',
+    name: 'Tug of War',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'HARD',
+    players: '2',
+    description: "Tug of War. Mash keys to pull the rope, but manage your stamina.",
+    howToPlay: "P1: Mash 'D'. P2: Mash 'Left Arrow'. Too fast = stamina drop.",
+    controls: [
+      { key: 'D', action: 'P1 Pull' },
+      { key: 'LEFT ARROW', action: 'P2 Pull' }
+    ],
+    scoringExplanation: "Pull the rope all the way to your side to win a round.",
+    estimatedDuration: 120,
+    tags: ['MULTIPLAYER', 'REACTION'],
+    accentColor: '#f97316',
+    file: '/js/games/multiplayer/tug-of-war.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-tank',
+    name: 'Tank (Ballistics)',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'HARD',
+    players: '2',
+    description: "Tank Trouble. 4-bounce vector ricochets and intense arena combat.",
+    howToPlay: "P1: WASD+Space. P2: Arrows+Enter. Bullets bounce off walls.",
+    controls: [
+      { key: 'WASD + SPACE', action: 'P1 Move/Fire' },
+      { key: 'ARROWS + ENTER', action: 'P2 Move/Fire' }
+    ],
+    scoringExplanation: "First to 5 kills wins.",
+    estimatedDuration: 300,
+    tags: ['MULTIPLAYER', 'ACTION'],
+    accentColor: '#6366f1',
+    file: '/js/games/multiplayer/tank-trouble.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-racing',
+    name: 'Racing Dots',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'MEDIUM',
+    players: '2',
+    description: "Racing Dots. Alternating key mashing for maximum velocity.",
+    howToPlay: "P1: A->D. P2: Left->Right. Don't press the same key twice!",
+    controls: [
+      { key: 'A / D', action: 'P1 Run' },
+      { key: 'LEFT / RIGHT', action: 'P2 Run' }
+    ],
+    scoringExplanation: "First to cross the finish line wins.",
+    estimatedDuration: 60,
+    tags: ['MULTIPLAYER', 'RACING'],
+    accentColor: '#0ea5e9',
+    file: '/js/games/multiplayer/racing-dots.js',
+    version: '1.0.0',
+    status: 'live'
+  },
+  {
+    id: 'mp-air-hockey',
+    name: 'Air Hockey Arena',
+    type: 'multiplayer',
+    category: 'MULTIPLAYER',
+    difficulty: 'MEDIUM',
+    players: '2',
+    description: "Air Hockey. Elastic circle-circle impulse math in a fast-paced rink.",
+    howToPlay: "P1: WASD. P2: Arrows. Hit the puck into the opponent's goal.",
+    controls: [
+      { key: 'WASD', action: 'P1 Move' },
+      { key: 'ARROWS', action: 'P2 Move' }
+    ],
+    scoringExplanation: "First to 7 goals wins.",
+    estimatedDuration: 240,
+    tags: ['MULTIPLAYER', 'SPORTS'],
+    accentColor: '#ec4899',
+    file: '/js/games/multiplayer/air-hockey.js',
     version: '1.0.0',
     status: 'live'
   }
 ];
-// ---- Manifest validation ---------------------------------------------------
-// Verify that each declared game file actually exists on the server. This runs
-// once when the module is imported. Missing entries are marked with `missing: true`
-// and a warning is printed to the console.
-async function _validateManifest() {
-  const missing = [];
-  await Promise.all(GAMES.map(async (game) => {
-    try {
-      const resp = await fetch(game.file, { method: 'HEAD' });
-      if (!resp.ok) {
-        console.warn(`[Manifest] Missing game file for ${game.id}: ${game.file}`);
-        game.missing = true;
-        missing.push(game.id);
-      }
-    } catch (e) {
-      console.warn(`[Manifest] Error fetching game file for ${game.id}: ${e}`);
-      game.missing = true;
-      missing.push(game.id);
-    }
-  }));
-  if (missing.length) {
-    console.warn(`[Manifest] ${missing.length} game(s) have missing files: ${missing.join(', ')}`);
-  }
-}
-_validateManifest();
 
-/**
- * Returns a filtered list of games that have a valid file reference.
- * Used by the loader to avoid attempting to import missing modules.
- */
 export function getValidGames() {
-  return GAMES.filter(g => !g.missing);
+  return GAMES.filter(g => g.status !== 'disabled');
 }

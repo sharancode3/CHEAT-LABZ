@@ -1,432 +1,225 @@
-# Hyper Plays - Browser Gaming Platform
-
 <div align="center">
+  <img src="assets/images/logo.png" alt="Cheat Labz Logo" width="200" height="auto" />
+  <h1>🎮 CHEAT LABZ 🎮</h1>
+  <p><strong>The Universal Browser Gaming Engine</strong></p>
 
-[![Node.js](https://img.shields.io/badge/Node.js-v14%2B-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)]()
-
-**A modern, full-stack browser gaming platform with real-time progress tracking, secure authentication, and an intuitive arcade experience.**
-
-[🎮 Play Live](https://sharancode3.github.io/CHEAT-LABZ/) • [📖 Docs](#quick-start) • [🤝 Contributing](#contributing)
-
+  [![Vanilla JS](https://img.shields.io/badge/Vanilla_JS-ES6%2B-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+  [![HTML5 Canvas](https://img.shields.io/badge/HTML5-Canvas-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+  [![CSS Grid](https://img.shields.io/badge/CSS3-Grid_Layout-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout)
+  [![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-brightgreen?style=for-the-badge)]()
+  
+  <br />
+  
+  [**Play Live Demo**](https://sharancode3.github.io/CHEAT-LABZ/) • 
+  [**Architecture Docs**](#%EF%B8%8F-engine-architecture) • 
+  [**Game Library**](#-game-library-35-games)
 </div>
 
 ---
 
-## Overview
+> [!NOTE]
+> **Cheat Labz** is a production-grade, monolithic browser gaming platform featuring **35 custom-built games**. It operates entirely without external frameworks (No Unity, No Phaser, No React), relying on a highly optimized, proprietary Vanilla JS engine to deliver a seamless 60FPS Single Page Application (SPA) experience.
 
-Hyper Plays is a production-grade gaming platform built for the modern browser. It combines a sophisticated full-stack architecture with an engaging user experience, delivering a seamless arcade experience accessible from any device. Whether you're a casual gamer or a developer looking to extend the platform, Hyper Plays provides the infrastructure and flexibility you need.
+## ✨ Core Features
 
-### Key Highlights
-
-- **🎯 Modern Architecture**: Express.js backend with JWT authentication and REST API
-- **🔐 Enterprise-Grade Security**: Secure token-based authentication with offline fallback
-- **📊 Real-Time Progress Tracking**: Persistent player statistics and leaderboards
-- **🎮 11 Original Games**: All games are custom-built in-house, experimental, and constantly evolving
-- **📱 Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **⚡ Fullscreen Gaming**: Immersive game experience with in-game controls
-- **🌐 Guest Mode**: Play without authentication
-- **💾 Offline Support**: Local fallback storage ensures uninterrupted gameplay
+*   🚀 **Proprietary Engine:** The `GameRunner` loop handles input, delta-timing, and rendering uniformly across all 35 games.
+*   🧠 **Advanced Mechanics:** Features A* Pathfinding (Pac-Man), Backtracking Solvers (Sudoku), Matrix Sliding (2048), and Elastic Impulse Physics (Air Hockey).
+*   ⚔️ **Multiplayer Arena:** Includes 10 Local Shared-Keyboard PvP games with split controls.
+*   🔊 **Synthesized Audio:** Custom Web Audio API synthesizer for retro chiptune effects (zero `.mp3` payloads).
+*   📱 **Responsive Canvas:** Automatic logical-to-physical coordinate scaling across all screen sizes.
+*   💾 **Local State:** High scores and progress persist silently via `localStorage`.
 
 ---
 
-## 🚀 Deployment Options
+## 🏗️ Engine Architecture
 
-### Live Demo (GitHub Pages - Frontend Only)
-**[🎮 Play Now](https://sharancode3.github.io/CHEAT-LABZ/)** - Play all games instantly, no setup required!
-- ✅ All 11 games playable
-- ✅ Local score persistence (browser storage)
-- ⚠️ No user accounts or backend features (guest mode only)
+Cheat Labz is designed around a strictly decoupled, object-oriented workflow that ensures zero memory leaks when dynamically switching between 35 different game contexts.
 
-### Local Development (Full Stack)
-Follow the [Quick Start](#quick-start) below to run locally with:
-- ✅ Full authentication system
-- ✅ Real-time leaderboards
-- ✅ Progress sync to backend
-- ✅ Multi-user accounts
+### 🔄 The Execution Lifecycle
+
+```mermaid
+graph TD
+    UI[DOM UI / Portal] -->|Select Game| GL[Game Loader]
+    GL -->|Dynamic Import| MD[Game Module file]
+    MD -->|Instantiate| GR[Game Runner]
+    GR -->|Mount| Canvas[HTML5 Canvas]
+    
+    subgraph The Engine Loop
+        GR -->|1. Poll Input| IN[Input Manager]
+        GR -->|2. Calc Delta| DT[Timing System]
+        GR -->|3. Call| GB[GameBase Interface]
+        
+        GB -->|update| Physics[Game Logic & State]
+        GB -->|render| Draw[Context 2D Draw]
+        Physics -.-> GB
+        Draw -.-> GB
+    end
+    
+    GB -->|Emit Game Over| GR
+    GR -->|Cleanup Memory| UI
+```
+
+### 🧩 Component Roles
+
+| Component | Description | Responsibility |
+| :--- | :--- | :--- |
+| `GameRunner` | The Engine Heart | Hooks into `requestAnimationFrame`. Calculates `delta` time for monitor refresh-rate independence. Pumps data into the active game class. Handles garbage collection upon game exit. |
+| `GameBase` | The Universal Interface | An abstract ES6 class that all 35 games extend. Enforces the implementation of `init()`, `update(delta)`, and `render(ctx)`. Provides standard utilities for clearing the screen and ending levels. |
+| `InputManager` | The Controller | Attaches global event listeners for Keyboard/Mouse/Touch once. Abstracts physical events into logical states that `GameRunner` feeds to the current game, avoiding overlapping listeners. |
+| `GameManifest` | The Router | A JSON-like configuration mapping game IDs to their specific ES6 `.js` file paths and metadata, enabling lazy-loaded dynamic imports. |
+
+### 🛠️ The GameBase Contract
+
+To create a new game, a developer simply extends the engine's core class:
+
+```javascript
+import { GameBase } from '../../core/game-base.js';
+
+export class MyNewGame extends GameBase {
+  init() {
+    // 1. Define entities and initial state
+    this.player = { x: 0, y: 0, velocity: 100 };
+  }
+
+  update(delta) {
+    // 2. Process Input & Physics based on frame time
+    if (this.input.keys['ArrowRight']) {
+      this.player.x += this.player.velocity * delta;
+    }
+  }
+
+  render(ctx) {
+    // 3. Draw to the 1:1 aspect ratio canvas
+    this.clear(); 
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(this.player.x, this.player.y, 50, 50);
+  }
+}
+```
 
 ---
 
-## Quick Start
+## 📂 Project Structure
 
-### Prerequisites
+> [!TIP]
+> The repository is heavily modularized to maintain clean separation between DOM/UI logic and HTML5 Canvas Game Logic.
 
-- **Node.js** v14 or higher
-- **npm** v6 or higher
+```text
+CHEAT-LABZ/
+├── 📄 index.html               # Landing Dashboard
+├── 📄 games.html               # Universal Game Portal SPA
+│
+├── 📁 js/                      # Core Logic
+│   ├── 📁 core/                # ⚙️ THE ENGINE
+│   │   ├── runner.js           # requestAnimationFrame loop
+│   │   ├── game-base.js        # Abstract class
+│   │   ├── input.js            # Unified I/O
+│   │   └── game-manifest.js    # Routing & Lazy-loading
+│   │
+│   ├── 📁 games/               # 🎮 THE GAME LIBRARY
+│   │   ├── 📁 solo/            # Section A & B (25 Games)
+│   │   └── 📁 multiplayer/     # Section C (10 Games)
+│   │
+│   └── 📁 ui/                  # 🖥️ DOM MANIPULATION
+│       ├── home.js             # Landing page interactions
+│       ├── game-modal.js       # Game UI wrapper & sidebar
+│       └── filters.js          # Catalog sorting
+│
+└── 📁 css/                     # Styling
+    ├── main.css                # Global Design Tokens
+    └── games.css               # Portal & HUD Layouts
+```
 
-### Installation
+---
 
-1. **Clone the repository**
+## 🎮 Game Library (35 Games)
+
+The platform is divided into three major gameplay verticals.
+
+### Section A: Arcade & Action (Solo)
+*Reflex-driven physics and collision simulations.*
+
+| ID | Title | Key Mechanics |
+| :--- | :--- | :--- |
+| 1 | **Flappy Bird** | Gravity/Velocity Physics |
+| 2 | **Brick Breaker** | AABB Collision & Paddle English |
+| 3 | **Asteroids** | Vector Math, Screen Wrapping |
+| 4 | **Frogger** | Grid-based bounding, Lane traffic |
+| 5 | **Space Invaders** | Swarm behavior, Projectile pooling |
+| 6 | **Pac-Man Mini** | A* Pathfinding logic for Ghost AI |
+| 7 | **Snake** | Array shifting, Matrix coordinates |
+| 8 | **Tetris** | Matrix rotation, 2D Array collision |
+| 9 | **Doodle Jump** | Camera translation, Procedural generation |
+| 10 | **Pong** | AI Tracking, Elastic deflection |
+| 11 | **Whack-a-Mole** | Event timers, Randomized node states |
+| 12 | **Catch the Objects**| Falling object pooling |
+| 13 | **Balloon Pop** | Sine-wave oscillation algorithms |
+| 14 | **Clicker Hero** | Exponential scaling, Idle ticks |
+| 15 | **Simon Says** | Sequence memory, Audio arrays |
+
+### Section B: Word & Logic Puzzles (Solo)
+*Heavy algorithmic focus utilizing recursion and matrices.*
+
+| ID | Title | Key Mechanics |
+| :--- | :--- | :--- |
+| 16 | **Number Guessing** | Binary search logic |
+| 17 | **Typing Speed Test** | WPM parsing, String validation |
+| 18 | **Hangman** | String masking, State deterioration |
+| 19 | **Word Scramble** | Fisher-Yates array shuffling |
+| 20 | **Wordle** | 2-Pass Frequency Matrix validation |
+| 21 | **2048** | 1D vector sliding and merging |
+| 22 | **Sudoku** | Recursive Backtracking generation |
+| 23 | **Sliding Puzzle** | Inversion Parity math (solvability) |
+| 24 | **Minesweeper** | Breadth-First Search (BFS) Flood Fill |
+| 25 | **Trivia Quiz** | Time-decay multiplier scoring |
+
+### Section C: Multiplayer Arena (Local PvP)
+*Shared-keyboard competitive duels designed for high APM.*
+
+| ID | Title | Key Mechanics |
+| :--- | :--- | :--- |
+| 26 | **Tic-Tac-Toe** | Chess-clock round timers |
+| 27 | **Pong Hyper-Rally**| Kinetic velocity transfer |
+| 28 | **Rock Paper Scissors**| Tie-damage multiplier pots |
+| 29 | **Snake vs Snake** | Simultaneous head-on collision |
+| 30 | **Connect Four** | Animated drop states, Raycasting |
+| 31 | **Memory Match** | Point-stealing trap triggers |
+| 32 | **Tug of War** | Anti-macro stamina throttling |
+| 33 | **Tank Trouble** | Vector ricochets (4-bounce max) |
+| 34 | **Racing Dots** | Sequence staggering (Stumble penalty) |
+| 35 | **Air Hockey** | Elastic circle-circle impulse physics |
+
+---
+
+## 🚀 Getting Started Locally
+
+Because the project relies on **ES6 Modules** (`import` / `export`), it cannot be run directly via the `file://` protocol due to browser CORS security policies.
+
+1. **Clone & Navigate**
    ```bash
    git clone https://github.com/sharancode3/CHEAT-LABZ.git
    cd CHEAT-LABZ
    ```
 
-2. **Install dependencies**
+2. **Run a Local Server**
    ```bash
-   npm install
+   # If you have Node/npm installed
+   npx serve .
+   # OR
+   npm run dev
    ```
 
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your settings
-   ```
-
-4. **Start the server**
-   ```bash
-   npm start
-   ```
-
-5. **Access the platform**
-   - Open `http://localhost:3000` in your browser
-   - Or open `index.html` directly for frontend-only testing
+3. **Play!**
+   Open `http://localhost:3000` (or your specific port) in your browser.
 
 ---
 
-## Features
-
-### 🏠 Landing Dashboard
-- Hero showcase with game spotlights
-- Category-based game filtering
-- Intelligent search functionality
-- One-click game launch
-
-### 🔐 Authentication System
-- Modern registration and login flows
-- JWT token-based session management
-- Guest mode for immediate access
-- Secure password handling with offline fallback
-
-### 🎮 Game Portal
-- Unified command center for all games
-- Real-time player statistics
-- Personal progress tracking
-- Fullscreen game launcher with HUD controls
-- Game pause/resume/replay functionality
-
-### 🏆 Leaderboards & Progress
-- Global game leaderboards
-- Per-player game statistics
-- High-score persistence
-- Progress sync with backend API
-
-### 📱 Responsive Interface
-- Mobile-first design approach
-- Touch-friendly controls
-- Adaptive layouts for all screen sizes
-- Cross-browser compatibility
-
----
-
-## Architecture
-
-### Technology Stack
-
-**Frontend**
-- HTML5, CSS3, Vanilla JavaScript
-- Responsive design system
-- localStorage for client-side persistence
-
-**Backend**
-- Node.js with Express.js
-- JWT authentication
-- RESTful API design
-- CORS support for cross-origin requests
-
-### Project Structure
-
-```
-├── index.html              # Landing page
-├── portal.html             # Game portal/dashboard
-├── login.html              # Authentication flow
-├── register.html           # User registration
-├── server.js               # Express backend
-├── games/                  # Game collection (11 titles)
-│   ├── snake/
-│   ├── wordle/
-│   ├── bubbleshooter/
-│   └── ... (more games)
-├── shared/                 # Shared utilities
-├── tests/                  # Test utilities
-└── assets/                 # Images and resources
-```
-
----
-
-## 🧪 Our Game Development Philosophy
-
-At Hyper Plays, we believe in **experimental game design** and **continuous innovation**. Every game in our collection:
-
-- **🔨 Built from Scratch**: Engineered entirely by our team with pure HTML5, CSS3, and JavaScript
-- **🔬 Constantly Evolving**: Treated as living prototypes that improve with each iteration
-- **💡 Innovation Labs**: Each game tests new mechanics, aesthetics, and interaction patterns
-- **🎯 Player-Centric**: Your feedback directly shapes future versions
-- **🚀 Performance-Focused**: Optimized for smooth gameplay across all devices
-
-We embrace the experimental nature of game development—expect features to be refined, mechanics to evolve, and new game experiences to be added regularly.
-
----
-
-### Available Games
-
-> 🎨 **100% Original & Experimental**
->
-> Every game in Hyper Plays is **built from scratch in-house**—not borrowed from external sites or libraries. Each title is designed as a creative experiment to showcase innovative gameplay mechanics, visual design, and interactive experiences. Our team continuously refines and evolves these games based on player feedback, making each release better than the last. Think of them as a living laboratory of browser-based gaming innovation.
-
-| Game | Type | Description |
-|------|------|-------------|
-| **Neon Serpent** | Arcade | Classic snake gameplay with synth combos |
-| **Loop Rally** | Arcade | Laser-fast paddle rallies with looping shots |
-| **Orb Pop Deluxe** | Arcade | Bubble matching with color combinations |
-| **Astro Strider** | Arcade | Dinosaur endless runner through cosmic obstacles |
-| **Turbo Drift** | Racing | Slide through neon corners and chase best laps |
-| **Slide Forge** | Puzzle | Craft pictures one satisfying move at a time |
-| **Word Pulse** | Puzzle | Word guessing challenge with hints and penalties |
-| **Cipher Quest** | Puzzle | Guess words under pressure with streak bonuses |
-| **Phantom Calc** | Puzzle | Haunted math riddles with glitching display |
-| **Key Frenzy** | Skill | Typing gauntlet for lightning-fast accuracy |
-| **Blink Lab** | Skill | Minimal reflex trials to shave off milliseconds |
-
----
-
-## API Documentation
-
-### Authentication Endpoints
-
-**Sign Up**
-```http
-POST /api/auth/signup
-Content-Type: application/json
-
-{
-  "username": "player",
-  "email": "player@example.com",
-  "password": "secure_password"
-}
-```
-
-**Login**
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "player@example.com",
-  "password": "secure_password"
-}
-```
-
-**Get Current User**
-```http
-GET /api/auth/me
-Authorization: Bearer {token}
-```
-
-### Progress Endpoints
-
-**Submit Game Score**
-```http
-POST /api/progress
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "gameId": "snake",
-  "score": 1250,
-  "result": "completed"
-}
-```
-
-**Get Game Progress**
-```http
-GET /api/progress/:gameId
-Authorization: Bearer {token}
-```
-
-**Get User Leaderboard**
-```http
-GET /api/leaderboard/:gameId
-```
-
----
-
-## Configuration
-
-Create a `.env` file in the project root:
-
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-
-# Security
-JWT_SECRET=your-secure-secret-key-change-in-production
-JWT_EXPIRY=7d
-
-# Database (if applicable)
-DB_CONNECTION_STRING=
-
-# CORS
-CORS_ORIGIN=http://localhost:3000
-```
-
----
-
-## Game Development Guide
-
-### Creating a New Game
-
-1. **Create game directory**
-   ```bash
-   mkdir -p games/my-game
-   ```
-
-2. **Build your game** in `games/my-game/index.html`
-   - Use vanilla JavaScript or any framework
-   - Keep dependencies minimal
-
-3. **Register in portal** (`portal.app.js`)
-   ```javascript
-   {
-     id: 'my-game',
-     title: 'My Awesome Game',
-     embed: '/games/my-game/index.html',
-     category: 'action'
-   }
-   ```
-
-4. **Add thumbnail** in `assets/thumbs/my-game.png`
-
-5. **Submit game results** from your game
-   ```javascript
-   window.parent.postMessage({
-     type: 'game_over',
-     gameId: 'my-game',
-     result: 'completed',
-     score: 1500
-   }, '*');
-   ```
-
----
-
-## Troubleshooting
-
-### Port Already in Use
-```bash
-# Change port in .env
-PORT=3001
-npm start
-```
-
-### Games Not Loading
-- Verify embed paths in `portal.app.js`
-- Check browser console for CORS errors
-- Ensure game files exist in `games/` directory
-
-### Authentication Issues
-- Clear localStorage: `localStorage.clear()`
-- Verify JWT_SECRET matches between client and server
-- Check token expiration in browser DevTools
-
-### Progress Not Syncing
-- Verify backend is running
-- Check network tab in DevTools for API errors
-- Confirm JWT token exists in localStorage
-
----
-
-## Performance Optimization
-
-- **Lazy loading** for game assets
-- **Responsive images** for multiple screen sizes
-- **Efficient caching** strategies
-- **Optimized bundle** sizes
-
----
-
-## Security Considerations
-
-- JWT tokens secured with strong secret keys
-- CORS properly configured for production
-- Input validation on all API endpoints
-- Password hashing for user credentials
-- Secure offline fallback mechanisms
-
----
-
-## Browser Support
-
-| Browser | Version | Support |
-|---------|---------|---------|
-| Chrome | 90+ | ✅ Full |
-| Firefox | 88+ | ✅ Full |
-| Safari | 14+ | ✅ Full |
-| Edge | 90+ | ✅ Full |
-| Mobile Safari | 14+ | ✅ Full |
-| Chrome Mobile | 90+ | ✅ Full |
-
----
-
-## Contributing
-
-Contributions are welcome! Here's how to contribute:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Workflow
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-
-# Start with auto-reload (requires nodemon)
-npm run dev
-```
-
----
-
-## Roadmap
-
-- [ ] Advanced matchmaking system
-- [ ] Social features (friend challenges, leaderboards)
-- [ ] Game mods support
-- [ ] Mobile app version
-- [ ] Cloud save synchronization
-- [ ] Achievement system
-- [ ] Real-time multiplayer games
-- [ ] Custom game creation tools
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-
----
-
-## Support
-
-For support, issues, or questions:
-
-- 📧 Email: sharan18x@gmail.com
-- 🐛 Report bugs via [GitHub Issues](https://github.com/sharancode3/CHEAT-LABZ/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/sharancode3/CHEAT-LABZ/discussions)
-
----
+> [!WARNING]
+> **Performance Note:** Cheat Labz relies heavily on `requestAnimationFrame`. If the browser tab loses focus, the engine automatically pauses the loop to preserve system resources and prevent delta-time explosion bugs upon returning.
 
 <div align="center">
-
-**Made with ❤️ by Sharan S**
-
-*Bringing arcade gaming to the modern web*
-
+  <br/>
+  <strong>Engineered with precision for the modern web.</strong>
+  <br/>
+  © Sharan S
 </div>
