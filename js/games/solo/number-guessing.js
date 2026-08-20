@@ -175,3 +175,5 @@ export class NumberGuessing extends GameBase {
     }
   }
 }
+
+export default NumberGuessing;

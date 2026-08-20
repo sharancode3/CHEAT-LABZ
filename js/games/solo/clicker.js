@@ -263,3 +263,5 @@ export class ClickerGame extends GameBase {
     ctx.fillText("Press END GAME in menu when finished.", this.W / 2, this.H - 30);
   }
 }
+
+export default ClickerGame;

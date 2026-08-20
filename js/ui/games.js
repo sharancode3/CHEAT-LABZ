@@ -1,6 +1,7 @@
 import { GAME_ICONS } from '../../assets/icons/game-icons.js';
 import { isGameLocked, getCoins, formatCoins, Storage } from '../core/storage.js';
 import { showToast } from '../core/notifications.js';
+import { GAMES } from '../core/game-manifest.js';
 
 function getGameIcon(gameId) {
   return GAME_ICONS[gameId] || GAME_ICONS['default'] || '🎮';
@@ -57,7 +58,7 @@ class GamesGrid {
     this.currentFilter = 'all';
     this.currentSearch = '';
     this.currentSort = 'pop';
-    this.games = window.GAMES || [];
+    this.games = window.GAMES && window.GAMES.length > 0 ? window.GAMES : GAMES;
 
     this.init();
   }

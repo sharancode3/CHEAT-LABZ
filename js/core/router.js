@@ -152,7 +152,11 @@ class Router {
     let params = {};
 
     // Strip query string and hash for matching
-    const path = fullPath.split('?')[0].split('#')[0];
+    let path = fullPath.split('?')[0].split('#')[0];
+    // Ensure path starts with a slash for regex matching
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
 
     for (const route of this.routes) {
       const res = path.match(route.regex);

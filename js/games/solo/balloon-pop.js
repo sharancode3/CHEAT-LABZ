@@ -272,3 +272,5 @@ export class BalloonPop extends GameBase {
     }
   }
 }
+
+export default BalloonPop;

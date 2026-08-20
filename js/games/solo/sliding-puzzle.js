@@ -192,3 +192,5 @@ export class SlidingPuzzle extends GameBase {
     }
   }
 }
+
+export default SlidingPuzzle;

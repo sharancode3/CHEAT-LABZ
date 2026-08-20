@@ -286,3 +286,5 @@ export class Sudoku extends GameBase {
     }
   }
 }
+
+export default Sudoku;

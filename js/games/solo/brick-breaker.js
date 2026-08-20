@@ -322,3 +322,5 @@ export class BrickBreaker extends GameBase {
     }
   }
 }
+
+export default BrickBreaker;

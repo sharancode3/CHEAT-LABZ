@@ -179,3 +179,5 @@ export class WordScramble extends GameBase {
     }
   }
 }
+
+export default WordScramble;

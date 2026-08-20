@@ -252,3 +252,5 @@ export class WhackAMole extends GameBase {
     }
   }
 }
+
+export default WhackAMole;
