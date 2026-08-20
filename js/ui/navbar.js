@@ -193,8 +193,7 @@ export function initNavbar() {
           if (window._router) {
             window._router.navigate(href);
           } else {
-            history.pushState({}, '', href);
-            window.dispatchEvent(new PopStateEvent('popstate'));
+            window.location.href = href;
           }
         }, 120);
       }

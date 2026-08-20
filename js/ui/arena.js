@@ -575,3 +575,15 @@ export function initArena() {
   new ArenaProtocol();
 }
 
+
+
+
+
+// Auto-init for standalone HTML pages
+if (document.getElementById('survival-tree-mount') || window.location.pathname.includes('arena')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initArena);
+  } else {
+    initArena();
+  }
+}
